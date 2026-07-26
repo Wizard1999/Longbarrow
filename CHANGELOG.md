@@ -8,6 +8,116 @@ e.g. `v1.2` = Phase 1, step 1.2. Design-only entries (no code) are marked `[desi
 
 ---
 
+## v1.7 — Squads & Behaviour Chains
+**Date:** 2026-07-26 · **Environment:** Claude Code · **Files:** `src/sim/squads.ts`, `src/ui/chainEditor.ts`, `src/render/chainVisuals.ts`
+
+Finishes the step that was mid-flight at the handoff. The draft's simulation
+logic was sound and is kept nearly verbatim; what was missing was everything
+that made it reachable — the tick call, the commands, the interaction, and the
+tests.
+
+**What changed:**
+- `stepSquads` now runs in the tick, between construction and gathering, so
+  standing orders are resolved before the units they command move.
+- **Squad commands**: form, disband, add/remove/clear chain step, loop toggle,
+  run, stop. Squads are persistent named groups (**Q1(a)**), addressed by
+  number — `Ctrl+1…5` forms, `1…5` selects. A unit belongs to at most one squad.
+- **The interaction** (`ui/chainEditor.ts`): pick a behaviour, click the map to
+  site that step. A three-step chain is six clicks, plus Run. The blueprint's
+  bar is "if it feels like scripting, it's wrong", so the chain is also drawn
+  **on the ground** — coloured waypoint posts joined by a line, the executing
+  step standing taller, the line closing into a loop when the chain loops.
+  Squad membership shows as a cyan ring under every member, whether or not
+  that squad is currently selected.
+- **Assumption A4 is now actually enforced.** The draft computed
+  `automationSlots()` but never consulted it, so the Command-gated concurrency
+  cap did nothing. Starting a chain past the cap is now refused with a reason,
+  and the HUD carries a `chains` readout beside supply. Starting Command (15)
+  buys exactly one slot; an Outpost (+8) buys the second. This is the half of
+  §8.3 that gives Cohort its "bandwidth of standing orders" flavour, so it
+  needed to bite.
+- **"Continues until redirected" (§4) is mechanical, not just prose.** A
+  hand-issued move, gather, or build order to any squad member takes that squad
+  off automation rather than fighting it.
+- Fixed `attackmove`'s `ongoing` flag, which the draft wrote as `true === false`.
+  It evaluated to `false`, which matches the intent — attack-move completes on
+  arrival — but it read like a typo mid-edit.
+- `assignGather` moved from `commands.ts` into `economy.ts`. Both the player's
+  gather order and an automated `gather` step need it, and `squads.ts` must not
+  import `commands.ts`; `cmdGather` is now a thin wrapper that also handles the
+  redirect.
+
+**Testing:**
+- **126 passing** (85 ported + 5 architecture + 36 new). New suites: squad
+  persistence and single-squad membership, a three-step chain advancing through
+  every step unattended, loop-by-default and the loop-off toggle, the Command
+  gate refusing a second chain and an Outpost lifting it, manual redirect,
+  gather steps as ongoing, the step timeout clearing an unreachable step, chain
+  editing limits, and squads disbanding when their last member dies.
+
+**Assumptions/notes:**
+- **A9 (new):** 8 Command per automation slot. Chosen so the opening position
+  has exactly one slot and the first Outpost visibly buys the second — the
+  mechanic should be legible within the first few minutes. Pure tuning.
+- **A10 (new):** a manual order stops the chain rather than pausing it. See
+  `OPEN_QUESTIONS.md` Q18.
+- **A11 (new):** a `gather` step targets the nearest live node to the point you
+  clicked, not one specific node, so a chain keeps working after that node is
+  mined out.
+- **Q3 is implemented as leaning** — loop by default, per-chain toggle — but
+  still unconfirmed with the designer.
+- Chains are capped at 6 steps and squads at 5, both arbitrary.
+
+**How to test:** `VERIFICATION_CHECKLIST.md` §E3. Short version: press **G**,
+then **Ctrl+1**, then Move→click, Attack-move→click, Patrol→click, then **Run**.
+It should run the loop unattended until you right-click somewhere with those
+units selected.
+
+---
+
+## v1.1 — Project Structure (Vite + TypeScript migration)
+**Date:** 2026-07-26 · **Environment:** Claude Code · **Files:** `package.json`, `src/**`, `tests/**`
+
+The step that was skipped in chat for lack of `npm`, done as a real migration
+rather than a blank scaffold, per `07_claude_code_migration.md`.
+
+**What changed:**
+- Vite + TypeScript (`strict`, plus `noUncheckedIndexedAccess`) + Three.js and
+  vitest via npm. Dev server, type checker, linter, and a test suite that runs
+  against real modules instead of a string-extracted `<script>` block.
+- Ported `phase1_step1.6_construction.html` into the module layout from
+  `06_phase1_kickoff.md` §2. Each `/* ---------- path.ts ---------- */` marker
+  in the source became its module; behaviour is unchanged.
+- `core/loop.ts` now owns the accumulator loop itself rather than just its
+  constants. Nothing in the render callback advances game state.
+- **The sim-purity rule is enforced rather than documented** (06 §3): an ESLint
+  `no-restricted-imports`/`globals`/`properties` block scoped to `src/sim/**`
+  fails the lint if the sim imports `three`, touches the DOM, reads wall-clock
+  time, or calls `Math.random()`. `tests/architecture.test.ts` re-checks it
+  statically, and the ported purity test still runs a full simulation with
+  `Math.random` rigged to throw.
+
+**Testing:**
+- **85/85 ported tests passing, unchanged in behaviour** — the point of porting
+  them in the same pass rather than after. Plus 5 new architecture tests.
+
+**Assumptions/notes:**
+- Three.js r128 → r185. Every geometry and material still exists; only the
+  point lights on building cores needed rescaling, since Three's lighting has
+  been physically correct since r155. Directional and hemisphere intensities
+  carry over unchanged. Output is sRGB now rather than r128's linear default,
+  so colour reproduction is slightly different — and more correct.
+- `npm audit` reports a high-severity advisory in `brace-expansion`, reached
+  only through ESLint's own config loader. Clearing it means ESLint 10, a
+  breaking upgrade, for a dev-only DoS vector. Left alone deliberately.
+- The single-file HTML builds are kept for reference and rollback; they are no
+  longer the thing under test.
+
+**How to test:** `npm install`, then `npm run dev`. `npm test` for the suite,
+`npm run lint` for the purity rule, `npm run build` for a production bundle.
+
+---
+
 ## [design] Migration to Claude Code
 **Date:** 2026-07-26 · **File:** `07_claude_code_migration.md` (new)
 

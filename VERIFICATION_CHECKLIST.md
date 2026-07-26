@@ -6,17 +6,23 @@ Anything covered by `test_sim.mjs` is deliberately **not** listed; that's alread
 
 Check items off as you go, and note anything that fails — a failure here is a real bug regardless of what the tests say.
 
-**Test the newest file** — `phase1_step1.6_construction.html`. Earlier versions are kept only for rollback.
+**The game is now a real project, not a single file.** `npm install`, then
+`npm run dev`, then open the URL it prints (usually `http://localhost:5173`).
+The old `phase1_step1.*.html` files are kept only for rollback and reference —
+don't test against them.
 
 ---
 
 ## A. Does it even run (do this first, 2 minutes)
 
-- [ ] `phase1_step1.6_construction.html` opens by double-clicking, no server needed
+- [ ] `npm install` completes. It prints a high-severity `npm audit` warning about `brace-expansion` — that's inside ESLint's own config loader, dev-only, and clearing it needs a breaking ESLint upgrade. Deliberately left alone; tell me if you'd rather I take the upgrade
+- [ ] `npm run dev` starts and the page loads
 - [ ] Terrain, trees, rocks, units, and both bases render — nothing invisible or black
 - [ ] No red errors in the browser console (F12 → Console)
-- [ ] **Three.js loads from CDN.** Everything depends on `cdnjs.cloudflare.com`. Some networks (libraries, schools, workplaces, some corporate VPNs) block CDNs. If the screen is blank and the console shows a failed script load, tell me and I'll inline the library or swap the source.
-- [ ] Works in whichever browser you actually use. I've written to standard WebGL/ES2020 — but untested everywhere. Chrome/Edge/Firefox should be fine; **Safari is the most likely to misbehave.**
+- [ ] **Colours look right.** Three.js went from r128 to r185 in this migration, and its lighting model and colour output changed underneath us. I re-tuned the light intensities and checked it in a browser, but "right" here is a judgement call — if the scene reads flatter, brighter, or cooler than the old single-file build did on your machine, say so and compare against `phase1_step1.6_construction.html` side by side
+- [ ] `npm test` → 126 passing
+- [ ] `npm run lint` → clean, and `npm run build` produces a bundle
+- [ ] Works in whichever browser you actually use. Chrome/Edge/Firefox should be fine; **Safari is the most likely to misbehave.**
 
 ## B. Performance and the fixed tick (1.2)
 
@@ -89,6 +95,50 @@ The pause-on-reassignment behaviour is the headline here — the blueprint calls
 - [ ] Placing with no worker selected still works, and the toast tells you no worker was assigned
 - [ ] Assigning four workers instead of one does **not** build faster (deliberate — assumption A8, see `OPEN_QUESTIONS.md`)
 
+## E3. Squads and behaviour chains (1.7)
+
+This is the step the blueprint judges hardest: *"if it feels like scripting,
+it's wrong — rebuild the interaction, not the backend."* So the questions below
+about how it **feels** matter more than the ones about whether it works.
+
+**The core run-through:**
+
+- [ ] Press **G** to grab the workers, then **Ctrl+1** — a cyan ring appears under each member and the panel bottom-left reads "Squad 1 — 4 unit(s)"
+- [ ] Click **Move**, then click a spot on the map → a blue post appears there and "1. Move" joins the list
+- [ ] Add **Attack-move** and **Patrol** the same way, somewhere else each time
+- [ ] The three posts are joined by a line on the ground, and the line **closes into a loop** (because Loop is on)
+- [ ] Press **Run**. The squad sets off, and the post for the step it's currently on stands taller
+- [ ] **Walk away for a minute.** It should keep running the loop with no further input
+- [ ] The step highlighted in the list matches the tall post on the map
+
+**Did it feel like scripting?**
+
+- [ ] Assembling that chain took about six clicks. Did it feel like *commanding*, or like filling in a form? This is the question — if it's the latter, the interaction needs rebuilding, not the backend
+- [ ] Can you tell what a squad is going to do by looking at the **map**, without reading the panel?
+- [ ] Is the arm-a-behaviour-then-click-the-map rhythm obvious, or did you have to think about it?
+
+**The Command gate (assumption A4 — the interesting half of §8.3):**
+
+- [ ] The top bar shows `chains` next to `command`. It reads **0/1** at the start
+- [ ] Form a second squad from the legionnaires (**Ctrl+2**), give it a step, press Run → **refused**, with "not enough Command — 1 chain at a time"
+- [ ] Build an Outpost. Once it *finishes*, the readout becomes **/2** and the second chain runs
+- [ ] Does being limited to one automated chain at the opening feel like a meaningful constraint, or just annoying? (Open question Q19)
+
+**Redirecting:**
+
+- [ ] With a running squad selected, right-click the ground → it stops automating and obeys, and the button flips back to Run
+- [ ] The squad still **exists** afterwards — redirected, not disbanded
+- [ ] Press Run again → it starts over from step 1. **Should it instead resume where it left off?** That's open question Q18 and I'd like your call
+- [ ] Press **1** at any time to re-select squad 1, wherever it is
+
+**Odds and ends:**
+
+- [ ] **Loop: off** → the chain stops after the last step instead of repeating
+- [ ] **×** next to a step removes it; **Clear** empties the chain
+- [ ] A `gather` step puts the workers in that squad to work and keeps them there
+- [ ] Put a step somewhere unreachable — the chain should give up on it after ~45s and move on, not wedge
+- [ ] Forming a squad from units already in another squad moves them out of the old one
+
 ## F. Art direction — the subjective ones
 
 These matter more than they sound, because they're the decisions that can't be un-made cheaply later.
@@ -112,6 +162,7 @@ Don't report these; they're scheduled work.
 - No combat; red units are inert
 - High ground has no combat effect yet — the terrain queries exist but nothing consumes them until 1.8/1.9
 - No fog of war, no vision system
+- Attack-move currently just moves — there is nothing to attack until 1.9
 - Rival team has no AI (1.11)
 - No win condition (1.12)
 - Every number is a placeholder; the economy is deliberately untuned
@@ -124,4 +175,4 @@ The feel-based ones in there (Q12–Q16) specifically need you at the controls, 
 
 ---
 
-*Updated through v1.6. New items get added as versions land.*
+*Updated through v1.7. New items get added as versions land.*

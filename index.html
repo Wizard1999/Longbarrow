@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RTS — Phase 1.1 · Vite/TS Migration</title>
+<title>RTS — Phase 1.7 · Squads &amp; Behaviour Chains</title>
 <style>
   html, body { margin: 0; padding: 0; overflow: hidden; background: #7ec8e3; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
   canvas { display: block; }
@@ -46,17 +46,49 @@
     padding: 6px 14px; font-size: 12px; opacity: 0; transition: opacity .25s;
   }
 
+  /* ---- behaviour chain editor (1.7) ---- */
+  #chain { bottom: 14px; left: 14px; width: 262px; pointer-events: auto; text-align: left; }
+  #chain h3 { margin: 0 0 6px; font-size: 12px; letter-spacing: .05em; text-transform: uppercase; color: #444; }
+  #chain .squads { display: flex; gap: 5px; margin-bottom: 8px; }
+  #chain .squads button {
+    font: inherit; font-size: 12px; width: 26px; height: 26px; padding: 0;
+    border-radius: 6px; border: 1px solid #c9c2b4; background: #fffdf7; cursor: pointer;
+  }
+  #chain .squads button.on { background: #ffe1a8; border-color: #d8b872; font-weight: 700; }
+  #chain .squads button.empty { opacity: .38; }
+  #chain ol { margin: 0 0 8px; padding-left: 20px; font-size: 12px; line-height: 1.65; }
+  #chain ol li.now { font-weight: 700; color: #8a6100; }
+  #chain ol li button {
+    font: inherit; font-size: 10px; margin-left: 6px; padding: 0 5px; cursor: pointer;
+    border: 1px solid #ddd6c8; background: #fffdf7; border-radius: 4px; color: #999;
+  }
+  #chain .add { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 7px; }
+  #chain .add button, #chain .run button {
+    font: inherit; font-size: 11px; padding: 5px 8px; border-radius: 6px;
+    border: 1px solid #c9c2b4; background: #fffdf7; cursor: pointer;
+  }
+  #chain .add button.arming { background: #d6f0ff; border-color: #7ab8dd; font-weight: 600; }
+  #chain .add button:disabled, #chain .run button:disabled { opacity: .42; cursor: not-allowed; }
+  #chain .run { display: flex; gap: 5px; align-items: center; }
+  #chain .run button.go { background: #dbf5d6; border-color: #86bf7a; font-weight: 600; }
+  #chain .run button.stop { background: #ffe0dd; border-color: #d99a92; }
+  #chain .note { font-size: 11px; color: #888; margin-top: 6px; line-height: 1.45; }
+  #chain .note.warn { color: #b02e2e; font-weight: 600; }
+  #chain .empty-state { font-size: 11px; color: #888; line-height: 1.5; }
+
 </style>
 </head>
 <body>
 <div id="hud" class="panel">
-  <b>Phase 1.1 — Vite/TS Migration</b><br>
+  <b>Phase 1.7 — Squads &amp; Behaviour Chains</b><br>
   Left-click / drag: select &middot; Right-click ground: move<br>
   <b>Right-click a resource node with workers selected:</b><br>
   &nbsp;&nbsp;they gather forever, no further input<br>
   Select the Standard: <b>Q</b> worker &middot; <b>E</b> legionnaire<br>
   Select a worker, <b>B</b>: build outpost, click to site it<br>
   Worker walks there and builds &middot; pull it off and it <b>pauses</b><br>
+  <b>Ctrl+1…5</b> forms a squad &middot; <b>1…5</b> selects it<br>
+  Pick a behaviour, click the map to place that step, hit Run<br>
   WASD / edge-scroll: pan &middot; Scroll: zoom<br>
   <b>T</b>: throttle test &middot; <b>G</b>: select all workers
 </div>
@@ -64,6 +96,7 @@
   <div><span class="big" id="r-essence">0</span> <span class="sub">essence</span></div>
   <div><span id="r-gathering">0</span>/<span id="r-workers">0</span> <span class="sub">workers gathering</span></div>
   <div><span class="big" id="r-supply">0/0</span> <span class="sub">command</span></div>
+  <div><span class="big" id="r-chains">0/0</span> <span class="sub">chains</span></div>
   <div><span id="r-remaining">0</span> <span class="sub">left on map</span></div>
 </div>
 <div id="card" class="panel">
@@ -71,6 +104,11 @@
   <div class="btns" id="card-btns"></div>
   <div class="queue" id="card-queue"></div>
   <div class="hint" id="card-hint"></div>
+</div>
+<div id="chain" class="panel">
+  <h3 id="chain-title">Squads</h3>
+  <div class="squads" id="chain-squads"></div>
+  <div id="chain-body"></div>
 </div>
 <div id="flash" class="panel"></div>
 <div id="debug" class="panel">

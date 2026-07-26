@@ -54,6 +54,53 @@ Each of these is live in the build right now.
 
 **A8 — More workers don't build faster.** Construction runs at a flat rate whenever at least one assigned worker is present. Piling workers onto a building to rush it is a different race's fantasy, and Cohort's whole curve is "flat and reliable." But it does make construction feel slightly inert — worth a second look.
 
+**A9 — Automation slots are Command / 8.** Starting Command (15) buys one
+concurrent chain; the first Outpost (+8) buys the second. See Q19.
+
+**A10 — A manual order stops a running chain outright.** See Q18.
+
+**A11 — A `gather` chain step targets the nearest *live* node to the point you
+clicked**, not one specific node, so the step keeps working after that node is
+mined out. Consistent with how 1.4's set-and-forget loop re-targets on its own.
+
+---
+
+## ⚠️ New with 1.7 (squads & behaviour chains)
+
+**Q17 — Should *forming* a squad cost Command, or only *running* a chain?**
+Right now forming is free and unlimited (up to five squads); the Command cap
+only refuses you when you try to **run** a second chain simultaneously. That
+reads well — you can plan as much as you like, you just can't execute it all at
+once — and it matches §8.3's "number of squads that can run an automated
+command chain simultaneously" fairly literally. But it does mean the cap is
+invisible until the moment it bites. **Leaning as built.**
+
+**Q18 — Should a manual order *stop* a chain or *pause* it?**
+Currently it stops: right-clicking a move order at any squad member takes that
+squad off automation, and you press Run again to resume from step 1. The
+alternative is pausing — you interrupt, and it picks the chain back up where it
+left off once you stop giving orders. Stopping is more predictable and never
+surprises you by resuming; pausing is less typing when you just want to nudge a
+squad mid-route. §4 only says "continues until redirected", which doesn't
+settle it. **Leaning stop, but this is the one I'd most like you to feel.**
+
+**Q19 — Is 8 Command per automation slot the right rate?** (A9)
+Chosen so you start with exactly one slot and your first Outpost visibly buys
+the second, making the mechanic legible early. Whether one chain at the opening
+is *fun* or just restrictive is a feel question. Pure tuning either way.
+
+**Q20 — Should a squad be able to hold a mixed chain of economy and army steps?**
+Nothing stops you putting a `gather` step in a chain of legionnaires — the
+non-workers just stand guard at the point while any workers in the squad mine.
+That fell out of the implementation rather than being designed. It might be a
+nice bit of emergent flexibility (a squad that escorts its own miners), or it
+might be muddle.
+
+**Q21 — Chain step cap is 6, squad cap is 5.** Both arbitrary. The step cap
+matters more than it looks: Mycora's whole supply identity (§8.3) is gating
+chain *complexity*, so whatever number Cohort sits at becomes the baseline that
+Mycora is measured against later.
+
 ---
 
 ## ◐ Design gaps that will block Phase 2+
@@ -90,4 +137,4 @@ These need a human at the controls; they can't be reasoned out.
 
 ---
 
-*Updated through v1.6.*
+*Updated through v1.7.*

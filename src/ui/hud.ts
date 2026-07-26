@@ -7,6 +7,7 @@ import { cmdCancelSite, cmdTrain } from '../sim/commands';
 import { builderIsWorking, buildersOn } from '../sim/construction';
 import { countGathering, totalResourcesRemaining } from '../sim/economy';
 import { supplyCap, supplyUsed } from '../sim/supply';
+import { automationSlots, runningSquads } from '../sim/squads';
 import type { UiState } from '../input/selection';
 
 const el = (id: string): HTMLElement => {
@@ -29,6 +30,7 @@ export function createHud(world: World, ui: UiState): Hud {
   const resUi = {
     essence: el('r-essence'), gathering: el('r-gathering'),
     workers: el('r-workers'), remaining: el('r-remaining'), supply: el('r-supply'),
+    chains: el('r-chains'),
   };
   const cardTitle = el('card-title');
   const cardBtns = el('card-btns');
@@ -179,6 +181,12 @@ export function createHud(world: World, ui: UiState): Hud {
     const cap = supplyCap(world, 'player');
     resUi.supply.textContent = `${used}/${cap}`;
     resUi.supply.style.color = used >= cap ? '#b02e2e' : '';
+
+    // Command buys automation slots as well as population (A4, §8.3).
+    const slots = automationSlots(world, 'player');
+    const chains = runningSquads(world, 'player');
+    resUi.chains.textContent = `${chains}/${slots}`;
+    resUi.chains.style.color = chains >= slots ? '#b02e2e' : '';
 
     renderCard();
   }

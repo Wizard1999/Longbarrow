@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { BuildingTypeKey, EntityId, World } from '../core/types';
+import type { BehaviourKind, BuildingTypeKey, EntityId, World } from '../core/types';
 import { terrainHeightAt } from '../sim/terrain';
 
 /** What the player currently has selected. Units carry their own `selected`
@@ -9,10 +9,20 @@ export interface UiState {
   placingType: BuildingTypeKey | null;
   selectedBuildingId: EntityId | null;
   selectedSiteId: EntityId | null;
+  /** Which squad the chain editor is showing. */
+  selectedSquadId: EntityId | null;
+  /** A behaviour picked but not yet placed — the next map click sites it. */
+  armedBehaviour: BehaviourKind | null;
 }
 
 export function createUiState(): UiState {
-  return { placingType: null, selectedBuildingId: null, selectedSiteId: null };
+  return {
+    placingType: null,
+    selectedBuildingId: null,
+    selectedSiteId: null,
+    selectedSquadId: null,
+    armedBehaviour: null,
+  };
 }
 
 export interface ViewMaps {

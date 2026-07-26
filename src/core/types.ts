@@ -93,6 +93,41 @@ export interface Scenery {
   spin: number;
 }
 
+/**
+ * The four Phase 1 behaviours (§4 / blueprint 1.7). Two complete and hand over
+ * to the next step; two are ongoing and hold the squad until it is redirected.
+ */
+export type BehaviourKind = 'move' | 'attackmove' | 'gather' | 'patrol';
+
+export interface ChainStep {
+  kind: BehaviourKind;
+  x: number;
+  z: number;
+}
+
+/**
+ * A squad is a PERSISTENT group, not a transient selection (assumption Q1). It
+ * has to persist for §8.3 to mean anything — you cannot cap "how many squads
+ * are running a chain" if a squad stops existing the moment you click
+ * elsewhere.
+ */
+export interface Squad {
+  id: EntityId;
+  team: Team;
+  number: number;
+  memberIds: EntityId[];
+  chain: ChainStep[];
+  index: number;
+  running: boolean;
+  /** Chains loop by default (Q3), with this per-chain toggle. */
+  loop: boolean;
+  dispatched: boolean;
+  stepTicks: number;
+  patrolFrom: Vec2 | null;
+  patrolTo: Vec2 | null;
+  patrolHeading: 'to' | 'from';
+}
+
 export interface World {
   seed: number;
   rng: () => number;
@@ -103,6 +138,7 @@ export interface World {
   nodes: ResourceNode[];
   sites: Site[];
   scenery: Scenery[];
+  squads: Squad[];
   resources: Record<Team, number>;
 }
 

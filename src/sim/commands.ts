@@ -1,15 +1,20 @@
 import type {
-  BuildingTypeKey, CommandResult, EntityId, Team, UnitTypeKey, World,
+  BehaviourKind, BuildingTypeKey, CommandResult, EntityId, Squad, Team, UnitTypeKey, World,
 } from '../core/types';
 import { BUILDING_TYPES } from '../data/buildings';
 import { UNIT_TYPES } from '../data/units';
+import { AUTOMATION } from '../data/tuning';
 import { canTrain } from './production';
 import { canPlaceBuilding, findSite, spawnSite } from './construction';
-import { findNode } from './economy';
+import { assignGather } from './economy';
+import {
+  automationSlots, createSquad, findSquad, runningSquads, stopSquadsContaining,
+} from './squads';
 
 // The ONLY way anything outside the sim mutates the sim.
 
 export function cmdMove(world: World, unitIds: EntityId[], x: number, z: number): void {
+  stopSquadsContaining(world, unitIds);
   const ids = new Set(unitIds);
   const group = world.units.filter(u => ids.has(u.id));
   group.forEach((u, i) => {
@@ -28,18 +33,8 @@ export function cmdMove(world: World, unitIds: EntityId[], x: number, z: number)
 /** One command, indefinite loop, no further input — §8.2 "set-and-forget".
  *  Returns the ids that actually accepted the order (workers only). */
 export function cmdGather(world: World, unitIds: EntityId[], nodeId: EntityId): EntityId[] {
-  const ids = new Set(unitIds);
-  const node = findNode(world, nodeId);
-  if (!node) return [];
-  const accepted: EntityId[] = [];
-  for (const u of world.units) {
-    if (!ids.has(u.id) || !u.gather) continue;
-    if (u.build) u.build.siteId = null;      // pauses whatever it was building
-    u.gather.nodeId = nodeId;
-    u.gather.state = u.gather.carrying > 0 ? 'toBase' : 'toNode';
-    u.target = null;
-    accepted.push(u.id);
-  }
+  const accepted = assignGather(world, unitIds, nodeId);
+  if (accepted.length) stopSquadsContaining(world, accepted);
   return accepted;
 }
 
@@ -86,6 +81,7 @@ export function cmdPlaceBuilding(
 export function cmdAssignBuilders(world: World, unitIds: EntityId[], siteId: EntityId): EntityId[] {
   const site = findSite(world, siteId);
   if (!site) return [];
+  stopSquadsContaining(world, unitIds);
   const ids = new Set(unitIds);
   const accepted: EntityId[] = [];
   for (const u of world.units) {
@@ -113,4 +109,103 @@ export function cmdCancelSite(world: World, siteId: EntityId): CommandResult {
 export function cmdSetSelection(world: World, unitIds: EntityId[]): void {
   const ids = new Set(unitIds);
   for (const u of world.units) u.selected = ids.has(u.id);
+}
+
+// ---- squads and behaviour chains (1.7) ----
+
+/** Forms (or replaces) squad `number` from the given units. Persistent, per
+ *  assumption Q1 — the group survives clicking elsewhere. */
+export function cmdFormSquad(
+  world: World, team: Team, unitIds: EntityId[], number: number,
+): CommandResult {
+  if (number < 1 || number > AUTOMATION.maxSquads) return { ok: false, reason: 'no such squad slot' };
+  const own = world.units.filter(u => unitIds.includes(u.id) && u.team === team).map(u => u.id);
+  if (!own.length) return { ok: false, reason: 'select some units first' };
+  const squad = createSquad(world, team, own, number);
+  return { ok: true, siteId: squad.id };
+}
+
+export function cmdDisbandSquad(world: World, squadId: EntityId): CommandResult {
+  const i = world.squads.findIndex(s => s.id === squadId);
+  if (i < 0) return { ok: false, reason: 'no such squad' };
+  world.squads.splice(i, 1);
+  return { ok: true };
+}
+
+export function cmdAddChainStep(
+  world: World, squadId: EntityId, kind: BehaviourKind, x: number, z: number,
+): CommandResult {
+  const squad = findSquad(world, squadId);
+  if (!squad) return { ok: false, reason: 'no such squad' };
+  if (squad.chain.length >= AUTOMATION.maxChainSteps) {
+    return { ok: false, reason: `chains are capped at ${AUTOMATION.maxChainSteps} steps` };
+  }
+  squad.chain.push({ kind, x, z });
+  return { ok: true };
+}
+
+export function cmdRemoveChainStep(
+  world: World, squadId: EntityId, index: number,
+): CommandResult {
+  const squad = findSquad(world, squadId);
+  if (!squad || index < 0 || index >= squad.chain.length) {
+    return { ok: false, reason: 'nothing to remove' };
+  }
+  squad.chain.splice(index, 1);
+  resetChain(squad);
+  if (!squad.chain.length) squad.running = false;
+  return { ok: true };
+}
+
+export function cmdClearChain(world: World, squadId: EntityId): CommandResult {
+  const squad = findSquad(world, squadId);
+  if (!squad) return { ok: false, reason: 'no such squad' };
+  squad.chain = [];
+  squad.running = false;
+  resetChain(squad);
+  return { ok: true };
+}
+
+export function cmdSetChainLoop(
+  world: World, squadId: EntityId, loop: boolean,
+): CommandResult {
+  const squad = findSquad(world, squadId);
+  if (!squad) return { ok: false, reason: 'no such squad' };
+  squad.loop = loop;
+  return { ok: true };
+}
+
+/**
+ * Starts a chain. This is where assumption A4 actually bites: Command gates
+ * how many squads may run a chain at once (§8.3), so starting one past the cap
+ * is refused rather than silently allowed.
+ */
+export function cmdRunChain(world: World, squadId: EntityId): CommandResult {
+  const squad = findSquad(world, squadId);
+  if (!squad) return { ok: false, reason: 'no such squad' };
+  if (!squad.chain.length) return { ok: false, reason: 'this squad has no chain yet' };
+  if (squad.running) return { ok: true };
+  const slots = automationSlots(world, squad.team);
+  if (runningSquads(world, squad.team) >= slots) {
+    return { ok: false, reason: `not enough Command — ${slots} chain${slots === 1 ? '' : 's'} at a time` };
+  }
+  resetChain(squad);
+  squad.running = true;
+  return { ok: true };
+}
+
+export function cmdStopChain(world: World, squadId: EntityId): CommandResult {
+  const squad = findSquad(world, squadId);
+  if (!squad) return { ok: false, reason: 'no such squad' };
+  squad.running = false;
+  return { ok: true };
+}
+
+function resetChain(squad: Squad): void {
+  squad.index = 0;
+  squad.dispatched = false;
+  squad.stepTicks = 0;
+  squad.patrolFrom = null;
+  squad.patrolTo = null;
+  squad.patrolHeading = 'to';
 }

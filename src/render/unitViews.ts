@@ -9,6 +9,7 @@ export const TEAM_COLORS: Record<Team, number> = { player: 0x3b5bdb, rival: 0xb0
 interface UnitViewData {
   unitId: EntityId;
   ring: THREE.Mesh;
+  squadRing: THREE.Mesh;
   carry: THREE.Mesh | null;
   pickTarget: THREE.Mesh;
 }
@@ -47,7 +48,19 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
   ring.visible = false;
   g.add(ring);
 
-  g.userData = { unitId: unit.id, ring, carry, pickTarget: body } satisfies UnitViewData;
+  // Squad membership ring, just outside the selection ring. Squads persist
+  // (Q1), so it has to show on the unit whether or not that squad is currently
+  // selected — otherwise you cannot tell at a glance what is already committed.
+  const squadRing = new THREE.Mesh(
+    new THREE.RingGeometry(isWorker ? 0.62 : 0.72, isWorker ? 0.72 : 0.82, 20),
+    new THREE.MeshBasicMaterial({ color: 0x8ad6ff, side: THREE.DoubleSide, transparent: true, opacity: 0.75 }),
+  );
+  squadRing.rotation.x = -Math.PI / 2;
+  squadRing.position.y = 0.02;
+  squadRing.visible = false;
+  g.add(squadRing);
+
+  g.userData = { unitId: unit.id, ring, squadRing, carry, pickTarget: body } satisfies UnitViewData;
   scene.add(g);
   return g;
 }
@@ -61,9 +74,11 @@ function lerpAngle(a: number, b: number, t: number): number {
 /**
  * Interpolates between the previous and current tick so a 20Hz simulation
  * still looks smooth at display refresh rate. Nothing here advances game state.
+ * Units in `squadMemberIds` get the squad ring.
  */
 export function syncUnitViews(
-  scene: THREE.Scene, world: World, views: Map<EntityId, THREE.Group>, alpha: number,
+  scene: THREE.Scene, world: World, views: Map<EntityId, THREE.Group>,
+  alpha: number, squadMemberIds: Set<EntityId>,
 ): void {
   for (const u of world.units) {
     let v = views.get(u.id);
@@ -74,6 +89,7 @@ export function syncUnitViews(
     v.position.set(x, terrainHeightAt(x, z), z);
     v.rotation.y = lerpAngle(u.prevFacing, u.facing, alpha);
     d.ring.visible = u.selected;
+    d.squadRing.visible = squadMemberIds.has(u.id);
     if (d.carry) d.carry.visible = (u.gather?.carrying ?? 0) > 0;
   }
   // drop views for units that no longer exist

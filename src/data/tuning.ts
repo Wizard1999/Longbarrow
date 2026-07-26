@@ -17,6 +17,17 @@ export const SUPPLY_MAX = 200;      // hard ceiling regardless of Command built
 export const MAX_QUEUE = 5;         // production queue depth per building
 export const PLACE_CLEARANCE = 1.0; // gap required between a new building and anything else
 
+// Automation (§4, §8.3). Command gates how many squads can run a chain at
+// once — Cohort's flavour of the multitasking skill is bandwidth of standing
+// orders, so the cap is a count, not a distance or a complexity limit.
+export const AUTOMATION = {
+  commandPerSlot: 8,  // 15 command -> 1 squad; an outpost (+8) buys another
+  arriveRadius: 2.2,  // how close counts as "the squad got there"
+  stepTimeout: 900,   // 45s — a step that cannot finish must not deadlock the chain
+  maxChainSteps: 6,
+  maxSquads: 5,       // squads are bound to number keys 1–5
+};
+
 export const ECON = {
   gatherTicks: 30,      // 1.5s to fill up — Cohort is "flat and reliable" (§8.1)
   carryAmount: 8,       // essence per trip

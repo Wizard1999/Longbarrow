@@ -2,7 +2,8 @@ import type * as THREE from 'three';
 import type { World } from '../core/types';
 import { BUILDING_TYPES } from '../data/buildings';
 import {
-  cmdAssignBuilders, cmdGather, cmdMove, cmdPlaceBuilding, cmdSetRally, cmdSetSelection,
+  cmdAddChainStep, cmdAssignBuilders, cmdGather, cmdMove, cmdPlaceBuilding,
+  cmdSetRally, cmdSetSelection,
 } from '../sim/commands';
 import type { RtsCamera } from '../render/camera';
 import type { PlacementGhost } from '../render/placementGhost';
@@ -26,6 +27,17 @@ export function createMouse(deps: MouseDeps): void {
   const selboxEl = document.getElementById('selbox');
   let dragStart: { x: number; y: number } | null = null;
   let dragging = false;
+
+  /** Keep the chain editor pointed at whatever the player is looking at: if
+   *  the whole selection belongs to one squad, show that squad's chain. */
+  function followSelection(): void {
+    const sel = world.units.filter(u => u.selected);
+    const owner = sel.length
+      ? world.squads.find(s => sel.every(u => s.memberIds.includes(u.id)))
+      : undefined;
+    ui.selectedSquadId = owner?.id ?? null;
+    ui.armedBehaviour = null;
+  }
 
   domElement.addEventListener('wheel', e => cam.zoom(e.deltaY), { passive: true });
   domElement.addEventListener('contextmenu', e => e.preventDefault());
@@ -76,6 +88,22 @@ export function createMouse(deps: MouseDeps): void {
       return;
     }
 
+    // ---- left while a behaviour is armed: site that chain step ----
+    if (e.button === 0 && ui.armedBehaviour && ui.selectedSquadId !== null && !dragging) {
+      picker.setFromEvent(e);
+      const hit = picker.ground();
+      if (hit) {
+        const kind = ui.armedBehaviour;
+        const res = cmdAddChainStep(world, ui.selectedSquadId, kind, hit.point.x, hit.point.z);
+        flash(res.ok ? `${kind} step added` : res.reason ?? 'cannot add that step');
+        ui.armedBehaviour = null;
+      }
+      if (selboxEl) selboxEl.style.display = 'none';
+      dragStart = null;
+      dragging = false;
+      return;
+    }
+
     // ---- left: selection ----
     if (e.button === 0 && dragStart) {
       if (dragging) {
@@ -91,6 +119,7 @@ export function createMouse(deps: MouseDeps): void {
           const p = screenPosOf(cam.camera, u.x, u.z);
           return p.x >= x1 && p.x <= x2 && p.y >= y1 && p.y <= y2;
         }).map(u => u.id));
+        followSelection();
       } else {
         picker.setFromEvent(e);
         const unitHit = picker.unit();
@@ -111,12 +140,14 @@ export function createMouse(deps: MouseDeps): void {
             ui.selectedBuildingId = null;
             ui.selectedSiteId = null;
             cmdSetSelection(world, e.shiftKey ? [...selectedIds(world), unitId] : [unitId]);
+            followSelection();
           }
         } else if (bldHit && near === bldHit) {
           const bid = ownerIdOf(bldHit, 'buildingId');
           const b = world.buildings.find(x => x.id === bid);
           if (b && b.team === 'player') {
             cmdSetSelection(world, []);
+            followSelection();
             ui.selectedSiteId = null;
             ui.selectedBuildingId = bid;
           }
@@ -124,6 +155,7 @@ export function createMouse(deps: MouseDeps): void {
           ui.selectedBuildingId = null;
           ui.selectedSiteId = null;
           cmdSetSelection(world, []);
+          followSelection();
         }
       }
       if (selboxEl) selboxEl.style.display = 'none';

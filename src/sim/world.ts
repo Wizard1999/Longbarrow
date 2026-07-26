@@ -4,6 +4,7 @@ import { stepProduction } from './production';
 import { stepBuild, stepConstruction } from './construction';
 import { stepGather } from './economy';
 import { stepMovement } from './movement';
+import { stepSquads } from './squads';
 
 export function createWorld(seed: number): World {
   return {
@@ -16,6 +17,7 @@ export function createWorld(seed: number): World {
     nodes: [],
     sites: [],          // construction in progress
     scenery: [],
+    squads: [],         // persistent groups running behaviour chains
     resources: { player: 0, rival: 0 },
   };
 }
@@ -27,6 +29,7 @@ export function simStep(world: World): void {
   }
   stepProduction(world);
   stepConstruction(world);
+  stepSquads(world);                                   // standing orders first
   for (const u of world.units) stepGather(world, u);   // decides where to go
   for (const u of world.units) stepBuild(world, u);    // ...or where to build
   for (const u of world.units) stepMovement(u);        // goes there

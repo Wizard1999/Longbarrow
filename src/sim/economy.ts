@@ -38,6 +38,28 @@ export function approachPoint(unit: Unit, tx: number, tz: number, standoff: numb
   return { x: tx + Math.cos(a) * standoff, z: tz + Math.sin(a) * standoff };
 }
 
+/**
+ * Puts workers on a node. Lives here rather than in commands.ts because both
+ * the player's gather order and an automated `gather` chain step need it, and
+ * squads.ts must not import commands.ts. Returns the ids that accepted
+ * (workers only).
+ */
+export function assignGather(world: World, unitIds: EntityId[], nodeId: EntityId): EntityId[] {
+  const ids = new Set(unitIds);
+  const node = findNode(world, nodeId);
+  if (!node) return [];
+  const accepted: EntityId[] = [];
+  for (const u of world.units) {
+    if (!ids.has(u.id) || !u.gather) continue;
+    if (u.build) u.build.siteId = null;      // pauses whatever it was building
+    u.gather.nodeId = nodeId;
+    u.gather.state = u.gather.carrying > 0 ? 'toBase' : 'toNode';
+    u.target = null;
+    accepted.push(u.id);
+  }
+  return accepted;
+}
+
 export function stepGather(world: World, u: Unit): void {
   const g = u.gather;
   if (!g || g.state === 'idle') return;
