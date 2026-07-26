@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RTS — Phase 1.7 · Squads &amp; Behaviour Chains</title>
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; background: #7ec8e3; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
+  canvas { display: block; }
+  .panel {
+    position: absolute; color: #2b2b2b; background: rgba(255,255,255,0.78);
+    padding: 10px 14px; border-radius: 8px; font-size: 13px; line-height: 1.5;
+    pointer-events: none;
+  }
+  #hud { top: 12px; left: 12px; max-width: 300px; }
+  #res {
+    top: 12px; left: 50%; transform: translateX(-50%);
+    font-size: 15px; padding: 8px 18px; display: flex; gap: 22px; align-items: center;
+  }
+  #res .big { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  #res .sub { color: #666; font-size: 12px; }
+  #debug { top: 12px; right: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; min-width: 210px; }
+  #debug .row { display: flex; justify-content: space-between; gap: 16px; }
+  #debug .k { color: #666; }
+  #debug .warn { color: #b02e2e; font-weight: 600; }
+  #debug h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: #444; }
+  #selbox { position: absolute; border: 1.5px solid #ffe66d; background: rgba(255,230,109,0.18); pointer-events: none; display: none; }
+  #card {
+    bottom: 14px; left: 50%; transform: translateX(-50%);
+    min-width: 340px; pointer-events: auto; text-align: center;
+  }
+  #card h3 { margin: 0 0 8px; font-size: 13px; letter-spacing: .05em; text-transform: uppercase; color: #444; }
+  #card .btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  #card button {
+    font: inherit; font-size: 12px; padding: 7px 12px; border-radius: 6px;
+    border: 1px solid #c9c2b4; background: #fffdf7; cursor: pointer; line-height: 1.3;
+  }
+  #card button:hover:not(:disabled) { background: #fff4d6; border-color: #d8b872; }
+  #card button:disabled { opacity: .42; cursor: not-allowed; }
+  #card button b { display: block; }
+  #card button .c { color: #777; font-size: 11px; }
+  #card .queue { margin-top: 8px; font-size: 12px; color: #555; min-height: 17px; }
+  #card .hint { margin-top: 6px; font-size: 11px; color: #888; }
+  #cap { color: #b02e2e; font-weight: 600; }
+  #flash {
+    bottom: 128px; left: 50%; transform: translateX(-50%);
+    padding: 6px 14px; font-size: 12px; opacity: 0; transition: opacity .25s;
+  }
+</style>
+</head>
+<body>
+<div id="hud" class="panel">
+  <b>Phase 1.4 — Worker Gather Loop</b><br>
+  Left-click / drag: select &middot; Right-click ground: move<br>
+  <b>Right-click a resource node with workers selected:</b><br>
+  &nbsp;&nbsp;they gather forever, no further input<br>
+  Select the Standard: <b>Q</b> worker &middot; <b>E</b> legionnaire<br>
+  Select a worker, <b>B</b>: build outpost, click to site it<br>
+  Worker walks there and builds &middot; pull it off and it <b>pauses</b><br>
+  Right-click a paused site with a worker to resume<br>
+  Building selected + right-click: set rally<br>
+  WASD / edge-scroll: pan &middot; Scroll: zoom<br>
+  <b>T</b>: throttle test &middot; <b>G</b>: select all workers
+</div>
+<div id="res" class="panel">
+  <div><span class="big" id="r-essence">0</span> <span class="sub">essence</span></div>
+  <div><span id="r-gathering">0</span>/<span id="r-workers">0</span> <span class="sub">workers gathering</span></div>
+  <div><span class="big" id="r-supply">0/0</span> <span class="sub">command</span></div>
+  <div><span id="r-remaining">0</span> <span class="sub">left on map</span></div>
+</div>
+<div id="card" class="panel">
+  <h3 id="card-title">Nothing selected</h3>
+  <div class="btns" id="card-btns"></div>
+  <div class="queue" id="card-queue"></div>
+  <div class="hint" id="card-hint"></div>
+</div>
+<div id="flash" class="panel"></div>
+<div id="debug" class="panel">
+  <h4>Debug</h4>
+  <div class="row"><span class="k">render fps</span><span id="d-fps">—</span></div>
+  <div class="row"><span class="k">sim ticks/s</span><span id="d-tps">—</span></div>
+  <div class="row"><span class="k">tick</span><span id="d-tick">—</span></div>
+  <div class="row"><span class="k">essence/min</span><span id="d-rate">—</span></div>
+  <div class="row"><span class="k">units</span><span id="d-units">—</span></div>
+  <div class="row"><span class="k">selected</span><span id="d-sel">—</span></div>
+  <div class="row"><span class="k">throttle</span><span id="d-throttle">off</span></div>
+</div>
+<div id="selbox"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ==========================================================================
+   PHASE 1.7 — SQUADS & BEHAVIOUR CHAINS
+   Builds on 1.6 (construction). See CHANGELOG.md.
+
+   Single-file build (no server, no npm). Section markers map onto the src/
+   layout in 06_phase1_kickoff.md §2 for a clean port into Vite later.
+
+   ARCHITECTURAL RULE: everything between SIM CORE START and SIM CORE END is
+   pure — no THREE, no DOM, no window, no Math.random(). Verified by
+   test_sim.mjs, which runs that section standalone under Node.
+   ========================================================================== */
+
+// === SIM CORE START =======================================================
+
+/* ---------- core/rng.ts -------------------------------------------------- */
+function makeRng(seed) {
+  let a = seed >>> 0;
+  return function next() {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ---------- core/loop.ts (constants) ------------------------------------- */
+const TICK_HZ      = 20;
+const TICK_MS      = 1000 / TICK_HZ;
+const DT           = 1 / TICK_HZ;
+const MAX_CATCHUP  = 5;
+const GOLDEN_ANGLE = 2.399963229728653;   // deterministic spread without RNG
+
+/* ---------- sim/terrain.ts ----------------------------------------------- */
+const TERRAIN_SIZE = 80;
+const TERRAIN_FLOOR = -0.2;
+
+function terrainHeightAt(x, z) {
+  const h = Math.sin(x * 0.15) * Math.cos(z * 0.15) * 1.6
+          + Math.sin(x * 0.35 + 3.0) * 0.5;
+  return Math.max(h, TERRAIN_FLOOR);
+}
+
+// Groundwork for 1.3. Wired to combat at 1.8/1.9.
+const HIGH_GROUND_THRESHOLD = 0.6;
+function elevationAdvantage(ax, az, bx, bz) {
+  return terrainHeightAt(ax, az) - terrainHeightAt(bx, bz);
+}
+function hasHighGroundOver(ax, az, bx, bz) {
+  return elevationAdvantage(ax, az, bx, bz) >= HIGH_GROUND_THRESHOLD;
+}
+
+/* ---------- data/units.ts + data/buildings.ts + data/tuning.ts ----------- */
+// EVERY balance number lives here. All placeholders (blueprint: "Notes on
+// Scope Discipline" — implement systems faithfully, tune at Phase 4.4).
+const UNIT_TYPES = {
+  legionnaire: { speed: 4.2, radius: 0.42, arriveEpsilon: 0.06, isWorker: false,
+                 supply: 2, cost: 75, buildTicks: 80, label: 'Legionnaire' },
+  worker:      { speed: 3.6, radius: 0.36, arriveEpsilon: 0.06, isWorker: true,
+                 supply: 1, cost: 50, buildTicks: 60, label: 'Worker' },
+};
+
+// Command structures. `command` is the supply this building contributes;
+// `controlRadius` is the territory it holds (§8.1 — Command extends control
+// range and population cap TOGETHER, so they are properties of the same
+// building rather than two separate systems).
+const BUILDING_TYPES = {
+  standard: { radius: 2.2, dropoff: true, command: 15, controlRadius: 18,
+              cost: 0,   buildTicks: 0,   produces: ['worker', 'legionnaire'],
+              label: 'Standard' },
+  outpost:  { radius: 1.4, dropoff: true, command: 8,  controlRadius: 11,
+              cost: 100, buildTicks: 100, produces: ['worker'],
+              label: 'Outpost' },
+};
+
+const BUILD = {
+  // Flat rate whenever at least one assigned worker is present (assumption A8).
+  // Deliberately NOT "more workers = faster": stacking workers to rush a
+  // building is a different race's fantasy, and Cohort's gather curve is
+  // "flat and reliable" (§8.1). The interesting decision here is meant to be
+  // *whether to leave the worker there*, not how many to pile on.
+  progressPerTick: 1,
+  buildRange: 2.0,        // how close a builder must be for progress to run
+  builderStandoff: 0.9,   // parked just outside the site footprint
+};
+
+// Automation (§4, §8.3). Command gates how many squads can run a chain at
+// once — Cohort's flavour of the multitasking skill is bandwidth of standing
+// orders, so the cap is a count, not a distance or a complexity limit.
+const AUTOMATION = {
+  commandPerSlot: 8,      // 15 command -> 1 squad; an outpost (+8) buys another
+  arriveRadius: 2.2,      // how close counts as "the squad got there"
+  stepTimeout: 900,       // 45s — a step that cannot finish must not deadlock the chain
+  maxChainSteps: 6,
+};
+
+const SUPPLY_MAX = 200;          // hard ceiling regardless of Command built
+const MAX_QUEUE  = 5;            // production queue depth per building
+const PLACE_CLEARANCE = 1.0;     // gap required between a new building and anything else
+
+const ECON = {
+  gatherTicks:   30,    // 1.5s to fill up  — Cohort is "flat and reliable" (8.1)
+  carryAmount:   8,     // essence per trip
+  depositTicks:  4,     // 0.2s to unload
+  gatherRange:   1.4,   // how close a worker must be to a node
+  gatherStandoff: 1.05, // where a worker parks — each gets its own slot
+  slotEpsilon:   0.12,  // how close to its slot counts as arrived
+  dropoffRange:  2.6,   // how close a worker must be to a base
+  nodeCapacity:  1200,  // finite: matches can run until the map is exhausted (§3)
+};
+
+/* ---------- sim/world.ts + sim/entities.ts ------------------------------- */
+function createWorld(seed) {
+  return {
+    seed,
+    rng: makeRng(seed),
+    tick: 0,
+    nextId: 1,
+    units: [],
+    buildings: [],
+    nodes: [],
+    sites: [],          // construction in progress
+    squads: [],         // persistent groups running behaviour chains
+    scenery: [],
+    resources: { player: 0, rival: 0 },
+  };
+}
+
+function spawnUnit(world, typeKey, team, x, z) {
+  const t = UNIT_TYPES[typeKey];
+  const u = {
+    id: world.nextId++,
+    type: typeKey, team,
+    x, z, prevX: x, prevZ: z,
+    facing: 0, prevFacing: 0,
+    speed: t.speed, radius: t.radius,
+    target: null,
+    selected: false,
+    // gather job — null for non-workers. This is the whole "set-and-forget"
+    // state machine: once state leaves 'idle' it never returns without a new
+    // order, which is exactly the design requirement in §8.2.
+    gather: t.isWorker ? { state: 'idle', nodeId: null, carrying: 0, timer: 0 } : null,
+    // Build assignment. Progress lives on the SITE, not here — that is what
+    // makes reassignment pause construction instead of cancelling it (§8.1).
+    build: t.isWorker ? { siteId: null } : null,
+  };
+  world.units.push(u);
+  return u;
+}
+
+function spawnBuilding(world, typeKey, team, x, z) {
+  const t = BUILDING_TYPES[typeKey];
+  const b = {
+    id: world.nextId++,
+    type: typeKey, team, x, z,
+    radius: t.radius,
+    queue: [],                          // [{ type, ticksLeft }]
+    rally: { x, z: z + t.radius + 2.5 },
+  };
+  world.buildings.push(b);
+  return b;
+}
+
+function spawnResourceNode(world, x, z, amount) {
+  const n = {
+    id: world.nextId++,
+    x, z,
+    amount: amount ?? ECON.nodeCapacity,
+    maxAmount: amount ?? ECON.nodeCapacity,
+  };
+  world.nodes.push(n);
+  return n;
+}
+
+function spawnSquad(world, typeKey, team, cx, cz, count) {
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2;
+    out.push(spawnUnit(world, typeKey, team, cx + Math.cos(angle) * 1.6, cz + Math.sin(angle) * 1.6));
+  }
+  return out;
+}
+
+function generateScenery(world, count) {
+  for (let i = 0; i < count; i++) {
+    const x = (world.rng() - 0.5) * 64;
+    const z = (world.rng() - 0.5) * 64;
+    const kind = world.rng() < 0.5 ? 'rock' : 'tree';
+    const scale = 0.6 + world.rng() * 0.6;
+    const spin = world.rng() * Math.PI * 2;
+    // keep clear of both bases and both resource clusters
+    const nearBuilding = world.buildings.some(b => Math.hypot(x - b.x, z - b.z) < 7);
+    const nearNode = world.nodes.some(n => Math.hypot(x - n.x, z - n.z) < 5);
+    if (nearBuilding || nearNode) continue;
+    world.scenery.push({ kind, x, z, scale, spin });
+  }
+}
+
+/* ---------- sim/supply.ts ------------------------------------------------ */
+// Cohort's Command (§8.1). One stat, three jobs: population cap, control
+// range, and — once squads exist at 1.7 — the number of squads that can run an
+// automated behaviour chain at once (§8.3, assumption A4).
+
+function supplyCap(world, team) {
+  let cap = 0;
+  for (const b of world.buildings) {
+    if (b.team !== team) continue;
+    cap += BUILDING_TYPES[b.type].command;
+  }
+  return Math.min(cap, SUPPLY_MAX);
+}
+
+// Queued units count against the cap. Charging only on completion lets a
+// player over-queue and strand finished units with nowhere to go.
+function supplyUsed(world, team) {
+  let used = 0;
+  for (const u of world.units) {
+    if (u.team === team) used += UNIT_TYPES[u.type].supply;
+  }
+  for (const b of world.buildings) {
+    if (b.team !== team) continue;
+    for (const item of b.queue) used += UNIT_TYPES[item.type].supply;
+  }
+  return used;
+}
+
+function supplyFree(world, team) {
+  return supplyCap(world, team) - supplyUsed(world, team);
+}
+
+// Territory held, for display and for later systems. Deliberately NOT a build
+// restriction: gating placement on network range is Conclave's mechanic
+// ("Project from Network", §8.1), and Cohort's construction identity is
+// "Queue & Walk" — a worker walks wherever you point it. See assumption A7.
+function isInControl(world, team, x, z) {
+  for (const b of world.buildings) {
+    if (b.team !== team) continue;
+    if (Math.hypot(b.x - x, b.z - z) <= BUILDING_TYPES[b.type].controlRadius) return true;
+  }
+  return false;
+}
+
+/* ---------- sim/production.ts -------------------------------------------- */
+function canTrain(world, buildingId, unitType) {
+  const b = world.buildings.find(x => x.id === buildingId);
+  if (!b) return { ok: false, reason: 'no such building' };
+  const bt = BUILDING_TYPES[b.type];
+  if (!bt.produces.includes(unitType)) return { ok: false, reason: 'cannot build that here' };
+  if (b.queue.length >= MAX_QUEUE) return { ok: false, reason: 'queue full' };
+  const ut = UNIT_TYPES[unitType];
+  if (world.resources[b.team] < ut.cost) return { ok: false, reason: 'not enough essence' };
+  if (supplyFree(world, b.team) < ut.supply) return { ok: false, reason: 'not enough Command' };
+  return { ok: true };
+}
+
+function stepProduction(world) {
+  for (const b of world.buildings) {
+    if (!b.queue.length) continue;
+    const item = b.queue[0];
+    item.ticksLeft--;
+    if (item.ticksLeft > 0) continue;
+    b.queue.shift();
+    // pop out at the building edge, then walk to the rally point
+    const t = BUILDING_TYPES[b.type];
+    const a = (world.tick * GOLDEN_ANGLE) % (Math.PI * 2);
+    const u = spawnUnit(world, item.type, b.team,
+      b.x + Math.cos(a) * (t.radius + 0.9),
+      b.z + Math.sin(a) * (t.radius + 0.9));
+    u.target = { x: b.rally.x, z: b.rally.z };
+  }
+}
+
+/* ---------- sim/construction.ts ------------------------------------------ */
+// Cohort's "Queue & Walk" (§8.1): a worker walks to the site and builds; the
+// worker can be reassigned mid-build and construction PAUSES rather than
+// cancelling. Progress is stored on the site so it survives losing every
+// builder — that is the whole point of the mechanic.
+
+function canPlaceBuilding(world, team, typeKey, x, z) {
+  const t = BUILDING_TYPES[typeKey];
+  const half = TERRAIN_SIZE / 2 - 2;
+  if (Math.abs(x) > half || Math.abs(z) > half) return { ok: false, reason: 'off the map' };
+  if (world.resources[team] < t.cost) return { ok: false, reason: 'not enough essence' };
+  for (const b of world.buildings) {
+    if (Math.hypot(b.x - x, b.z - z) < t.radius + b.radius + PLACE_CLEARANCE)
+      return { ok: false, reason: 'too close to a structure' };
+  }
+  for (const st of world.sites) {
+    if (Math.hypot(st.x - x, st.z - z) < t.radius + st.radius + PLACE_CLEARANCE)
+      return { ok: false, reason: 'too close to a build site' };
+  }
+  for (const n of world.nodes) {
+    if (n.amount > 0 && Math.hypot(n.x - x, n.z - z) < t.radius + 1.6)
+      return { ok: false, reason: 'blocked by essence' };
+  }
+  return { ok: true };
+}
+
+function spawnSite(world, typeKey, team, x, z) {
+  const t = BUILDING_TYPES[typeKey];
+  const site = {
+    id: world.nextId++,
+    type: typeKey, team, x, z,
+    radius: t.radius,
+    progress: 0,
+    required: t.buildTicks,
+  };
+  world.sites.push(site);
+  return site;
+}
+
+function findSite(world, id) {
+  return world.sites.find(s => s.id === id) || null;
+}
+
+function buildersOn(world, siteId) {
+  return world.units.filter(u => u.build && u.build.siteId === siteId);
+}
+
+// A builder only counts while it is actually standing at the site. Walking
+// there does not advance anything.
+function builderIsWorking(world, u) {
+  if (!u.build || u.build.siteId === null) return false;
+  const site = findSite(world, u.build.siteId);
+  if (!site) return false;
+  return Math.hypot(site.x - u.x, site.z - u.z) <= site.radius + BUILD.buildRange;
+}
+
+function stepConstruction(world) {
+  for (let i = world.sites.length - 1; i >= 0; i--) {
+    const site = world.sites[i];
+    const working = buildersOn(world, site.id).some(u => builderIsWorking(world, u));
+    if (!working) continue;                      // paused, progress retained
+    site.progress += BUILD.progressPerTick;
+    if (site.progress < site.required) continue;
+
+    // finished — becomes a real structure, builders are released
+    world.sites.splice(i, 1);
+    spawnBuilding(world, site.type, site.team, site.x, site.z);
+    for (const u of buildersOn(world, site.id)) {
+      u.build.siteId = null;
+      u.target = null;
+    }
+  }
+}
+
+// Walk to the site and stay put. Movement only; progress is stepConstruction's job.
+function stepBuild(world, u) {
+  if (!u.build || u.build.siteId === null) return;
+  const site = findSite(world, u.build.siteId);
+  if (!site) { u.build.siteId = null; return; }
+  if (builderIsWorking(world, u)) { u.target = null; return; }
+  const slot = approachPoint(u, site.x, site.z, site.radius + BUILD.builderStandoff);
+  u.target = slot;
+}
+
+/* ---------- sim/economy.ts ----------------------------------------------- */
+function findNode(world, id) {
+  return world.nodes.find(n => n.id === id) || null;
+}
+
+function nearestNodeWithResources(world, x, z) {
+  let best = null, bestD = Infinity;
+  for (const n of world.nodes) {
+    if (n.amount <= 0) continue;
+    const d = Math.hypot(n.x - x, n.z - z);
+    if (d < bestD) { bestD = d; best = n; }
+  }
+  return best;
+}
+
+function nearestDropoff(world, team, x, z) {
+  let best = null, bestD = Infinity;
+  for (const b of world.buildings) {
+    if (b.team !== team) continue;
+    if (!BUILDING_TYPES[b.type].dropoff) continue;
+    const d = Math.hypot(b.x - x, b.z - z);
+    if (d < bestD) { bestD = d; best = b; }
+  }
+  return best;
+}
+
+// Approach a point from a stable per-unit angle so workers fan out around a
+// node instead of piling onto one spot. Deterministic — derived from unit id,
+// not RNG, so replays and lockstep stay identical.
+function approachPoint(unit, tx, tz, standoff) {
+  const a = (unit.id * GOLDEN_ANGLE) % (Math.PI * 2);
+  return { x: tx + Math.cos(a) * standoff, z: tz + Math.sin(a) * standoff };
+}
+
+function stepGather(world, u) {
+  const g = u.gather;
+  if (!g || g.state === 'idle') return;
+
+  // --- walking out to the node ---
+  if (g.state === 'toNode') {
+    let node = findNode(world, g.nodeId);
+    // Node ran dry while we were walking: re-target the nearest live one.
+    // This is what makes the loop genuinely set-and-forget across a whole match.
+    if (!node || node.amount <= 0) {
+      node = nearestNodeWithResources(world, u.x, u.z);
+      if (!node) {
+        // Nothing left anywhere. Deliver what we're holding, then stop.
+        if (g.carrying > 0) { g.state = 'toBase'; return; }
+        g.state = 'idle'; g.nodeId = null; u.target = null;
+        return;
+      }
+      g.nodeId = node.id;
+    }
+    // Park at this worker's own slot, not merely "somewhere near the node".
+    // Triggering on distance-to-node instead would stop every worker at the
+    // point where it first crosses that radius — and since they all arrive
+    // from the base, that means they all stop in the same place.
+    const slot = approachPoint(u, node.x, node.z, ECON.gatherStandoff);
+    if (Math.hypot(slot.x - u.x, slot.z - u.z) <= ECON.slotEpsilon) {
+      u.target = null;
+      g.state = 'gathering';
+      g.timer = ECON.gatherTicks;
+    } else {
+      u.target = slot;
+    }
+    return;
+  }
+
+  // --- extracting ---
+  if (g.state === 'gathering') {
+    const node = findNode(world, g.nodeId);
+    if (!node || node.amount <= 0) { g.state = 'toNode'; return; }
+    g.timer--;
+    if (g.timer <= 0) {
+      const taken = Math.min(ECON.carryAmount, node.amount);
+      node.amount -= taken;
+      g.carrying = taken;
+      g.state = 'toBase';
+    }
+    return;
+  }
+
+  // --- hauling back ---
+  if (g.state === 'toBase') {
+    const base = nearestDropoff(world, u.team, u.x, u.z);
+    if (!base) { g.state = 'idle'; u.target = null; return; }
+    if (Math.hypot(base.x - u.x, base.z - u.z) <= ECON.dropoffRange + base.radius) {
+      u.target = null;
+      g.state = 'depositing';
+      g.timer = ECON.depositTicks;
+    } else {
+      u.target = approachPoint(u, base.x, base.z, base.radius + 0.8);
+    }
+    return;
+  }
+
+  // --- unloading, then straight back out ---
+  if (g.state === 'depositing') {
+    g.timer--;
+    if (g.timer <= 0) {
+      world.resources[u.team] += g.carrying;
+      g.carrying = 0;
+      g.state = 'toNode';
+    }
+    return;
+  }
+}
+
+function totalResourcesRemaining(world) {
+  return world.nodes.reduce((sum, n) => sum + n.amount, 0);
+}
+
+function countGathering(world, team) {
+  return world.units.filter(u => u.team === team && u.gather && u.gather.state !== 'idle').length;
+}
+
+/* ---------- sim/squads.ts ------------------------------------------------ */
+// A squad is a PERSISTENT group, not a transient selection (assumption Q1).
+// It has to persist for §8.3 to mean anything — you cannot cap "how many
+// squads are running a chain" if a squad stops existing the moment you click
+// elsewhere.
+//
+// A chain is a short list of steps the squad walks through on its own. Steps
+// are one of four behaviours for Phase 1 (§4 / blueprint 1.7). Two of them
+// complete and hand over to the next step; two are ongoing and hold the squad
+// there until it is redirected:
+//
+//   move        -> completes on arrival
+//   attackmove  -> completes on arrival (engages en route once combat lands at 1.9)
+//   gather      -> ongoing: workers work the nearest node and stay
+//   patrol      -> ongoing: squad paces between this point and the previous one
+
+const BEHAVIOURS = {
+  move:       { label: 'Move',        ongoing: false },
+  attackmove: { label: 'Attack-move', ongoing: true === false, },
+  gather:     { label: 'Gather',      ongoing: true  },
+  patrol:     { label: 'Patrol',      ongoing: true  },
+};
+
+function automationSlots(world, team) {
+  return Math.floor(supplyCap(world, team) / AUTOMATION.commandPerSlot);
+}
+
+function runningSquads(world, team) {
+  return world.squads.filter(s => s.team === team && s.running).length;
+}
+
+function createSquad(world, team, unitIds, number) {
+  // a unit belongs to at most one squad
+  for (const sq of world.squads) {
+    sq.memberIds = sq.memberIds.filter(id => !unitIds.includes(id));
+  }
+  const existing = world.squads.findIndex(s => s.team === team && s.number === number);
+  if (existing >= 0) world.squads.splice(existing, 1);
+  const squad = {
+    id: world.nextId++,
+    team, number,
+    memberIds: [...unitIds],
+    chain: [],
+    index: 0,
+    running: false,
+    loop: true,
+    dispatched: false,
+    stepTicks: 0,
+    patrolFrom: null,
+  };
+  world.squads.push(squad);
+  pruneSquads(world);
+  return squad;
+}
+
+function squadMembers(world, squad) {
+  return world.units.filter(u => squad.memberIds.includes(u.id));
+}
+
+function findSquad(world, id) { return world.squads.find(s => s.id === id) || null; }
+function squadByNumber(world, team, n) {
+  return world.squads.find(s => s.team === team && s.number === n) || null;
+}
+
+// Drop dead members; disband squads that have none left.
+function pruneSquads(world) {
+  const alive = new Set(world.units.map(u => u.id));
+  for (let i = world.squads.length - 1; i >= 0; i--) {
+    const sq = world.squads[i];
+    sq.memberIds = sq.memberIds.filter(id => alive.has(id));
+    if (!sq.memberIds.length) world.squads.splice(i, 1);
+  }
+}
+
+function squadCentre(world, squad) {
+  const ms = squadMembers(world, squad);
+  if (!ms.length) return null;
+  let x = 0, z = 0;
+  for (const u of ms) { x += u.x; z += u.z; }
+  return { x: x / ms.length, z: z / ms.length };
+}
+
+// Send the squad to a point in formation. Same spread rule as a manual order,
+// so an automated move looks exactly like a hand-issued one.
+function dispatchTo(world, squad, x, z) {
+  const ms = squadMembers(world, squad);
+  ms.forEach((u, i) => {
+    if (u.gather) { u.gather.state = 'idle'; u.gather.nodeId = null; }
+    if (u.build) u.build.siteId = null;
+    if (ms.length === 1) { u.target = { x, z }; return; }
+    const a = (i / ms.length) * Math.PI * 2;
+    const spread = Math.min(0.5 * ms.length, 3.0);
+    u.target = { x: x + Math.cos(a) * spread, z: z + Math.sin(a) * spread };
+  });
+}
+
+function squadArrived(world, squad, x, z) {
+  const ms = squadMembers(world, squad);
+  if (!ms.length) return true;
+  return ms.every(u => Math.hypot(u.x - x, u.z - z) <= AUTOMATION.arriveRadius + ms.length * 0.12);
+}
+
+function advanceStep(world, squad) {
+  squad.index++;
+  squad.dispatched = false;
+  squad.stepTicks = 0;
+  squad.patrolFrom = null;
+  if (squad.index >= squad.chain.length) {
+    if (squad.loop && squad.chain.length) squad.index = 0;
+    else { squad.index = Math.max(0, squad.chain.length - 1); squad.running = false; }
+  }
+}
+
+function stepSquads(world) {
+  pruneSquads(world);
+  for (const squad of world.squads) {
+    if (!squad.running || !squad.chain.length) continue;
+    const ms = squadMembers(world, squad);
+    if (!ms.length) continue;
+    const step = squad.chain[squad.index];
+    if (!step) { squad.running = false; continue; }
+    squad.stepTicks++;
+
+    // A step that cannot finish (unreachable point, blocked) must not wedge the
+    // whole chain forever — give up and move on.
+    if (squad.stepTicks > AUTOMATION.stepTimeout && !BEHAVIOURS[step.kind].ongoing) {
+      advanceStep(world, squad);
+      continue;
+    }
+
+    if (step.kind === 'move' || step.kind === 'attackmove') {
+      if (!squad.dispatched) { dispatchTo(world, squad, step.x, step.z); squad.dispatched = true; }
+      if (squadArrived(world, squad, step.x, step.z)) advanceStep(world, squad);
+      continue;
+    }
+
+    if (step.kind === 'gather') {
+      // ongoing: put every worker in the squad on the nearest live node
+      if (!squad.dispatched) {
+        const node = nearestNodeWithResources(world, step.x, step.z);
+        if (node) {
+          const ids = ms.filter(u => u.gather).map(u => u.id);
+          if (ids.length) cmdGather(world, ids, node.id);
+          // members that cannot gather just stand guard at the point
+          const rest = ms.filter(u => !u.gather);
+          rest.forEach(u => { u.target = { x: step.x, z: step.z }; });
+        }
+        squad.dispatched = true;
+      }
+      // if the node ran out and no worker is still employed, fall through
+      const stillWorking = ms.some(u => u.gather && u.gather.state !== 'idle');
+      if (!stillWorking && !nearestNodeWithResources(world, step.x, step.z)) advanceStep(world, squad);
+      continue;
+    }
+
+    if (step.kind === 'patrol') {
+      // ongoing: pace between the previous step's point and this one
+      if (!squad.patrolFrom) {
+        const prev = squad.chain[squad.index - 1];
+        const c = squadCentre(world, squad);
+        squad.patrolFrom = prev ? { x: prev.x, z: prev.z } : { x: c.x, z: c.z };
+        squad.patrolTo = { x: step.x, z: step.z };
+        squad.patrolHeading = 'to';
+        dispatchTo(world, squad, squad.patrolTo.x, squad.patrolTo.z);
+      }
+      const goal = squad.patrolHeading === 'to' ? squad.patrolTo : squad.patrolFrom;
+      if (squadArrived(world, squad, goal.x, goal.z)) {
+        squad.patrolHeading = squad.patrolHeading === 'to' ? 'from' : 'to';
+        const next = squad.patrolHeading === 'to' ? squad.patrolTo : squad.patrolFrom;
+        dispatchTo(world, squad, next.x, next.z);
+      }
+      continue;
+    }
+  }
+}
+
+/* ---------- sim/movement.ts ---------------------------------------------- */
+function stepMovement(u) {
+  if (!u.target) return;
+  const dx = u.target.x - u.x;
+  const dz = u.target.z - u.z;
+  const dist = Math.hypot(dx, dz);
+  const eps = UNIT_TYPES[u.type].arriveEpsilon;
+  if (dist <= eps) { u.target = null; return; }
+  const step = Math.min(u.speed * DT, dist);
+  u.x += (dx / dist) * step;
+  u.z += (dz / dist) * step;
+  u.facing = Math.atan2(dx, dz);
+}
+
+/* ---------- sim/commands.ts ---------------------------------------------- */
+// The ONLY way anything outside the sim mutates the sim.
+function cmdMove(world, unitIds, x, z) {
+  const ids = new Set(unitIds);
+  const group = world.units.filter(u => ids.has(u.id));
+  group.forEach((u, i) => {
+    // An explicit move order cancels a gather job. Standard RTS expectation,
+    // and it's the player's escape hatch from "set and forget".
+    if (u.gather) { u.gather.state = 'idle'; u.gather.nodeId = null; }
+    // Releasing a builder PAUSES its site — progress stays on the site (§8.1).
+    if (u.build) u.build.siteId = null;
+    if (group.length === 1) { u.target = { x, z }; return; }
+    const angle = (i / group.length) * Math.PI * 2;
+    const spread = Math.min(0.5 * group.length, 2.5);
+    u.target = { x: x + Math.cos(angle) * spread, z: z + Math.sin(angle) * spread };
+  });
+}
+
+// One command, indefinite loop, no further input — §8.2 "set-and-forget".
+// Returns the ids that actually accepted the order (workers only).
+function cmdGather(world, unitIds, nodeId) {
+  const ids = new Set(unitIds);
+  const node = findNode(world, nodeId);
+  if (!node) return [];
+  const accepted = [];
+  for (const u of world.units) {
+    if (!ids.has(u.id) || !u.gather) continue;
+    if (u.build) u.build.siteId = null;      // pauses whatever it was building
+    u.gather.nodeId = nodeId;
+    u.gather.state = u.gather.carrying > 0 ? 'toBase' : 'toNode';
+    u.target = null;
+    accepted.push(u.id);
+  }
+  return accepted;
+}
+
+function cmdTrain(world, buildingId, unitType) {
+  const check = canTrain(world, buildingId, unitType);
+  if (!check.ok) return check;
+  const b = world.buildings.find(x => x.id === buildingId);
+  world.resources[b.team] -= UNIT_TYPES[unitType].cost;
+  b.queue.push({ type: unitType, ticksLeft: UNIT_TYPES[unitType].buildTicks });
+  return { ok: true };
+}
+
+function cmdCancelTrain(world, buildingId, index) {
+  const b = world.buildings.find(x => x.id === buildingId);
+  if (!b || index < 0 || index >= b.queue.length) return { ok: false, reason: 'nothing to cancel' };
+  const [item] = b.queue.splice(index, 1);
+  world.resources[b.team] += UNIT_TYPES[item.type].cost;   // full refund
+  return { ok: true };
+}
+
+function cmdSetRally(world, buildingId, x, z) {
+  const b = world.buildings.find(x2 => x2.id === buildingId);
+  if (!b) return { ok: false };
+  b.rally = { x, z };
+  return { ok: true };
+}
+
+// Placing does not build. It commits the essence and creates a site; a worker
+// still has to walk there. Any workers passed in are assigned immediately.
+function cmdPlaceBuilding(world, team, typeKey, x, z, builderIds = []) {
+  const check = canPlaceBuilding(world, team, typeKey, x, z);
+  if (!check.ok) return check;
+  world.resources[team] -= BUILDING_TYPES[typeKey].cost;
+  const site = spawnSite(world, typeKey, team, x, z);
+  if (builderIds.length) cmdAssignBuilders(world, builderIds, site.id);
+  return { ok: true, siteId: site.id };
+}
+
+function cmdAssignBuilders(world, unitIds, siteId) {
+  const site = findSite(world, siteId);
+  if (!site) return [];
+  const ids = new Set(unitIds);
+  const accepted = [];
+  for (const u of world.units) {
+    if (!ids.has(u.id) || !u.build || u.team !== site.team) continue;
+    if (u.gather) { u.gather.state = 'idle'; u.gather.nodeId = null; }  // one job at a time
+    u.build.siteId = siteId;
+    u.target = null;
+    accepted.push(u.id);
+  }
+  return accepted;
+}
+
+function cmdCancelSite(world, siteId) {
+  const i = world.sites.findIndex(s => s.id === siteId);
+  if (i < 0) return { ok: false, reason: 'no such site' };
+  const [site] = world.sites.splice(i, 1);
+  world.resources[site.team] += BUILDING_TYPES[site.type].cost;   // full refund
+  for (const u of world.units) {
+    if (u.build && u.build.siteId === siteId) { u.build.siteId = null; u.target = null; }
+  }
+  return { ok: true };
+}
+
+function cmdSetSelection(world, unitIds) {
+  const ids = new Set(unitIds);
+  for (const u of world.units) u.selected = ids.has(u.id);
+}
+
+/* ---------- sim/world.ts — the tick -------------------------------------- */
+function simStep(world) {
+  world.tick++;
+  for (const u of world.units) {
+    u.prevX = u.x; u.prevZ = u.z; u.prevFacing = u.facing;
+  }
+  stepProduction(world);
+  stepConstruction(world);
+  for (const u of world.units) stepGather(world, u);   // decides where to go
+  for (const u of world.units) stepBuild(world, u);    // ...or where to build
+  for (const u of world.units) stepMovement(u);        // goes there
+}
+
+/* ---------- sim/map.ts — Phase 1 test map (assumption A5) ---------------- */
+// Rotationally symmetric: rotate 180° about origin and the two sides match,
+// satisfying "maps are symmetric from spawns, no spawn has an advantage" (§2).
+function buildTestMap(world) {
+  spawnBuilding(world, 'standard', 'player', -14, 10);
+  spawnBuilding(world, 'standard', 'rival',   14, -10);
+
+  spawnResourceNode(world, -19.5,  4.0);
+  spawnResourceNode(world,  -8.0, 15.5);
+  spawnResourceNode(world,  19.5, -4.0);
+  spawnResourceNode(world,   8.0, -15.5);
+
+  spawnSquad(world, 'worker',      'player', -12.0,  7.0, 4);
+  spawnSquad(world, 'legionnaire', 'player', -10.0,  3.0, 4);
+  spawnSquad(world, 'worker',      'rival',   12.0, -7.0, 4);
+  spawnSquad(world, 'legionnaire', 'rival',   10.0, -3.0, 4);
+
+  generateScenery(world, 26);
+  return world;
+}
+
+// === SIM CORE END =========================================================
+
+
+/* ==========================================================================
+   Presentation and input. Reads sim state freely; mutates only via cmd*.
+   ========================================================================== */
+
+const world = buildTestMap(createWorld(1337));
+
+/* ---------- render/renderer.ts ------------------------------------------- */
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x9fd6e8);
+scene.fog = new THREE.Fog(0x9fd6e8, 46, 120);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+// Warm, soft, painterly — the Ghibli pillar from §1 / §10.1.
+scene.add(new THREE.HemisphereLight(0xdfefff, 0x4d6b3a, 0.9));
+const sun = new THREE.DirectionalLight(0xfff2d6, 1.1);
+sun.position.set(20, 35, 15);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -46, right: 46, top: 46, bottom: -46, near: 1, far: 110 });
+scene.add(sun);
+
+/* ---------- render/terrainMesh.ts ---------------------------------------- */
+function buildTerrainMesh() {
+  const seg = 56;
+  const geo = new THREE.PlaneGeometry(TERRAIN_SIZE, TERRAIN_SIZE, seg, seg);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i++) pos.setY(i, terrainHeightAt(pos.getX(i), pos.getZ(i)));
+  geo.computeVertexNormals();
+  const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
+    color: 0x6fae4a, flatShading: true, roughness: 1
+  }));
+  mesh.receiveShadow = true;
+  scene.add(mesh);
+  return mesh;
+}
+const terrainMesh = buildTerrainMesh();
+
+/* ---------- render/sceneryViews ------------------------------------------ */
+const rockMat  = new THREE.MeshStandardMaterial({ color: 0x8d897f, flatShading: true });
+const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2f, flatShading: true });
+const leafMat  = new THREE.MeshStandardMaterial({ color: 0x4f8f3d, flatShading: true });
+
+for (const s of world.scenery) {
+  const y = terrainHeightAt(s.x, s.z);
+  if (s.kind === 'rock') {
+    const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(s.scale, 0), rockMat);
+    rock.position.set(s.x, y + s.scale * 0.6, s.z);
+    rock.rotation.set(s.spin, s.spin * 1.7, s.spin * 0.4);
+    rock.castShadow = true;
+    scene.add(rock);
+  } else {
+    const tree = new THREE.Group();
+    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.22, 1.4, 6), trunkMat);
+    trunk.position.y = 0.7;
+    const leaves = new THREE.Mesh(new THREE.ConeGeometry(1.1, 2.0, 7), leafMat);
+    leaves.position.y = 2.1;
+    trunk.castShadow = leaves.castShadow = true;
+    tree.add(trunk, leaves);
+    tree.position.set(s.x, y, s.z);
+    tree.rotation.y = s.spin;
+    scene.add(tree);
+  }
+}
+
+/* ---------- render/nodeViews --------------------------------------------- */
+// Essence nodes: pale crystalline shards. They visibly shrink as they deplete,
+// so map state is readable at a glance without a UI overlay.
+const essenceMat = new THREE.MeshStandardMaterial({
+  color: 0xbfe9ea, emissive: 0x2e6b70, emissiveIntensity: 0.45,
+  flatShading: true, roughness: 0.5
+});
+const nodeViews = new Map();
+
+for (const n of world.nodes) {
+  const g = new THREE.Group();
+  for (let i = 0; i < 5; i++) {
+    const a = i * GOLDEN_ANGLE;
+    const h = 0.9 + (i % 3) * 0.45;
+    const shard = new THREE.Mesh(new THREE.ConeGeometry(0.34, h, 5), essenceMat);
+    shard.position.set(Math.cos(a) * 0.62, h / 2, Math.sin(a) * 0.62);
+    shard.rotation.set(Math.cos(a) * 0.22, a, Math.sin(a) * 0.22);
+    shard.castShadow = true;
+    g.add(shard);
+  }
+  g.position.set(n.x, terrainHeightAt(n.x, n.z), n.z);
+  g.userData = { nodeId: n.id };
+  scene.add(g);
+  nodeViews.set(n.id, g);
+}
+
+/* ---------- render/buildingViews ----------------------------------------- */
+// First Cohort structure — the fossil-and-glow direction from §8.8:
+// bone-pale stone, no visible mechanism, warm internal light at the vital
+// point, moss collecting in the seams. Rival version tinted, same silhouette.
+function makeBuildingView(b) {
+  const t = BUILDING_TYPES[b.type];
+  const isPlayer = b.team === 'player';
+  const s = t.radius / 2.2;                        // scale off the Standard
+  const stoneMat = new THREE.MeshStandardMaterial({
+    color: isPlayer ? 0xe8e2d0 : 0xd8c4b8, flatShading: true, roughness: 0.95
+  });
+  const glowMat = new THREE.MeshStandardMaterial({
+    color: 0xffe9a8, emissive: isPlayer ? 0xffcc55 : 0xff7755,
+    emissiveIntensity: 1.4, flatShading: true
+  });
+  const mossMat = new THREE.MeshStandardMaterial({ color: 0x5f8a45, flatShading: true, roughness: 1 });
+
+  const g = new THREE.Group();
+
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(2.0 * s, 2.4 * s, 1.5 * s, 6), stoneMat);
+  drum.position.y = 0.75 * s;
+  drum.castShadow = drum.receiveShadow = true;
+  g.add(drum);
+
+  // Ribs — fossil, not machinery: no joints, no gears, just weathered bone.
+  const ribCount = b.type === 'outpost' ? 4 : 6;
+  for (let i = 0; i < ribCount; i++) {
+    const a = (i / ribCount) * Math.PI * 2;
+    const rib = new THREE.Mesh(new THREE.CylinderGeometry(0.16 * s, 0.22 * s, 2.6 * s, 5), stoneMat);
+    rib.position.set(Math.cos(a) * 1.85 * s, 1.5 * s, Math.sin(a) * 1.85 * s);
+    rib.rotation.z = Math.cos(a) * 0.16;
+    rib.rotation.x = -Math.sin(a) * 0.16;
+    rib.castShadow = true;
+    g.add(rib);
+    if (i % 2 === 0) {   // moss gathers in the seams
+      const moss = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3 * s, 0), mossMat);
+      moss.position.set(Math.cos(a) * 1.85 * s, (0.35 + (i % 3) * 0.2) * s, Math.sin(a) * 1.85 * s);
+      moss.scale.set(1, 0.55, 1);
+      g.add(moss);
+    }
+  }
+
+  // The "still faintly alive" tell.
+  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.72 * s, 0), glowMat);
+  core.position.y = 2.5 * s;
+  g.add(core);
+  const light = new THREE.PointLight(isPlayer ? 0xffcc66 : 0xff8866, 1.1, 11 * s);
+  light.position.y = 2.5 * s;
+  g.add(light);
+
+  // selection ring
+  const sel = new THREE.Mesh(
+    new THREE.RingGeometry(t.radius + 0.15, t.radius + 0.38, 28),
+    new THREE.MeshBasicMaterial({ color: 0xffe66d, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
+  );
+  sel.rotation.x = -Math.PI / 2;
+  sel.position.y = 0.06;
+  sel.visible = false;
+  g.add(sel);
+
+  g.position.set(b.x, terrainHeightAt(b.x, b.z), b.z);
+  g.userData = { core, sel, buildingId: b.id, pickTarget: drum };
+  scene.add(g);
+
+  // Control range — territory held, drawn flat on the ground. Follows the
+  // terrain so it reads as land rather than a floating UI circle.
+  const ringGeo = new THREE.RingGeometry(t.controlRadius - 0.22, t.controlRadius, 96);
+  ringGeo.rotateX(-Math.PI / 2);
+  const rp = ringGeo.attributes.position;
+  for (let i = 0; i < rp.count; i++) {
+    rp.setY(i, terrainHeightAt(b.x + rp.getX(i), b.z + rp.getZ(i)) + 0.09);
+  }
+  const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
+    color: isPlayer ? 0x6ea8ff : 0xff7a6e, transparent: true, opacity: 0.4, side: THREE.DoubleSide
+  }));
+  ring.position.set(b.x, 0, b.z);
+  scene.add(ring);
+
+  return g;
+}
+
+const buildingViews = new Map();
+function syncBuildingViews() {
+  for (const b of world.buildings) {
+    if (!buildingViews.has(b.id)) buildingViews.set(b.id, makeBuildingView(b));
+  }
+}
+syncBuildingViews();
+
+/* ---------- render/unitViews.ts ------------------------------------------ */
+const views = new Map();
+const TEAM_COLORS = { player: 0x3b5bdb, rival: 0xb02e2e };
+
+function makeUnitView(unit) {
+  const g = new THREE.Group();
+  const isWorker = UNIT_TYPES[unit.type].isWorker;
+  const bodyMat = new THREE.MeshStandardMaterial({ color: TEAM_COLORS[unit.team], flatShading: true });
+  const trimMat = new THREE.MeshStandardMaterial({ color: 0xf2e9d8, flatShading: true });
+
+  const bodyH = isWorker ? 0.8 : 1.0;
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(isWorker ? 0.26 : 0.32, isWorker ? 0.34 : 0.4, bodyH, 6), bodyMat);
+  body.position.y = bodyH * 0.7;
+  const head = new THREE.Mesh(new THREE.IcosahedronGeometry(isWorker ? 0.23 : 0.28, 0), trimMat);
+  head.position.y = bodyH + 0.35;
+  body.castShadow = head.castShadow = true;
+  g.add(body, head);
+
+  // carried essence — only workers, only visible while hauling
+  let carry = null;
+  if (isWorker) {
+    carry = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), essenceMat);
+    carry.position.y = bodyH + 0.85;
+    carry.visible = false;
+    g.add(carry);
+  }
+
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(isWorker ? 0.46 : 0.55, isWorker ? 0.58 : 0.68, 20),
+    new THREE.MeshBasicMaterial({ color: 0xffe66d, side: THREE.DoubleSide, transparent: true, opacity: 0.9 })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.03;
+  ring.visible = false;
+  g.add(ring);
+
+  g.userData = { unitId: unit.id, ring, carry, pickTarget: body };
+  scene.add(g);
+  return g;
+}
+for (const u of world.units) views.set(u.id, makeUnitView(u));
+
+function lerpAngle(a, b, t) {
+  const TAU = Math.PI * 2;
+  const d = (((b - a + Math.PI) % TAU) + TAU) % TAU - Math.PI;
+  return a + d * t;
+}
+
+function syncViews(alpha) {
+  for (const u of world.units) {
+    const v = views.get(u.id);
+    if (!v) continue;
+    const x = u.prevX + (u.x - u.prevX) * alpha;
+    const z = u.prevZ + (u.z - u.prevZ) * alpha;
+    v.position.set(x, terrainHeightAt(x, z), z);
+    v.rotation.y = lerpAngle(u.prevFacing, u.facing, alpha);
+    v.userData.ring.visible = u.selected;
+    if (v.userData.carry) v.userData.carry.visible = u.gather.carrying > 0;
+  }
+  for (const n of world.nodes) {
+    const v = nodeViews.get(n.id);
+    if (!v) continue;
+    const frac = n.maxAmount > 0 ? n.amount / n.maxAmount : 0;
+    const s = 0.28 + 0.72 * frac;
+    v.scale.set(s, s, s);
+    v.visible = n.amount > 0;
+  }
+  syncSiteViews();
+  // slow pulse on the base cores — "still faintly alive", not machinery
+  syncBuildingViews();
+  const pulse = 1 + Math.sin(world.tick * 0.045) * 0.09;
+  for (const v of buildingViews.values()) {
+    v.userData.core.scale.setScalar(pulse);
+    v.userData.sel.visible = v.userData.buildingId === selectedBuildingId;
+  }
+}
+
+/* ---------- render/siteViews --------------------------------------------- */
+// A site is the real silhouette, sunk into the earth and rising as it
+// completes — fitting for a civilisation that reads as geology.
+const siteViews = new Map();
+const SITE_SINK = 4.2;
+
+function makeSiteView(site) {
+  const t = BUILDING_TYPES[site.type];
+  const sc = t.radius / 2.2;
+  const mat = new THREE.MeshStandardMaterial({
+    color: site.team === 'player' ? 0xe8e2d0 : 0xd8c4b8,
+    flatShading: true, roughness: 0.95, transparent: true, opacity: 0.9
+  });
+  const g = new THREE.Group();
+  const drum = new THREE.Mesh(new THREE.CylinderGeometry(2.0 * sc, 2.4 * sc, 1.5 * sc, 6), mat);
+  drum.position.y = 0.75 * sc;
+  g.add(drum);
+  const ribCount = site.type === 'outpost' ? 4 : 6;
+  for (let i = 0; i < ribCount; i++) {
+    const a = (i / ribCount) * Math.PI * 2;
+    const rib = new THREE.Mesh(new THREE.CylinderGeometry(0.16 * sc, 0.22 * sc, 2.6 * sc, 5), mat);
+    rib.position.set(Math.cos(a) * 1.85 * sc, 1.5 * sc, Math.sin(a) * 1.85 * sc);
+    rib.rotation.z = Math.cos(a) * 0.16;
+    rib.rotation.x = -Math.sin(a) * 0.16;
+    g.add(rib);
+  }
+  // footprint marker, so a paused site is still legible from a distance
+  const ringGeo = new THREE.RingGeometry(t.radius + 0.1, t.radius + 0.3, 32);
+  ringGeo.rotateX(-Math.PI / 2);
+  const ring = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
+    color: 0xffe66d, transparent: true, opacity: 0.7, side: THREE.DoubleSide
+  }));
+  ring.position.y = 0.07;
+  g.add(ring);
+
+  g.userData = { siteId: site.id, mat, ring, pickTarget: drum };
+  scene.add(g);
+  return g;
+}
+
+function syncSiteViews() {
+  for (const site of world.sites) {
+    if (!siteViews.has(site.id)) siteViews.set(site.id, makeSiteView(site));
+    const v = siteViews.get(site.id);
+    const frac = site.progress / site.required;
+    v.position.set(site.x, terrainHeightAt(site.x, site.z) - (1 - frac) * SITE_SINK, site.z);
+    const working = buildersOn(world, site.id).some(u => builderIsWorking(world, u));
+    v.userData.mat.opacity = working ? 0.95 : 0.62;
+    // paused sites glow amber instead of yellow, and stop being subtle
+    v.userData.ring.material.color.setHex(working ? 0xffe66d : 0xff9c3f);
+    v.userData.ring.material.opacity = working ? 0.7 : 0.95;
+  }
+  // clear views for sites that completed or were cancelled
+  for (const [id, v] of siteViews) {
+    if (!world.sites.some(s => s.id === id)) { scene.remove(v); siteViews.delete(id); }
+  }
+}
+
+/* ---------- render/placementGhost ---------------------------------------- */
+let placingType = null;          // 'outpost' while in placement mode
+let selectedBuildingId = null;
+let selectedSiteId = null;
+
+const ghostMat = new THREE.MeshStandardMaterial({
+  color: 0x8effa0, transparent: true, opacity: 0.55, flatShading: true
+});
+const ghost = new THREE.Group();
+const ghostBody = new THREE.Mesh(new THREE.CylinderGeometry(1.3, 1.6, 1.0, 6), ghostMat);
+ghostBody.position.y = 0.5;
+ghost.add(ghostBody);
+const ghostRingGeo = new THREE.RingGeometry(1.35, 1.55, 32);
+ghostRingGeo.rotateX(-Math.PI / 2);
+const ghostRing = new THREE.Mesh(ghostRingGeo, new THREE.MeshBasicMaterial({
+  color: 0x8effa0, transparent: true, opacity: 0.8, side: THREE.DoubleSide
+}));
+ghostRing.position.y = 0.08;
+ghost.add(ghostRing);
+ghost.visible = false;
+scene.add(ghost);
+
+function updateGhost() {
+  if (!placingType) { ghost.visible = false; return; }
+  const hit = raycaster.intersectObject(terrainMesh)[0];
+  if (!hit) { ghost.visible = false; return; }
+  const { x, z } = hit.point;
+  const ok = canPlaceBuilding(world, 'player', placingType, x, z).ok;
+  ghost.position.set(x, terrainHeightAt(x, z), z);
+  ghost.visible = true;
+  ghostMat.color.setHex(ok ? 0x8effa0 : 0xff6b6b);
+  ghostRing.material.color.setHex(ok ? 0x8effa0 : 0xff6b6b);
+}
+
+/* ---------- render/camera.ts --------------------------------------------- */
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 500);
+const camTarget = new THREE.Vector3(-12, 0, 7);
+const camAngle = THREE.MathUtils.degToRad(52);
+let camDistance = 40;
+
+function updateCamera() {
+  camera.position.set(camTarget.x, camDistance * Math.sin(camAngle), camTarget.z + camDistance * Math.cos(camAngle));
+  camera.lookAt(camTarget);
+}
+
+const keys = {};
+let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+
+function panCamera(realDt) {
+  const panSpeed = 16 * realDt * (camDistance / 30);
+  let dx = 0, dz = 0;
+  if (keys['w']) dz -= 1;
+  if (keys['s']) dz += 1;
+  if (keys['a']) dx -= 1;
+  if (keys['d']) dx += 1;
+  const edge = 18;
+  if (mouseX < edge) dx -= 1;
+  if (mouseX > window.innerWidth - edge) dx += 1;
+  if (mouseY < edge) dz -= 1;
+  if (mouseY > window.innerHeight - edge) dz += 1;
+  if (dx || dz) {
+    const len = Math.hypot(dx, dz);
+    camTarget.x = THREE.MathUtils.clamp(camTarget.x + (dx / len) * panSpeed, -38, 38);
+    camTarget.z = THREE.MathUtils.clamp(camTarget.z + (dz / len) * panSpeed, -38, 38);
+  }
+}
+
+/* ---------- input/*.ts ---------------------------------------------------- */
+const raycaster = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+const selboxEl = document.getElementById('selbox');
+let dragStart = null, dragging = false;
+
+window.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  keys[k] = true;
+  if (k === 't') throttle = !throttle;
+  if (k === 'g') { selectedBuildingId = null; selectedSiteId = null; cmdSetSelection(world, world.units.filter(u => u.team === 'player' && u.gather).map(u => u.id)); }
+  if (k === 'escape') {
+    if (placingType) { placingType = null; ghost.visible = false; }
+    else if (selectedSiteId !== null) { cmdCancelSite(world, selectedSiteId); selectedSiteId = null; flash('site cancelled, essence refunded'); }
+  }
+  if (k === 'b' && world.units.some(u => u.selected && u.gather)) placingType = 'outpost';
+  if (k === 'q') tryTrain('worker');
+  if (k === 'e') tryTrain('legionnaire');
+});
+window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+
+renderer.domElement.addEventListener('wheel', e => {
+  camDistance = THREE.MathUtils.clamp(camDistance + e.deltaY * 0.03, 14, 64);
+}, { passive: true });
+renderer.domElement.addEventListener('contextmenu', e => e.preventDefault());
+
+function setNdc(e) {
+  ndc.x =  (e.clientX / window.innerWidth)  * 2 - 1;
+  ndc.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(ndc, camera);
+}
+
+function screenPosOf(unit) {
+  const v = new THREE.Vector3(unit.x, terrainHeightAt(unit.x, unit.z) + 1.0, unit.z).project(camera);
+  return { x: (v.x * 0.5 + 0.5) * window.innerWidth, y: (-v.y * 0.5 + 0.5) * window.innerHeight };
+}
+const selectedIds = () => world.units.filter(u => u.selected).map(u => u.id);
+
+renderer.domElement.addEventListener('mousedown', e => {
+  if (e.button !== 0) return;
+  dragStart = { x: e.clientX, y: e.clientY };
+  dragging = false;
+});
+
+renderer.domElement.addEventListener('mousemove', e => {
+  if (placingType) { setNdc(e); updateGhost(); }
+  if (!dragStart) return;
+  const dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
+  if (Math.hypot(dx, dy) > 4) {
+    dragging = true;
+    selboxEl.style.display = 'block';
+    selboxEl.style.left   = Math.min(dragStart.x, e.clientX) + 'px';
+    selboxEl.style.top    = Math.min(dragStart.y, e.clientY) + 'px';
+    selboxEl.style.width  = Math.abs(dx) + 'px';
+    selboxEl.style.height = Math.abs(dy) + 'px';
+  }
+});
+
+renderer.domElement.addEventListener('mouseup', e => {
+  // ---- left while placing: commit the building ----
+  if (e.button === 0 && placingType) {
+    setNdc(e);
+    const hit = raycaster.intersectObject(terrainMesh)[0];
+    if (hit) {
+      const builders = world.units.filter(u => u.selected && u.build).map(u => u.id);
+      const res = cmdPlaceBuilding(world, 'player', placingType, hit.point.x, hit.point.z, builders);
+      flash(res.ok
+        ? (builders.length ? `${BUILDING_TYPES[placingType].label} sited — worker heading over` : 'sited, but no worker assigned')
+        : res.reason);
+      if (res.ok && !e.shiftKey) { placingType = null; ghost.visible = false; }
+    }
+    dragStart = null; dragging = false;
+    return;
+  }
+
+  // ---- left: selection ----
+  if (e.button === 0 && dragStart) {
+    if (dragging) {
+      const x1 = Math.min(dragStart.x, e.clientX), x2 = Math.max(dragStart.x, e.clientX);
+      const y1 = Math.min(dragStart.y, e.clientY), y2 = Math.max(dragStart.y, e.clientY);
+      selectedBuildingId = null; selectedSiteId = null;
+      cmdSetSelection(world, world.units.filter(u => {
+        if (u.team !== 'player') return false;
+        const p = screenPosOf(u);
+        return p.x >= x1 && p.x <= x2 && p.y >= y1 && p.y <= y2;
+      }).map(u => u.id));
+    } else {
+      setNdc(e);
+      const unitHit = raycaster.intersectObjects([...views.values()].map(v => v.userData.pickTarget))[0];
+      const bldHit  = raycaster.intersectObjects([...buildingViews.values()].map(v => v.userData.pickTarget))[0];
+      const siteHit = raycaster.intersectObjects([...siteViews.values()].map(v => v.userData.pickTarget))[0];
+      const near = [unitHit, bldHit, siteHit].filter(Boolean).sort((a, b) => a.distance - b.distance)[0];
+      const takeUnit = unitHit && near === unitHit;
+      if (near === siteHit && siteHit) {
+        selectedBuildingId = null;
+        cmdSetSelection(world, []);
+        selectedSiteId = siteHit.object.parent.userData.siteId;
+      } else if (takeUnit) {
+        const unitId = unitHit.object.parent.userData.unitId;
+        const unit = world.units.find(u => u.id === unitId);
+        if (unit && unit.team === 'player') {
+          selectedBuildingId = null; selectedSiteId = null;
+          cmdSetSelection(world, e.shiftKey ? [...selectedIds(), unitId] : [unitId]);
+        }
+      } else if (near === bldHit && bldHit) {
+        const bid = bldHit.object.parent.userData.buildingId;
+        const b = world.buildings.find(x => x.id === bid);
+        if (b && b.team === 'player') { cmdSetSelection(world, []); selectedSiteId = null; selectedBuildingId = bid; }
+      } else {
+        selectedBuildingId = null; selectedSiteId = null;
+        cmdSetSelection(world, []);
+      }
+    }
+    selboxEl.style.display = 'none';
+    dragStart = null; dragging = false;
+  }
+
+  // ---- right: cancel placement / set rally / gather / move ----
+  if (e.button === 2) {
+    if (placingType) { placingType = null; ghost.visible = false; return; }
+    setNdc(e);
+
+    if (selectedBuildingId !== null) {
+      const groundHit = raycaster.intersectObject(terrainMesh)[0];
+      if (groundHit) {
+        cmdSetRally(world, selectedBuildingId, groundHit.point.x, groundHit.point.z);
+        flash('rally point set');
+      }
+      return;
+    }
+
+    const sel = selectedIds();
+    if (!sel.length) return;
+
+    // resuming a paused build is the same gesture as starting one
+    const siteHit = raycaster.intersectObjects([...siteViews.values()], true)[0];
+    if (siteHit) {
+      let g = siteHit.object; while (g.parent && !g.userData.siteId) g = g.parent;
+      const accepted = cmdAssignBuilders(world, sel, g.userData.siteId);
+      flash(accepted.length ? `${accepted.length} worker(s) building` : 'workers only');
+      return;
+    }
+
+    const nodeHit = raycaster.intersectObjects([...nodeViews.values()], true)[0];
+    if (nodeHit) {
+      let g = nodeHit.object; while (g.parent && !g.userData.nodeId) g = g.parent;
+      const nodeId = g.userData.nodeId;
+      const node = world.nodes.find(n => n.id === nodeId);
+      // Workers gather; anything else just walks there.
+      const accepted = new Set(cmdGather(world, sel, nodeId));
+      const rest = sel.filter(id => !accepted.has(id));
+      if (rest.length && node) cmdMove(world, rest, node.x, node.z);
+      return;
+    }
+
+    const groundHit = raycaster.intersectObject(terrainMesh)[0];
+    if (groundHit) cmdMove(world, sel, groundHit.point.x, groundHit.point.z);
+  }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+/* ---------- ui/hud.ts ----------------------------------------------------- */
+const el = id => document.getElementById(id);
+const dbg = {
+  fps: el('d-fps'), tps: el('d-tps'), tick: el('d-tick'), rate: el('d-rate'),
+  units: el('d-units'), sel: el('d-sel'), throttle: el('d-throttle'),
+};
+const resUi = {
+  essence: el('r-essence'), gathering: el('r-gathering'),
+  workers: el('r-workers'), remaining: el('r-remaining'),
+};
+
+const cardTitle = el('card-title'), cardBtns = el('card-btns');
+const cardQueue = el('card-queue'), cardHint = el('card-hint');
+const flashEl = el('flash');
+const resSupply = el('r-supply');
+
+let flashTimer = 0;
+function flash(msg) {
+  flashEl.textContent = msg;
+  flashEl.style.opacity = '1';
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => { flashEl.style.opacity = '0'; }, 1600);
+}
+
+function tryTrain(unitType) {
+  if (selectedBuildingId === null) { flash('select a structure first'); return; }
+  const res = cmdTrain(world, selectedBuildingId, unitType);
+  if (!res.ok) flash(res.reason);
+}
+
+// Rebuilt only when the selection changes, so buttons stay clickable.
+let cardKey = '';
+function renderCard() {
+  const sel = world.units.filter(u => u.selected);
+  const b = selectedBuildingId !== null ? world.buildings.find(x => x.id === selectedBuildingId) : null;
+  const site = selectedSiteId !== null ? world.sites.find(x => x.id === selectedSiteId) : null;
+  const key = site ? `s${site.id}` : b ? `b${b.id}` : sel.length ? `u${sel.length}:${sel[0].type}` : 'none';
+
+  if (key !== cardKey) {
+    cardKey = key;
+    cardBtns.innerHTML = '';
+    if (site) {
+      cardTitle.textContent = `${BUILDING_TYPES[site.type].label} — under construction`;
+      const btn = document.createElement('button');
+      btn.innerHTML = `<b>Cancel (Esc)</b><span class="c">full refund</span>`;
+      btn.onclick = () => { cmdCancelSite(world, site.id); selectedSiteId = null; flash('site cancelled, essence refunded'); };
+      cardBtns.appendChild(btn);
+      cardHint.textContent = 'right-click the site with a worker selected to resume';
+    } else if (b) {
+      const t = BUILDING_TYPES[b.type];
+      cardTitle.textContent = `${t.label} — +${t.command} command`;
+      const hotkeys = { worker: 'Q', legionnaire: 'E' };
+      for (const ut of t.produces) {
+        const u = UNIT_TYPES[ut];
+        const btn = document.createElement('button');
+        btn.innerHTML = `<b>${u.label} (${hotkeys[ut] || ''})</b><span class="c">${u.cost} essence · ${u.supply} cmd</span>`;
+        btn.dataset.unit = ut;
+        btn.onclick = () => tryTrain(ut);
+        cardBtns.appendChild(btn);
+      }
+      cardHint.textContent = 'right-click the ground to set a rally point';
+    } else if (sel.length) {
+      const workers = sel.filter(u => u.gather).length;
+      cardTitle.textContent = `${sel.length} selected (${workers} worker${workers === 1 ? '' : 's'})`;
+      if (workers) {
+        const t = BUILDING_TYPES.outpost;
+        const btn = document.createElement('button');
+        btn.innerHTML = `<b>Build Outpost (B)</b><span class="c">${t.cost} essence · +${t.command} cmd</span>`;
+        btn.dataset.build = 'outpost';
+        btn.onclick = () => { placingType = 'outpost'; };
+        cardBtns.appendChild(btn);
+        cardHint.textContent = 'outposts add command, hold territory, and accept essence';
+      } else {
+        cardHint.textContent = '';
+      }
+    } else {
+      cardTitle.textContent = 'Nothing selected';
+      cardHint.textContent = 'click the Standard to train units';
+    }
+  }
+
+  // live state on every frame: affordability and queue
+  for (const btn of cardBtns.children) {
+    if (btn.dataset.unit) {
+      btn.disabled = !(b && canTrain(world, b.id, btn.dataset.unit).ok);
+    } else if (btn.dataset.build) {
+      btn.disabled = world.resources.player < BUILDING_TYPES[btn.dataset.build].cost;
+    }
+  }
+  if (site) {
+    const pct = Math.round((site.progress / site.required) * 100);
+    const working = buildersOn(world, site.id).some(u => builderIsWorking(world, u));
+    cardQueue.textContent = `${pct}% — ${working ? 'building' : 'PAUSED (no worker)'}`;
+    cardQueue.style.color = working ? '#555' : '#b02e2e';
+  } else if (b && b.queue.length) {
+    cardQueue.style.color = '#555';
+    const head = b.queue[0];
+    const pct = Math.round((1 - head.ticksLeft / UNIT_TYPES[head.type].buildTicks) * 100);
+    const rest = b.queue.length > 1 ? ` (+${b.queue.length - 1} queued)` : '';
+    cardQueue.textContent = `${UNIT_TYPES[head.type].label} ${pct}%${rest}`;
+  } else {
+    cardQueue.textContent = '';
+  }
+}
+
+let frameCount = 0, tickAtLastSample = 0, lastSample = 0;
+let essenceAtLastSample = 0, measuredRate = 0;
+
+function updateHud(now) {
+  frameCount++;
+  if (now - lastSample >= 500) {
+    const elapsed = (now - lastSample) / 1000;
+    const fps = frameCount / elapsed;
+    const tps = (world.tick - tickAtLastSample) / elapsed;
+    measuredRate = ((world.resources.player - essenceAtLastSample) / elapsed) * 60;
+
+    frameCount = 0;
+    tickAtLastSample = world.tick;
+    essenceAtLastSample = world.resources.player;
+    lastSample = now;
+
+    dbg.fps.textContent = fps.toFixed(0);
+    dbg.tps.textContent = tps.toFixed(1);
+    dbg.tps.className = Math.abs(tps - TICK_HZ) > 1.5 ? 'warn' : '';
+    dbg.rate.textContent = measuredRate.toFixed(0);
+  }
+  dbg.tick.textContent = world.tick;
+  dbg.units.textContent = world.units.length;
+  dbg.sel.textContent = world.units.filter(u => u.selected).length;
+  dbg.throttle.textContent = throttle ? 'ON (~12fps)' : 'off';
+  dbg.throttle.className = throttle ? 'warn' : '';
+
+  resUi.essence.textContent = world.resources.player;
+  resUi.gathering.textContent = countGathering(world, 'player');
+  resUi.workers.textContent = world.units.filter(u => u.team === 'player' && u.gather).length;
+  resUi.remaining.textContent = totalResourcesRemaining(world);
+
+  const used = supplyUsed(world, 'player'), cap = supplyCap(world, 'player');
+  resSupply.textContent = `${used}/${cap}`;
+  resSupply.id = 'r-supply';
+  resSupply.className = used >= cap ? 'big' : 'big';
+  resSupply.style.color = used >= cap ? '#b02e2e' : '';
+  renderCard();
+}
+
+/* ---------- core/loop.ts — the loop --------------------------------------- */
+let accumulator = 0;
+let lastFrameTime = performance.now();
+let throttle = false;
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  if (throttle) { const until = performance.now() + 60; while (performance.now() < until); }
+
+  let frameMs = now - lastFrameTime;
+  lastFrameTime = now;
+  if (frameMs > 250) frameMs = 250;
+  const realDt = frameMs / 1000;
+
+  accumulator += frameMs;
+  let steps = 0;
+  while (accumulator >= TICK_MS && steps < MAX_CATCHUP) {
+    simStep(world);
+    accumulator -= TICK_MS;
+    steps++;
+  }
+  if (steps === MAX_CATCHUP) accumulator = 0;
+
+  const alpha = accumulator / TICK_MS;
+  panCamera(realDt);
+  updateCamera();
+  syncViews(alpha);
+  updateHud(now);
+  renderer.render(scene, camera);
+}
+
+updateCamera();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
