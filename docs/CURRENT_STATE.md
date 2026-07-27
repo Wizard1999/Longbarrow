@@ -1,3 +1,9 @@
+# Current State
+
+> **Cold start?** Read `START_HERE.md` first. This file is chronological:
+> the newest entry is immediately below, older history is archived further
+> down under "Historical log".
+
 ## ⚡ Latest — research lands, engine boundary tightened
 
 **340 tests · typecheck/lint/build clean.**
@@ -51,7 +57,14 @@ Two independent tracks landed this session and were reconciled:
 - Orders remain constrained by the generated polygon boundary.
 - Clean dependency installation, site consistency, typecheck, lint, all 302 tests, and the production build pass.
 
-# Current State
+
+---
+
+# Historical log
+
+_Older checkpoints, newest first. Kept for provenance; the current picture
+is the top of this file._
+
 
 ## v1.22.0 guided tutorial foundation
 

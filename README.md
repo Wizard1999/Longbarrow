@@ -90,7 +90,7 @@ npm run dev
 | Command | What |
 |---|---|
 | `npm run dev` | Vite dev server |
-| `npm test` | Vitest (146 tests) |
+| `npm test` | Vitest — full suite |
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint |
 | `npm run build` | Typecheck + production build |

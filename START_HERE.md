@@ -1,81 +1,151 @@
 # START HERE
 
-> **First, check the git remote.** The home of this project is
-> **`Wizard1999/Longbarrow`**, not the older `Wizard1999/RTS`.
->
-> ```bash
-> git remote -v          # origin must be .../Wizard1999/Longbarrow
-> ```
->
-> Remote-execution containers are recreated between sessions and re-clone from
-> whichever repository the session was originally attached to, which silently
-> resets `origin` back to `RTS`. This has already happened once and sent a
-> commit to the wrong repository. If `origin` is wrong, fix it before pushing:
->
-> ```bash
-> git remote rename origin rts-old
-> git remote add origin https://github.com/Wizard1999/Longbarrow
-> ```
+**You are picking up an in-progress game project. Everything you need is in
+this repository — there is no missing context and you should not need to ask
+for any.** Read this file, then the four in "Orientation" below, and begin.
 
-Every new session begins here. Read these, in order:
+---
 
-1. **`CLAUDE.md`** — what the project is, the architecture rule, the coding rules
-2. **`docs/AGENT_REASONING.md
-- `docs/ENGINE_VISION.md` — open RTS engine and creator-platform direction`** — the required structured quality and reasoning protocol
-3. **`docs/CURRENT_STATE.md`** — what was just done, what is in flight, what is next
-4. **`docs/TODO.md`** — the prioritized work queue
-5. **`docs/DECISIONS.md`** — decisions already made; do not relitigate these
-6. **`docs/BUGS.md`** — known defects
+## 0. Check the git remote before anything else
 
-Read on demand, not every session:
+The home of this project is **`Wizard1999/Longbarrow`**, not the older
+`Wizard1999/RTS`.
 
-- `docs/GAME_DESIGN.md` — the full design bible (races, economy, combat, phases)
-- `docs/UI_BLUEPRINT.md` — the target command interface
-- `docs/ARCHITECTURE.md` — module-by-module map of the codebase
-- `docs/ROADMAP.md` — phase plan
-- `docs/OPEN_QUESTIONS.md` — things needing a designer decision
-- `docs/CHANGELOG.md` — version history
+```bash
+git remote -v          # origin MUST be .../Wizard1999/Longbarrow
+```
 
-## The loop
+Remote-execution containers are recreated between sessions and re-clone from
+whichever repo the session was originally attached to, silently resetting
+`origin` back to `RTS`. This has happened **three times** and has sent commits
+to the wrong repository. A push to the wrong remote reports success, so this is
+silent — check it, don't assume it. If wrong:
+
+```bash
+git remote rename origin rts-old
+git remote add origin https://github.com/Wizard1999/Longbarrow
+```
+
+---
+
+## 1. What this is, in one paragraph
+
+**Longbarrow** is a browser real-time strategy game about **commanding intent,
+not clicking fast**. The player is an Operations Commander who issues
+objectives and doctrine to an army that executes them intelligently. Terrain
+decides fights; nobody wins by clicking faster. Four races are *forces of
+nature* rather than civilizations — Cohort (Death), Mycora (Life), Conclave
+(Water), Titanfolk (Earth). TypeScript + Three.js + Vite, no engine, no
+framework.
+
+*Longbarrow is the **project** codename. Cohort is a **race** inside it. Never
+conflate them.*
+
+---
+
+## 2. The two rules that are not negotiable
+
+**A. `src/sim/` is pure, deterministic, and never imports outward.**
+No `render/`, `input/`, or `ui/`. No `Math.random()` (use `world.rngState`), no
+`Date.now()`, no wall-clock — durations are **ticks** (`TICK_HZ` = 30).
+Enforced by `tests/architecture.test.ts`.
+
+**B. No sim state may live anywhere unreachable.**
+No closures, functions, `Map`/`Set` on `World`, or object references between
+entities — ids only. If `structuredClone` can't carry it, you have broken
+replays, save/load and future multiplayer *simultaneously*, and a fresh
+simulation from tick 0 will still pass all tests. See `DECISIONS.md` **D-010**.
+
+**C. Engine-first.** `src/sim/` must not name any specific unit, building or
+technology. Race content lives in `src/data/` and declares **traits** the
+engine reads generically. Scrapping all four races and rebuilding must stay
+cheap. See **D-029**.
+
+---
+
+## 3. Orientation — read these four, in order
+
+| File | What it gives you |
+|---|---|
+| `CLAUDE.md` | Architecture rules, coding rules, commands |
+| `docs/CURRENT_STATE.md` | **What was just done and what is next** (top section only) |
+| `docs/TODO.md` | Prioritized work queue |
+| `docs/DECISIONS.md` | 29 logged decisions — **do not relitigate these** |
+
+`DECISIONS.md` is the highest-value file in the repository. It records not just
+what was decided but *why the obvious alternative was rejected*. Read it before
+proposing a change to tick rate, combat resolution, cohesion, the resource
+colour, netcode, or the camera.
+
+## Read on demand
+
+| File | For |
+|---|---|
+| `docs/GAME_DESIGN.md` | The design bible — races, economy, combat, phases |
+| `docs/UI_BLUEPRINT.md` | Target command interface (missions, doctrine, squads) |
+| `docs/ARCHITECTURE.md` | Module-by-module map |
+| `docs/ROADMAP.md` | Phase plan — **public data, see invariant below** |
+| `docs/ART_PROMPTS.md` | Art direction encoded as image-generation prompts |
+| `docs/ART_REFERENCES.md` | Supplied references and what each is for |
+| `docs/OPEN_QUESTIONS.md` | Needs a designer decision |
+| `docs/BUGS.md` | Known defects |
+| `docs/CHANGELOG.md` | Version history |
+| `docs/AGENT_REASONING.md` | Structured reasoning protocol |
+| `docs/ENGINE_VISION.md` | Open-engine / creator-platform direction |
+
+---
+
+## 4. Art direction in one block
+
+Ghibli-influenced low-poly. **Warm painterly light; shadows shift hue toward
+violet rather than going black — never grimdark.** Weathering and overgrowth
+are real materials, not decals. Surfaces use a three-colour *hue path*
+(shade / mid / lit), not one colour dimmed.
+
+Cohort specifically: **fossil, not machinery.** Bone-pale weathered stone, no
+visible joints or gears, warm gold or pale green internal glow, moss in the
+seams. If it reads as a robot, it's wrong — the Laputa guardians from *Castle
+in the Sky* are the target.
+
+The gatherable resource is **violet** (`PALETTE.legacy`), never teal — teal
+reads as StarCraft minerals *and* belongs to Conclave (D-025).
+
+All published imagery is **concept art, not in-game footage**, and must be
+labelled as such. `src/site.ts` badges it automatically at the injection point.
+
+---
+
+## 5. The working loop
 
 ```
-Read START_HERE.md + referenced files
-Apply AGENT_REASONING.md privately
+Read this file + the four orientation docs
         ↓
 Do the work
         ↓
-npm test && npm run typecheck
+npm run verify        (typecheck + lint + tests + build)
         ↓
-Update CURRENT_STATE.md (+ DECISIONS.md if a decision was made)
+Update CURRENT_STATE.md  (+ DECISIONS.md if a decision was made)
+npm run sync:site        (if ROADMAP or progress changed)
         ↓
-git commit
+git remote -v   → confirm Longbarrow
+git commit && git push
 ```
 
-## When context is running low
+**Commit and push before you run out of context.** The container is ephemeral;
+anything unpushed is lost.
 
-Ask for, or proactively produce, a full `CURRENT_STATE.md` rewrite covering:
-architecture decisions, files changed, unfinished work, bugs, next steps, and
-design philosophy. Do not omit details. Then start a fresh session from this file.
+## Invariants to preserve
 
-## Conversation hygiene
+- **Public roadmap:** `docs/ROADMAP.md` is public product data. Run
+  `npm run sync:site` after editing it and confirm it appears on
+  `/development.html`.
+- **Versioned handoffs:** archives and work folders carry the build version
+  (`Longbarrow-v1.14.0-work`), never a generic `Longbarrow-main`.
+- **Replay format:** bump `REPLAY_VERSION` whenever a command's meaning or a
+  sim rule changes, or old replays will silently play wrong.
 
-Keep separate concerns in separate sessions. The docs are the shared memory,
-not the chat history:
+## When context runs low
 
-- Design / lore / balance → one session
-- Engine + architecture → another
-- UI and interface work → another
-- AI opponent → another
-
-## Current objective
-
-See `docs/CURRENT_STATE.md § Currently Working On`.
-
-
-## Versioned handoff naming
-
-Extracted work folders and packaged archives must include the build version, for example `Longbarrow-v1.14.0-work` and `Longbarrow-v1.14.0-59pct.zip`. Do not hand off generic `Longbarrow-main` folders when a version is known.
-
-## Public roadmap invariant
-
-- Treat `docs/ROADMAP.md` as public product data: run `npm run sync:site` after roadmap/progress edits and verify the full roadmap appears on `/development.html`.
+Rewrite the top section of `CURRENT_STATE.md` in full — architecture
+decisions, files changed, unfinished work, bugs, next steps, design philosophy.
+Omit nothing. Then push. A fresh session starts again from this file.

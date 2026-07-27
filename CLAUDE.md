@@ -31,7 +31,7 @@ Full design: `docs/GAME_DESIGN.md`. Interface target: `docs/UI_BLUEPRINT.md`.
 | Language | TypeScript (strict) |
 | Renderer | Three.js `^0.185` |
 | Build | Vite 7 |
-| Tests | Vitest — currently 146 passing |
+| Tests | Vitest — run `npm test` for the current count (340 at last update) |
 | Lint | ESLint 9 + typescript-eslint |
 
 No engine. No framework. Plain modules.
@@ -62,11 +62,13 @@ src/
 ## Required Reasoning Protocol
 
 Before substantial planning, coding, debugging, or visual work, apply
-`docs/AGENT_REASONING.md
-- `docs/ENGINE_VISION.md` — open RTS engine and creator-platform direction`. Use its structured checklist privately; communicate
+`docs/AGENT_REASONING.md`. Use its structured checklist privately; communicate
 concise rationale, decisions, evidence, and verification rather than private
 chain-of-thought. Treat claims about model internals as unverified unless reliable
 evidence is present.
+
+See also `docs/ENGINE_VISION.md` — the open RTS engine and creator-platform
+direction, which is why `src/sim/` must stay race-agnostic (D-029).
 
 ## Important Rules
 
@@ -98,9 +100,11 @@ npm test           # vitest run
 npm run typecheck  # tsc --noEmit
 npm run lint       # eslint src tests
 npm run build      # typecheck + vite build
+npm run verify     # typecheck + lint + test + build (the full gate)
+npm run sync:site  # republish docs/ROADMAP.md to the public dev page
 ```
 
-Run `npm test && npm run typecheck` before every commit.
+Run `npm run verify` before every commit.
 
 
 ## Versioned handoff naming

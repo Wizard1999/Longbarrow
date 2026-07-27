@@ -1,3 +1,8 @@
+# TODO
+
+Prioritized work queue. Newest decisions at the top of each section.
+Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
+
 ## Cohort playability — the road to a real match
 
 Tech system landed (D-028). Remaining gap to a *satisfying* Cohort match is
@@ -26,10 +31,6 @@ roster breadth: 3 of 7 ground units exist.
       unit" rather than a name. Deliberately deferred until the second race
       exists to generalise against.
 
-# TODO
-
-Prioritized work queue. Newest decisions at the top of each section.
-Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
 
 ## In flight
 
