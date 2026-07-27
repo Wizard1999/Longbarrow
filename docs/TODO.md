@@ -39,10 +39,13 @@ Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
 Foundation is in place: `sim/snapshot.ts` (snapshot/restore/hash) and
 `tests/determinism.test.ts`. What remains:
 
-- [ ] **Perf-gate the rollback decision.** Measure snapshot+restore at 50/100/200
-      units. If a snapshot costs more than ~1/3 of a frame at target unit count,
-      switch `World` to structure-of-arrays over typed arrays (only `snapshot.ts`
-      changes), or take lockstep-with-input-delay instead. Decide with numbers.
+- [~] **Rollback netcode — deferred** (D-016). Not being pursued for now. The
+      snapshot/restore/hash foundation stays: every one of its consumers
+      (replay seeking, desync detection, save/load, MMR validation, AI
+      lookahead) is independent of rollback. When multiplayer arrives, start
+      with **deterministic lockstep + input delay**, which reuses the command
+      stream `sim/replay.ts` already produces and needs no snapshotting.
+      Only revisit rollback via D-011's measurement gate.
 - [x] **Replay format** — `{ version, seed, startHour, tickRate, commands[] }`,
       recording + playback + validation in `sim/replay.ts`, 11 tests.
 - [ ] **Wire recording into live play** — input/UI still call `cmd*` directly.

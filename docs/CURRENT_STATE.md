@@ -1,7 +1,8 @@
 # Current State
 
 **Date:** 2026-07-27
-**Branch:** `claude/project-plan-review-34kyva`
+**Repository:** `Wizard1999/Longbarrow` (private) — migrated from `Wizard1999/RTS`
+**Branch:** `claude/project-plan-review-34kyva` · `main` is current
 **Tests:** 185 passing · typecheck clean · lint clean · build clean
 
 ---
@@ -190,17 +191,30 @@ In priority order — full detail in `TODO.md`:
 5. **Basic CPU opponent** (`DECISIONS.md` D-009) — grown alongside features, not
    written late; issues the same commands a human does.
 
-## Perf work now gated on a measurement
+## Rollback: deferred, and that is fine (D-016)
 
-Two decisions are deliberately waiting on numbers rather than opinion:
+Rollback netcode is **not being pursued for now**. This costs nothing later:
 
-- **Rollback vs. lockstep** (D-011). Measure snapshot+restore at 50/100/200
-  units. If a snapshot costs more than ~1/3 of a frame at target unit count,
-  either move `World` to structure-of-arrays over typed arrays — only
-  `snapshot.ts` changes, which is why everything routes through it — or take
-  lockstep-with-input-delay instead. Rollback in a 100+ unit RTS is a real
-  commitment; most RTS ship lockstep for exactly this reason.
-- **The 100-unit target itself** (D-006) is still unverified.
+- The snapshot/restore/hash work was never rollback-specific. Replay seeking,
+  desync detection, save/load, MMR validation and AI lookahead each need it
+  independently. None of it is dead code.
+- The expensive parts — per-tick snapshotting, a structure-of-arrays rewrite,
+  prediction/reconciliation — were deliberately never started.
+- The only thing rollback needs preserved is D-010's plain-data rule, which is
+  required by replays and networking anyway and is enforced by tests.
+
+**When multiplayer arrives, start with deterministic lockstep + input delay.**
+It is what most RTS ship, and it reuses the command stream `sim/replay.ts`
+already produces with no snapshotting at all.
+
+**The one thing that would genuinely hurt:** letting unreachable state back into
+`World` — a closure, a `Map`, an object reference between entities. That breaks
+replays and validation too, not just rollback, and stays invisible until
+something desyncs.
+
+## Still gated on a measurement
+
+- **The 100-unit performance target** (D-006) remains unverified.
 
 ## Design decisions awaiting the designer
 

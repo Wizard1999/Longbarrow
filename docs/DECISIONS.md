@@ -207,6 +207,8 @@ snapshot-safety means auditing every field added in between.
 
 ## D-011 — Rollback netcode: the state layout is the real decision
 **Date:** 2026-07-27
+**Amended 2026-07-27:** rollback **deferred** by the designer as too ambitious
+for now. See D-016 for what that does and does not cost.
 
 **Decision:** Target rollback netcode. Keep `structuredClone` for now; route
 every snapshot through `sim/snapshot.ts` so the representation can change
@@ -371,3 +373,51 @@ race's name. Evocative of the world rather than of one faction in it.
 **Consequence:** `Cohort` continues to mean the race, everywhere in the design
 documents. Only project-level titles changed: `README.md`, `CLAUDE.md`,
 `package.json`, and the page `<title>`.
+
+
+---
+
+## D-016 — Rollback deferred; the foundation stays because it was never rollback-specific
+**Date:** 2026-07-27
+
+**Decision:** Stop pursuing rollback netcode for now. Keep `sim/snapshot.ts`,
+the plain-data rule (D-010) and the determinism tests exactly as they are.
+
+**The question this answers:** does deferring rollback hurt development later?
+**No** — and specifically:
+
+**Nothing built for it is wasted.** Snapshot, restore and hash were never
+rollback-only. Each has an independent consumer that is still wanted:
+
+| Capability | Needs | Still wanted? |
+|---|---|---|
+| Replay seeking | `restore()` to a keyframe | Yes — D-012 |
+| Desync detection | `hash()` per tick | Yes, for any netcode |
+| Save / load a match | `snapshot()` + `restore()` | Yes |
+| Server-side MMR validation | re-simulate, compare `hash()` | Yes — D-012 |
+| Determinism regression tests | all three | Yes, already running |
+| AI lookahead ("what if I attack here?") | `snapshot()` + simulate + `restore()` | Likely — D-009 |
+
+Even if rollback is never built, none of this becomes dead code.
+
+**Nothing was spent that would not have been spent anyway.** The costly parts
+of rollback — per-tick snapshotting, a structure-of-arrays rewrite, prediction
+and reconciliation — were deliberately *not* started. D-011 gated them behind a
+measurement precisely so they would not be built on speculation.
+
+**The option stays open at zero ongoing cost.** The only thing rollback needs
+preserved is D-010's rule: sim state must be plain reachable data — no closures,
+no functions, no `Map`/`Set` on `World`. That rule is worth keeping on its own
+merits (replays and networking both require it), it is enforced by existing
+tests, and it costs nothing to follow.
+
+**What to do instead when multiplayer arrives:** deterministic lockstep with
+input delay. It is what most RTS ship, it reuses the same command stream
+`sim/replay.ts` already produces, and it needs no snapshotting at all. If
+rollback is ever revisited, D-011's measurement gate is still the right first
+step — do not start with netcode, start by measuring snapshot cost at 100+ units.
+
+**The one thing that would genuinely hurt later:** letting unreachable state
+back into `World`. A closure, a `Map`, or an object reference between entities
+would break replays and validation too, not just rollback — and it would be
+invisible until something desyncs. Keep the rule.
