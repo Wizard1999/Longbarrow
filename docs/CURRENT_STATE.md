@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-27
 **Branch:** `claude/project-plan-review-34kyva`
-**Tests:** 174 passing · typecheck clean · lint clean · build clean
+**Tests:** 185 passing · typecheck clean · lint clean · build clean
 
 ---
 
@@ -89,6 +89,24 @@ cannot silently change day length.
 
 The HUD shows a conic-gradient dial plus `HH:MM` and the period name, always
 visible. The sun tracks a real arc and the sky/fog/exposure follow it.
+
+### Replay system
+`src/sim/replay.ts` + 11 tests. Records `{ version, seed, startHour, tickRate,
+commands[] }` and plays back by re-simulating from tick 0.
+
+All 17 player actions are now a serializable discriminated union routed through
+one `dispatch()` funnel, which is what makes recording a single call rather than
+25 scattered ones — and forces commands to stay serializable, the property
+rollback and networking both need.
+
+Verified to reproduce a recorded match at **every intermediate tick**, not only
+the final one; a replay agreeing only at the end could be right by luck. Also
+tested: JSON round trip, correct time-of-day restoration, and rejection of
+mismatched tick rate or version rather than playing them wrong.
+
+**Not yet wired into live play** — input and UI still call `cmd*` directly.
+Routing them through `Recorder.apply()` is the last step before real matches
+record, and it is mechanical.
 
 ## Currently working on
 

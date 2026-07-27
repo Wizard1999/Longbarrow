@@ -24,11 +24,6 @@ Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
       competitive match. **Log every console command into the replay stream** —
       a replay that silently omits them will desync.
 
-- [ ] **Replay system.** Record `{ seed, tickRate, version, commands[] }`;
-      play back by re-simulating from tick 0. See `DECISIONS.md` D-008.
-      Ship a determinism test that runs a scripted command stream twice and
-      asserts identical world hashes.
-
 - [ ] **Basic CPU opponent.** See `DECISIONS.md` D-009. Grow it alongside
       features rather than writing it late. First version: build workers,
       gather, expand at a threshold, train army, attack when supply crosses a
@@ -48,8 +43,11 @@ Foundation is in place: `sim/snapshot.ts` (snapshot/restore/hash) and
       units. If a snapshot costs more than ~1/3 of a frame at target unit count,
       switch `World` to structure-of-arrays over typed arrays (only `snapshot.ts`
       changes), or take lockstep-with-input-delay instead. Decide with numbers.
-- [ ] **Replay format** — `{ seed, tickRate, startHour, version, commands[] }`.
-      Omitting any of these makes replays silently wrong rather than broken.
+- [x] **Replay format** — `{ version, seed, startHour, tickRate, commands[] }`,
+      recording + playback + validation in `sim/replay.ts`, 11 tests.
+- [ ] **Wire recording into live play** — input/UI still call `cmd*` directly.
+      Route them through `Recorder.apply()` so real matches are recorded. This
+      is the last step before replays work outside tests.
 - [ ] **Replay keyframes** — periodic snapshots so seeking does not re-simulate
       from tick 0.
 - [ ] **Per-tick hash comparison** for desync detection, reporting the exact
