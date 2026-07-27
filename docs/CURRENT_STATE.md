@@ -3,7 +3,7 @@
 **Date:** 2026-07-27
 **Repository:** `Wizard1999/Longbarrow` (private) — migrated from `Wizard1999/RTS`
 **Branch:** `claude/project-plan-review-34kyva` · `main` is current
-**Tests:** 197 passing · typecheck clean · lint clean · build clean
+**Tests:** 226 passing · typecheck clean · lint clean · build clean
 
 ---
 
@@ -127,9 +127,46 @@ hand-placed, so seeds currently vary only scenery. The plumbing is the part that
 would have been expensive to retrofit; the generator itself can be written
 whenever.
 
+### PHASE 1 COMPLETE — steps 1.9 to 1.12
+29 new tests. Longbarrow is now a game you can win or lose.
+
+**1.9 Squad cohesion.** Diminishing returns past 20 units, measured by
+*proximity* not squad membership (D-020) — squad-based counting would be
+trivially dodged by simply not grouping, which is the exact formation the rule
+exists to discourage. Constants solved backwards from §2's requirement that "a
+30-40 unit army should only barely beat a 20-25 unit army"; a test asserts that
+ratio so retuning cannot silently break the design intent. Workers exempt.
+
+**1.10 Positioning-driven combat.** High ground, flanking (rear/side/front arcs
+off the defender's facing), settle state and cohesion all multiply into
+`resolvedDamage()`. Units acquire targets and fight unprompted. Damage is a
+deterministic expectation, not a to-hit roll (D-019) — combat consumes no RNG
+at all, verified by test.
+
+**1.11 AI opponent.** Gathers, expands supply, builds an army, commits to
+attacking. Issues the same commands a human does, and lives inside the sim so
+AI matches replay correctly. **Opt-in** via `enableAi()` — a bare world is
+inert, so tests and replays are not silently driven by an opponent.
+
+**1.12 Win condition.** Buildings are destructible; a team with no buildings
+*and no construction sites* loses after a grace period, so a match cannot be
+decided by a one-tick race between a base falling and a site completing.
+
+Two real bugs found and fixed while building this:
+- The AI stalled permanently at 7 workers with 2,300 essence banked — it was
+  supply-capped and never built anything. Command gates population, so an AI
+  that cannot build cannot grow.
+- The AI re-tasked its own builder back to mining every think, because
+  `cmdAssignBuilders` parks a builder's gather job in `idle`. Construction
+  never finished.
+
 ## Currently working on
 
-**The painterly art pass** (`DECISIONS.md` D-005) — partially landed.
+**Nothing — Phase 1 is complete and the designer is pausing to playtest.**
+
+Resuming work: the war table camera (D-014), which unblocks the remaining art.
+
+### Paused: the painterly art pass (`DECISIONS.md` D-005) — partially landed.
 
 Built and wired:
 - `render/palette.ts` — hue paths (shade/mid/lit) per material, sun/sky/fog

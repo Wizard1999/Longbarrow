@@ -53,6 +53,10 @@ export interface Unit {
    *  stopping doesn't restore accuracy instantly, which is what stops kiting
    *  from being free (§8.7). */
   stillTicks: number;
+  /** Current attack target, or null. An id, never a reference — see D-010. */
+  targetId: EntityId | null;
+  /** Ticks until this unit may attack again. */
+  attackCd: number;
 }
 
 export interface QueueItem {
@@ -67,6 +71,9 @@ export interface Building {
   x: number;
   z: number;
   radius: number;
+  /** Buildings are destructible — the win condition is pure base destruction
+   *  (§2), so a base has to be something an army can actually knock down. */
+  hp: number;
   queue: QueueItem[];
   rally: Vec2;
 }
@@ -157,6 +164,27 @@ export interface World {
   scenery: Scenery[];
   squads: Squad[];
   resources: Record<Team, number>;
+  /** Set once a team has won. The sim keeps running; presentation decides what
+   *  to do about it. */
+  winner: Team | null;
+  /** Ticks each team has spent holding no buildings. */
+  eliminationTicks: Record<Team, number>;
+  /**
+   * The AI opponent's state, or null for a match with no AI.
+   *
+   * Lives in the sim rather than beside it, because an AI that decided outside
+   * the simulation would not reproduce during replay — the match would diverge
+   * the moment the AI made its first choice. Being deterministic sim state also
+   * means AI commands must NOT be recorded into the replay log: playback
+   * re-derives them exactly, and recording them too would apply each twice.
+   */
+  ai: AiState | null;
+}
+
+export interface AiState {
+  team: Team;
+  nextThinkTick: number;
+  attacking: boolean;
 }
 
 export interface CommandResult {

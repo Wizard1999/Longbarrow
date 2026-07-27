@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { createLoop } from './core/loop';
 import { createWorld, simStep } from './sim/world';
 import { buildTestMap } from './sim/map';
+import { enableAi } from './sim/ai';
 import { cmdCancelSite, cmdFormSquad, cmdSetSelection } from './sim/commands';
 import { squadByNumber } from './sim/squads';
 import { AUTOMATION } from './data/tuning';
@@ -25,7 +26,8 @@ import { createMouse } from './input/mouse';
 import { createHud } from './ui/hud';
 import { createChainEditor } from './ui/chainEditor';
 
-const world = buildTestMap(createWorld(1337));
+// Opt in to the opponent explicitly — a bare world is inert (see sim/world.ts).
+const world = enableAi(buildTestMap(createWorld(1337)));
 
 const quality = QUALITY[detectTier()];
 const { scene, renderer, sun } = createRenderer(quality);

@@ -40,6 +40,7 @@ export function createHud(world: World, ui: UiState): Hud {
   const cardHint = el('card-hint');
   const flashEl = el('flash');
 
+  let announcedWinner = false;
   let flashTimer: ReturnType<typeof setTimeout> | undefined;
   function flash(msg: string): void {
     flashEl.textContent = msg;
@@ -183,6 +184,14 @@ export function createHud(world: World, ui: UiState): Hud {
     clockUi.dial.style.background =
       `conic-gradient(#ffd9a0 0 ${lit}%, #2b3557 ${lit}% 100%)`;
     clockUi.dial.title = `Day ${dayNumber(world) + 1} — ${period}`;
+
+    // The match is over: say so once, plainly. Information, never advice
+    // (UI_BLUEPRINT § "Information, never advice").
+    if (world.winner && !announcedWinner) {
+      announcedWinner = true;
+      flash(world.winner === 'player' ? 'VICTORY — enemy base destroyed'
+                                      : 'DEFEAT — your base was destroyed');
+    }
 
     resUi.essence.textContent = String(world.resources.player);
     resUi.gathering.textContent = String(countGathering(world, 'player'));

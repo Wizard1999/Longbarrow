@@ -1,15 +1,21 @@
-import type { Unit, World } from '../core/types';
+import type { Building, EntityId, Team, Unit, World } from '../core/types';
 import { UNIT_TYPES } from '../data/units';
-import { COMBAT } from '../data/tuning';
+import { COHESION, COMBAT, VICTORY } from '../data/tuning';
+import { HIGH_GROUND_THRESHOLD, terrainHeightAt } from './terrain';
 
 /**
- * Step 1.8 — the two unit identities, expressed as derived stats.
+ * Combat: derived stats, cohesion, positional resolution and elimination.
  *
- * There is no fighting here yet; that arrives at 1.9. What lives in this file
- * is the answer to "how good is this unit right now, standing where it is
- * standing", which is the whole point of a game where positioning beats micro
- * (design doc §2). Everything is a pure function of world state, so both
- * claims in 06 §4 are measurable without a battle.
+ * The governing idea from §2 is that *where* a unit stands decides fights more
+ * than what the player does mid-fight. So every modifier here is positional —
+ * high ground, facing, crowding — and none of them reward clicking.
+ *
+ * Damage is applied as a deterministic expectation rather than a die roll.
+ * §2 asks for battles that are "quick and decisive" with micro *not* a major
+ * skill factor; rolling to hit adds variance that rewards neither positioning
+ * nor skill, only luck, and it would make identical engagements resolve
+ * differently. Accuracy is therefore a multiplier, not a coin flip. It also
+ * keeps combat off the RNG entirely, which keeps replays and lockstep simpler.
  */
 
 /** Legionnaires within shield-wall radius, excluding the unit itself. */
@@ -82,5 +88,234 @@ export function stepSettle(world: World): void {
     const moved = u.x !== u.prevX || u.z !== u.prevZ;
     if (moved) u.stillTicks = 0;
     else u.stillTicks++;
+  }
+}
+
+
+// --- Squad cohesion (1.9, §8.6) -------------------------------------------
+
+/**
+ * Friendly combat units packed in around this one, itself included.
+ *
+ * Counted by proximity rather than by squad membership. The design text is
+ * ambiguous between the two (§8.6 names the mechanic after squads; §2 describes
+ * it as "20+ units in one place"), but squad-based counting would be trivially
+ * dodgeable — an ungrouped blob would take no penalty, and that blob is exactly
+ * what the rule exists to discourage. Workers are excluded: a mining camp is
+ * not a deathball.
+ */
+export function localCrowding(world: World, unit: Unit): number {
+  let n = 0;
+  for (const other of world.units) {
+    if (other.hp <= 0) continue;
+    if (other.team !== unit.team) continue;
+    if (UNIT_TYPES[other.type].isWorker) continue;
+    if (Math.hypot(other.x - unit.x, other.z - unit.z) <= COHESION.radius) n++;
+  }
+  return n;
+}
+
+/**
+ * Effectiveness multiplier from crowding, 1 down to `minEffectiveness`.
+ *
+ * Cohort's flavour of this is Command Overload (§8.6) — past the cap a squad
+ * needs a second officer-type unit to keep full accuracy. The Chronicler that
+ * would relieve it is Phase 1 roster but not yet implemented, so for now the
+ * penalty always applies; that unit becomes a mitigation hook later.
+ */
+export function cohesionEffectiveness(world: World, unit: Unit): number {
+  if (UNIT_TYPES[unit.type].isWorker) return 1;
+  const excess = localCrowding(world, unit) - COHESION.cap;
+  if (excess <= 0) return 1;
+  return Math.max(COHESION.minEffectiveness, 1 - excess * COHESION.penaltyPerUnit);
+}
+
+// --- Positional modifiers (1.10, §2) --------------------------------------
+
+/** Height advantage of the attacker over the defender, as a multiplier. */
+export function elevationMultiplier(attacker: Unit, defender: Unit): number {
+  const d = terrainHeightAt(attacker.x, attacker.z) - terrainHeightAt(defender.x, defender.z);
+  if (d >= HIGH_GROUND_THRESHOLD) return COMBAT.highGroundBonus;
+  if (d <= -HIGH_GROUND_THRESHOLD) return COMBAT.lowGroundPenalty;
+  return 1;
+}
+
+export type Approach = 'front' | 'side' | 'rear';
+
+/**
+ * Where the attacker is standing relative to the way the defender is facing.
+ *
+ * `facing` is the direction the defender is looking, as atan2(dx, dz) — the
+ * same convention movement writes, so this stays consistent with what the
+ * renderer draws.
+ */
+export function approachFrom(attacker: Unit, defender: Unit): Approach {
+  const dx = attacker.x - defender.x;
+  const dz = attacker.z - defender.z;
+  if (dx === 0 && dz === 0) return 'front';
+  const toAttacker = Math.atan2(dx, dz);
+  let rel = toAttacker - defender.facing;
+  while (rel > Math.PI) rel -= Math.PI * 2;
+  while (rel < -Math.PI) rel += Math.PI * 2;
+  const a = Math.abs(rel);
+  if (a <= COMBAT.frontArc) return 'front';
+  if (a >= Math.PI - COMBAT.rearArc) return 'rear';
+  return 'side';
+}
+
+export function flankMultiplier(attacker: Unit, defender: Unit): number {
+  switch (approachFrom(attacker, defender)) {
+    case 'rear': return COMBAT.flankBonus;
+    case 'side': return COMBAT.sideBonus;
+    default: return 1;
+  }
+}
+
+/**
+ * Damage one attack actually deals, after everything positional.
+ *
+ * This is the single place the §2 pillar becomes a number: accuracy (are you
+ * set up?), cohesion (are you overpacked?), elevation and facing (where are you
+ * standing?) all multiply together, and none of them can be improved by
+ * clicking faster.
+ */
+export function resolvedDamage(world: World, attacker: Unit, defender: Unit): number {
+  return UNIT_TYPES[attacker.type].combat.damage
+    * effectiveAccuracy(attacker)
+    * cohesionEffectiveness(world, attacker)
+    * elevationMultiplier(attacker, defender)
+    * flankMultiplier(attacker, defender)
+    * (1 - effectiveDefense(world, defender));
+}
+
+// --- Target acquisition and attacking (1.10) ------------------------------
+
+function inRange(u: Unit, tx: number, tz: number, extra = 0): boolean {
+  const reach = UNIT_TYPES[u.type].combat.range + u.radius + extra;
+  return Math.hypot(tx - u.x, tz - u.z) <= reach;
+}
+
+/**
+ * Nearest living enemy within acquire range.
+ *
+ * Ties are broken by entity id so the choice cannot depend on array order —
+ * two peers must pick the same target from the same state (D-010).
+ */
+export function findTarget(world: World, unit: Unit): Unit | null {
+  let best: Unit | null = null;
+  let bestDist = Infinity;
+  for (const other of world.units) {
+    if (other.hp <= 0 || other.team === unit.team) continue;
+    const d = Math.hypot(other.x - unit.x, other.z - unit.z);
+    if (d > COMBAT.acquireRange) continue;
+    if (d < bestDist - 1e-9 || (Math.abs(d - bestDist) <= 1e-9 && best && other.id < best.id)) {
+      best = other;
+      bestDist = d;
+    }
+  }
+  return best;
+}
+
+/** Nearest enemy building in range — how a base actually falls (1.12). */
+function findEnemyBuilding(world: World, unit: Unit): Building | null {
+  let best: Building | null = null;
+  let bestDist = Infinity;
+  for (const b of world.buildings) {
+    if (b.team === unit.team) continue;
+    const d = Math.hypot(b.x - unit.x, b.z - unit.z);
+    if (d > COMBAT.acquireRange + b.radius) continue;
+    if (d < bestDist - 1e-9 || (Math.abs(d - bestDist) <= 1e-9 && best && b.id < best.id)) {
+      best = b;
+      bestDist = d;
+    }
+  }
+  return best;
+}
+
+/**
+ * One tick of fighting.
+ *
+ * Units defend themselves without being told to — the game is about intent, not
+ * about remembering to press attack. A unit already under orders keeps walking;
+ * it simply also shoots whatever comes into range.
+ */
+export function stepCombat(world: World): void {
+  for (const u of world.units) {
+    if (u.hp <= 0) continue;
+    if (u.attackCd > 0) u.attackCd--;
+
+    const target = findTarget(world, u);
+    u.targetId = target?.id ?? null;
+
+    if (u.attackCd > 0) continue;
+
+    if (target && inRange(u, target.x, target.z, target.radius)) {
+      target.hp -= resolvedDamage(world, u, target);
+      u.attackCd = UNIT_TYPES[u.type].combat.attackTicks;
+      continue;
+    }
+
+    // Nothing to shoot at, but there may be something to knock down.
+    const building = findEnemyBuilding(world, u);
+    if (building && inRange(u, building.x, building.z, building.radius)) {
+      building.hp -= UNIT_TYPES[u.type].combat.damage
+        * effectiveAccuracy(u)
+        * cohesionEffectiveness(world, u)
+        * COMBAT.buildingDamageScale;
+      u.attackCd = UNIT_TYPES[u.type].combat.attackTicks;
+    }
+  }
+}
+
+/**
+ * Clear out the dead.
+ *
+ * Squad rosters, selections and build/gather jobs all reference units by id, so
+ * every one of them has to be swept or they accumulate dangling ids — which
+ * would diverge between peers as soon as an id were reused.
+ */
+export function stepReaper(world: World): void {
+  const dead = new Set<EntityId>();
+  for (const u of world.units) if (u.hp <= 0) dead.add(u.id);
+  if (dead.size) {
+    world.units = world.units.filter(u => !dead.has(u.id));
+    for (const sq of world.squads) sq.memberIds = sq.memberIds.filter(id => !dead.has(id));
+    for (const u of world.units) if (u.targetId !== null && dead.has(u.targetId)) u.targetId = null;
+  }
+
+  const rubble = world.buildings.filter(b => b.hp <= 0).map(b => b.id);
+  if (rubble.length) {
+    const gone = new Set(rubble);
+    world.buildings = world.buildings.filter(b => !gone.has(b.id));
+    for (const u of world.units) {
+      if (u.gather && u.gather.state === 'toBase') { u.gather.state = 'idle'; u.gather.nodeId = null; }
+    }
+  }
+
+  world.squads = world.squads.filter(sq => sq.memberIds.length > 0);
+}
+
+// --- Win condition (1.12, §2 "pure base destruction") ---------------------
+
+/**
+ * A team is eliminated once it holds no buildings.
+ *
+ * The grace period stops a match being called in the single tick between a last
+ * base falling and a construction site completing — losing to a race condition
+ * rather than to the opponent would be indefensible.
+ */
+export function stepVictory(world: World): void {
+  if (world.winner) return;
+  const teams: Team[] = ['player', 'rival'];
+  for (const team of teams) {
+    const holds = world.buildings.some(b => b.team === team)
+      || world.sites.some(s => s.team === team);
+    world.eliminationTicks[team] = holds ? 0 : world.eliminationTicks[team] + 1;
+  }
+  for (const team of teams) {
+    if (world.eliminationTicks[team] > VICTORY.graceTicks) {
+      world.winner = team === 'player' ? 'rival' : 'player';
+      return;
+    }
   }
 }

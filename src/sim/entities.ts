@@ -22,6 +22,8 @@ export function spawnUnit(
     build: t.isWorker ? { siteId: null } : null,
     hp: t.combat.hp,
     stillTicks: 0,
+    targetId: null,
+    attackCd: 0,
   };
   world.units.push(u);
   return u;
@@ -35,6 +37,7 @@ export function spawnBuilding(
     id: world.nextId++,
     type: typeKey, team, x, z,
     radius: t.radius,
+    hp: t.hp,
     queue: [],
     rally: { x, z: z + t.radius + 2.5 },
   };

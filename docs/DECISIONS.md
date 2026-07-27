@@ -477,3 +477,58 @@ detection for free.
 30 Hz that is 66–133 ms). This raises the value of the immediate
 input-acknowledgement work already in `TODO.md` — under lockstep, local
 feedback on the frame of the click is what hides the delay.
+
+---
+
+## D-019 — Combat damage is a deterministic expectation, not a die roll
+**Date:** 2026-07-27
+
+**Decision:** Accuracy multiplies damage rather than gating a hit/miss roll.
+Combat consumes no RNG at all.
+
+**Reason:** §2 asks for battles that are "quick and decisive", where "initial
+positioning determines the outcome more than mid-fight adjustments" and micro is
+"not a major skill factor". A to-hit roll works against all three — it adds
+variance that rewards neither positioning nor skill, only luck, and it makes
+identical engagements resolve differently for no reason a player can act on.
+
+Folding accuracy in as a multiplier keeps every modifier in the game positional:
+settle state, cohesion, elevation and facing all multiply together, and none of
+them can be improved by clicking faster.
+
+**Secondary benefit:** combat touching no RNG keeps the generator's position
+independent of how many fights happened, which makes replays and future lockstep
+markedly easier to reason about. Verified by test.
+
+**Rejected:** per-attack hit rolls. Revisit only if playtesting shows fights
+feel too deterministic — and if so, prefer variance in *damage magnitude* over
+hit/miss, which preserves expected outcomes.
+
+---
+
+## D-020 — Cohesion is measured by proximity, not squad membership
+**Date:** 2026-07-27
+
+**Decision:** The diminishing-returns penalty counts friendly combat units
+within `COHESION.radius`, not members of a squad. Workers are exempt.
+
+**Reason:** The design text is ambiguous — §8.6 names the mechanic "Squad
+Cohesion", while §2 describes it as "20+ units in one place". Squad-based
+counting is the more literal reading and the wrong one: it is trivially
+dodgeable, because an *ungrouped* blob would take no penalty at all, and that
+blob is precisely the formation the rule exists to discourage.
+
+Proximity-based counting cannot be gamed, is readable on the battlefield (you
+can see the crowd), and matches the §2 wording. Workers are exempt because a
+mining camp is a dense cluster that has nothing to do with deathballing.
+
+**Numbers solved backwards from §2's requirement** that "a 30–40 unit army
+should only barely beat a 20–25 unit army": at cap 20 and 0.025 per excess unit,
+a 35-stack fields ~21.9 effective units against a 22-stack's ~20.9 — a ~5% edge.
+A test asserts this ratio directly, so retuning the constants cannot silently
+break the design intent.
+
+**Open:** Cohort's stated flavour is Command Overload — past the cap a squad
+needs a second officer-type unit (the Chronicler) to keep full accuracy. That
+unit is Phase 1 roster but unimplemented, so the penalty currently always
+applies; the Chronicler becomes a mitigation hook when it lands.

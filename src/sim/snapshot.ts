@@ -88,6 +88,11 @@ export function hash(world: World): string {
   mix(world.mapVersion);
   mixF(world.resources.player);
   mixF(world.resources.rival);
+  mixS(world.winner ?? '-');
+  mix(world.eliminationTicks.player); mix(world.eliminationTicks.rival);
+  if (world.ai) {
+    mixS(world.ai.team); mix(world.ai.nextThinkTick); mix(world.ai.attacking ? 1 : 0);
+  }
 
   for (const u of world.units) {
     mix(u.id); mixS(u.type); mixS(u.team);
@@ -100,10 +105,11 @@ export function hash(world: World): string {
       mixF(u.gather.carrying); mix(u.gather.timer);
     }
     mix(u.build?.siteId ?? -1);
+    mix(u.targetId ?? -1); mix(u.attackCd);
   }
 
   for (const b of world.buildings) {
-    mix(b.id); mixS(b.type); mixS(b.team); mixF(b.x); mixF(b.z);
+    mix(b.id); mixS(b.type); mixS(b.team); mixF(b.x); mixF(b.z); mixF(b.hp);
     for (const q of b.queue) { mixS(q.type); mix(q.ticksLeft); }
   }
 

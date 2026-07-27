@@ -8,6 +8,7 @@ import type { BuildingTypeKey, UnitTypeKey } from '../core/types';
  */
 export interface BuildingDef {
   radius: number;
+  hp: number;
   dropoff: boolean;
   command: number;
   controlRadius: number;
@@ -19,11 +20,11 @@ export interface BuildingDef {
 
 export const BUILDING_TYPES: Record<BuildingTypeKey, BuildingDef> = {
   standard: {
-    radius: 2.2, dropoff: true, command: 15, controlRadius: 18,
+    radius: 2.2, hp: 2200, dropoff: true, command: 15, controlRadius: 18,
     cost: 0, buildTicks: 0, produces: ['worker', 'legionnaire', 'marksman'], label: 'Standard',
   },
   outpost: {
-    radius: 1.4, dropoff: true, command: 8, controlRadius: 11,
+    radius: 1.4, hp: 1100, dropoff: true, command: 8, controlRadius: 11,
     cost: 100, buildTicks: 150, produces: ['worker'], label: 'Outpost',
   },
 };

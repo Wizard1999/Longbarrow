@@ -16,7 +16,7 @@ No combat, economy or AI.
 
 ---
 
-## ◐ Phase 1 — Single Race Core Loop (Cohort)
+## ✅ Phase 1 — Single Race Core Loop (Cohort) — COMPLETE
 
 Cohort first: its linear, forgiving economy is the simplest proving ground for
 core systems before asymmetry is layered on.
@@ -31,10 +31,10 @@ core systems before asymmetry is layered on.
 | 1.6 | Queue & walk construction | ✅ v1.6 |
 | 1.7 | Squads & behaviour chains | ✅ v1.7 |
 | 1.8 | Core units — Legionnaire shield-wall, Marksman setup | ✅ v1.8 |
-| 1.9 | Squad cohesion penalty | ⬜ next |
-| 1.10 | Positioning-driven combat resolution | ⬜ |
-| 1.11 | Simple AI opponent | ⬜ *(started early — see D-009)* |
-| 1.12 | Base-destruction win condition | ⬜ |
+| 1.9 | Squad cohesion penalty | ✅ |
+| 1.10 | Positioning-driven combat resolution | ✅ |
+| 1.11 | Simple AI opponent | ✅ |
+| 1.12 | Base-destruction win condition | ✅ |
 
 **Also in Phase 1, added after the original plan:**
 
@@ -60,7 +60,7 @@ tech — is the furthest from Cohort's, making it the best test of whether "same
 problem, different answer" produces genuinely different play rather than
 different stats.
 
-Blocked on Phase 1 completion. Design gaps to resolve first: Mycora naming pass,
+Phase 1 is complete; this is now the next major phase. Design gaps to resolve first: Mycora naming pass,
 contested ground-cover effect.
 
 ---

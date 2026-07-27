@@ -7,7 +7,8 @@ import { stepBuild, stepConstruction } from './construction';
 import { stepGather } from './economy';
 import { stepMovement } from './movement';
 import { stepSquads } from './squads';
-import { stepSettle } from './combat';
+import { stepCombat, stepReaper, stepSettle, stepVictory } from './combat';
+import { stepAi } from './ai';
 
 export function createWorld(seed: number, startHour = 8, mapSeed = seed): World {
   return {
@@ -25,6 +26,12 @@ export function createWorld(seed: number, startHour = 8, mapSeed = seed): World 
     scenery: [],
     squads: [],         // persistent groups running behaviour chains
     resources: { player: 0, rival: 0 },
+    winner: null,
+    eliminationTicks: { player: 0, rival: 0 },
+    // Deliberately null. A world is just a world; who plays it is match setup,
+    // not world construction. Baking an opponent into createWorld() would mean
+    // every test, replay and headless simulation silently ran against an AI.
+    ai: null,
   };
 }
 
@@ -33,6 +40,7 @@ export function simStep(world: World): void {
   for (const u of world.units) {
     u.prevX = u.x; u.prevZ = u.z; u.prevFacing = u.facing;
   }
+  if (world.ai) stepAi(world, world.ai);               // the opponent decides first
   stepProduction(world);
   stepConstruction(world);
   stepSquads(world);                                   // standing orders first
@@ -40,4 +48,7 @@ export function simStep(world: World): void {
   for (const u of world.units) stepBuild(world, u);    // ...or where to build
   for (const u of world.units) stepMovement(u);        // goes there
   stepSettle(world);                                   // ...and settles, or doesn't
+  stepCombat(world);                                   // then fights
+  stepReaper(world);                                   // clear the dead before anything reads them
+  stepVictory(world);                                  // and see if that ended it
 }

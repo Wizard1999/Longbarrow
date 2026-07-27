@@ -43,6 +43,61 @@ export const COMBAT = {
   maxDefense: 0.75,
   /** Ticks of standing still before a unit is fully "set up". */
   settleTicks: 30,   // 1s
+
+  // --- Positioning (1.10). Where a unit stands decides fights (§2). ---
+  /** Damage multiplier for attacking from high ground. */
+  highGroundBonus: 1.25,
+  /** ...and the penalty for attacking uphill. */
+  lowGroundPenalty: 0.85,
+  /** Damage multiplier when attacking a defender from behind. Flanking is
+   *  meant to be decisive, not a rounding error (§2). */
+  flankBonus: 1.35,
+  /** Attacking from the side — between flank and frontal. */
+  sideBonus: 1.15,
+  /** Half-angle (radians) of the defender's frontal arc. Outside this to the
+   *  rear is a flank. */
+  frontArc: 1.05,      // ~60 deg either side of facing
+  rearArc: 1.05,       // ~60 deg either side of directly behind
+  /** How far a unit will look for a target of its own accord. */
+  acquireRange: 9.0,
+  /** Damage a unit does to a building, as a fraction of its normal damage.
+   *  Nothing in the Phase 1 roster is a siege unit, so everything chips. */
+  buildingDamageScale: 0.5,
+};
+
+/**
+ * Squad cohesion (§8.6, §2) — the universal diminishing-returns mechanic.
+ *
+ * §2 asks for "20+ units in one place has dramatically diminishing returns",
+ * and that "a 30-40 unit army should only barely beat a 20-25 unit army".
+ * These numbers are solved backwards from that requirement:
+ *
+ *   35 units -> 1 - 15*0.025 = 0.625 effectiveness -> ~21.9 effective units
+ *   22 units -> 1 -  2*0.025 = 0.950 effectiveness -> ~20.9 effective units
+ *
+ * So a 35-stack beats a 22-stack by about 5% — "barely", as specified.
+ *
+ * Measured by local crowding rather than by squad membership. Basing it on
+ * squads would make it trivially dodgeable: an ungrouped deathball would take
+ * no penalty at all, which is the exact formation the rule exists to discourage.
+ * See docs/OPEN_QUESTIONS.md — the design text is ambiguous between the two.
+ */
+export const COHESION = {
+  /** Friendly combat units within this radius count as "in one place". */
+  radius: 8.0,
+  /** Up to this many, no penalty. */
+  cap: 20,
+  /** Effectiveness lost per unit over the cap. */
+  penaltyPerUnit: 0.025,
+  /** Effectiveness never falls below this, however dense the stack. */
+  minEffectiveness: 0.45,
+};
+
+/** Win condition (1.12): a team is eliminated when it holds no buildings. */
+export const VICTORY = {
+  /** Ticks a team must hold zero buildings before the match is called. Stops a
+   *  match ending in the instant between a base dying and a site completing. */
+  graceTicks: 30,
 };
 
 export const ECON = {
@@ -65,4 +120,30 @@ export const DAY = {
   dawnEnd: 7,               // ...and is fully daylight
   duskStart: 19,            // hour the light begins to fail
   duskEnd: 21,              // ...and is fully night
+};
+
+/**
+ * The Phase 1 AI opponent (§10.2 — "a simple (not necessarily smart) AI").
+ *
+ * Its job is to exist and to exercise the systems, not to be competitive.
+ * Numbers here are placeholders like everything else in this file.
+ */
+export const AI = {
+  /** Ticks between decisions. It has no reflexes to exercise, and thinking
+   *  every tick would cost real time at 100+ units for no behavioural gain. */
+  thinkInterval: 15,      // twice a second at 30Hz
+  targetWorkers: 10,
+  maxQueueDepth: 2,
+  /** Fighters before it commits to attacking. */
+  attackAtArmySize: 8,
+  /** How far from its rally point an idle fighter may drift before being
+   *  re-ordered. Slack, so it is not reissuing move orders every think. */
+  rallySlack: 6.0,
+  /** Build an Outpost once free supply drops to this. Command gates army size,
+   *  so without expansion the AI stalls permanently with a full supply bar. */
+  expandAtSupplyFree: 4,
+  expandMinRadius: 9.0,
+  expandRingStep: 3.5,
+  expandRings: 5,
+  expandAngles: 12,
 };
