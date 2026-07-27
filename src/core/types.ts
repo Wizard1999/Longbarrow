@@ -7,7 +7,7 @@ export type EntityId = number;
 export type Team = 'player' | 'rival';
 export const TEAMS: readonly Team[] = ['player', 'rival'];
 
-export type UnitTypeKey = 'legionnaire' | 'worker';
+export type UnitTypeKey = 'legionnaire' | 'marksman' | 'worker';
 export type BuildingTypeKey = 'standard' | 'outpost';
 
 export interface Vec2 {
@@ -48,6 +48,11 @@ export interface Unit {
   selected: boolean;
   gather: GatherJob | null;
   build: BuildJob | null;
+  hp: number;
+  /** Consecutive ticks spent not moving. Drives the Marksman's settle ramp —
+   *  stopping doesn't restore accuracy instantly, which is what stops kiting
+   *  from being free (§8.7). */
+  stillTicks: number;
 }
 
 export interface QueueItem {

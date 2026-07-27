@@ -139,6 +139,23 @@ about how it **feels** matter more than the ones about whether it works.
 - [ ] Put a step somewhere unreachable — the chain should give up on it after ~45s and move on, not wedge
 - [ ] Forming a squad from units already in another squad moves them out of the old one
 
+## E4. Core units (1.8)
+
+No combat yet — that's 1.9 — so these check that the two units *exist* with the
+mechanics that define them, and that you can see the difference.
+
+- [ ] Select the Standard: the card now offers **Marksman (R)** alongside Worker and Legionnaire
+- [ ] Train one. It's visibly **taller and narrower** than a Legionnaire, with a long stave over the shoulder
+- [ ] Legionnaires carry a visible **shield**
+- [ ] Bunch several Legionnaires together → a pale ring under each one **brightens** as they close up
+- [ ] Spread them out → the rings fade. This is the shield wall, and it should be obvious without reading a number
+- [ ] Does the shield-wall glow read as *"this formation is strong"*, or as UI clutter? §8.6 wants it legible on the battlefield, so if it looks like a debug overlay, say so
+
+**Feel questions I can't answer from here:**
+
+- [ ] The Marksman takes about a second of standing still to be fully set up (Q23). Does repositioning one feel like a *real cost*, or just sluggish?
+- [ ] Legionnaire and Marksman currently cost about the same and both cost 2 Command. Until 1.9 there's no reason to pick one — flagged as Q24, and worth a view once you can see them fight
+
 ## F. Art direction — the subjective ones
 
 These matter more than they sound, because they're the decisions that can't be un-made cheaply later.
@@ -163,6 +180,7 @@ Don't report these; they're scheduled work.
 - High ground has no combat effect yet — the terrain queries exist but nothing consumes them until 1.8/1.9
 - No fog of war, no vision system
 - Attack-move currently just moves — there is nothing to attack until 1.9
+- Units cannot fight, take damage, or die yet; hp and damage exist but nothing consumes them until 1.9
 - Rival team has no AI (1.11)
 - No win condition (1.12)
 - Every number is a placeholder; the economy is deliberately untuned
@@ -175,4 +193,4 @@ The feel-based ones in there (Q12–Q16) specifically need you at the controls, 
 
 ---
 
-*Updated through v1.7. New items get added as versions land.*
+*Updated through v1.8. New items get added as versions land.*

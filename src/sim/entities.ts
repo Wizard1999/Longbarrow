@@ -19,6 +19,8 @@ export function spawnUnit(
     selected: false,
     gather: t.isWorker ? { state: 'idle', nodeId: null, carrying: 0, timer: 0 } : null,
     build: t.isWorker ? { siteId: null } : null,
+    hp: t.combat.hp,
+    stillTicks: 0,
   };
   world.units.push(u);
   return u;

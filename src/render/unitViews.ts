@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import type { EntityId, Team, Unit, World } from '../core/types';
 import { UNIT_TYPES } from '../data/units';
 import { terrainHeightAt } from '../sim/terrain';
+import { shieldWallStacks } from '../sim/combat';
+import { COMBAT } from '../data/tuning';
 import { essenceMat } from './nodeViews';
 
 export const TEAM_COLORS: Record<Team, number> = { player: 0x3b5bdb, rival: 0xb02e2e };
@@ -11,24 +13,51 @@ interface UnitViewData {
   ring: THREE.Mesh;
   squadRing: THREE.Mesh;
   carry: THREE.Mesh | null;
+  /** Legionnaires only — brightens with the shield-wall bonus so the mechanic
+   *  is readable on the battlefield rather than hidden in a stat (§8.6). */
+  wall: THREE.Mesh | null;
   pickTarget: THREE.Mesh;
 }
 
 function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
   const g = new THREE.Group();
   const isWorker = UNIT_TYPES[unit.type].isWorker;
+  const isMarksman = unit.type === 'marksman';
   const bodyMat = new THREE.MeshStandardMaterial({ color: TEAM_COLORS[unit.team], flatShading: true });
   const trimMat = new THREE.MeshStandardMaterial({ color: 0xf2e9d8, flatShading: true });
 
-  const bodyH = isWorker ? 0.8 : 1.0;
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(isWorker ? 0.26 : 0.32, isWorker ? 0.34 : 0.4, bodyH, 6), bodyMat);
+  // Silhouette carries the role, since the design brief wants the battlefield
+  // readable at a glance: the Legionnaire is broad and low, the Marksman is
+  // narrow and tall with a visible long weapon, the worker is smallest.
+  const bodyH = isWorker ? 0.8 : isMarksman ? 1.1 : 1.0;
+  const rTop = isWorker ? 0.26 : isMarksman ? 0.22 : 0.32;
+  const rBot = isWorker ? 0.34 : isMarksman ? 0.28 : 0.4;
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, bodyH, 6), bodyMat);
   body.position.y = bodyH * 0.7;
-  const head = new THREE.Mesh(new THREE.IcosahedronGeometry(isWorker ? 0.23 : 0.28, 0), trimMat);
+  const head = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(isWorker ? 0.23 : isMarksman ? 0.21 : 0.28, 0), trimMat);
   head.position.y = bodyH + 0.35;
   body.castShadow = true;
   head.castShadow = true;
   g.add(body, head);
+
+  if (isMarksman) {
+    // Long bone stave, angled back over the shoulder — reads as "ranged"
+    // without adding a second material or a projectile.
+    const stave = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.055, 1.6, 5), trimMat);
+    stave.position.set(0.26, bodyH + 0.1, -0.05);
+    stave.rotation.z = -0.32;
+    stave.castShadow = true;
+    g.add(stave);
+  }
+
+  if (unit.type === 'legionnaire') {
+    // Shield, and the thing the wall bonus is drawn on.
+    const shield = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.62, 0.5), trimMat);
+    shield.position.set(-0.36, bodyH * 0.72, 0.06);
+    shield.castShadow = true;
+    g.add(shield);
+  }
 
   // carried essence — only workers, only visible while hauling
   let carry: THREE.Mesh | null = null;
@@ -60,7 +89,23 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
   squadRing.visible = false;
   g.add(squadRing);
 
-  g.userData = { unitId: unit.id, ring, squadRing, carry, pickTarget: body } satisfies UnitViewData;
+  // Shield-wall indicator: a flat arc under the unit that gains opacity with
+  // each adjacent Legionnaire, so a formed line visibly glows and a scattered
+  // one doesn't.
+  let wall: THREE.Mesh | null = null;
+  if (unit.type === 'legionnaire') {
+    wall = new THREE.Mesh(
+      new THREE.RingGeometry(0.3, 0.46, 18),
+      new THREE.MeshBasicMaterial({
+        color: 0xbfe0ff, side: THREE.DoubleSide, transparent: true, opacity: 0,
+      }),
+    );
+    wall.rotation.x = -Math.PI / 2;
+    wall.position.y = 0.015;
+    g.add(wall);
+  }
+
+  g.userData = { unitId: unit.id, ring, squadRing, carry, wall, pickTarget: body } satisfies UnitViewData;
   scene.add(g);
   return g;
 }
@@ -91,6 +136,10 @@ export function syncUnitViews(
     d.ring.visible = u.selected;
     d.squadRing.visible = squadMemberIds.has(u.id);
     if (d.carry) d.carry.visible = (u.gather?.carrying ?? 0) > 0;
+    if (d.wall) {
+      const frac = shieldWallStacks(world, u) / COMBAT.shieldWallMaxNeighbours;
+      (d.wall.material as THREE.MeshBasicMaterial).opacity = frac * 0.85;
+    }
   }
   // drop views for units that no longer exist
   for (const [id, v] of views) {

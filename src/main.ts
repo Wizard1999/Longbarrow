@@ -95,6 +95,7 @@ const keyboard = createKeyboard({
     if (k === 'b' && world.units.some(u => u.selected && u.gather)) ui.placingType = 'outpost';
     if (k === 'q') hud.tryTrain('worker');
     if (k === 'e') hud.tryTrain('legionnaire');
+    if (k === 'r') hud.tryTrain('marksman');
   },
 });
 

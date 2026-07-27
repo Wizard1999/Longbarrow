@@ -28,6 +28,23 @@ export const AUTOMATION = {
   maxSquads: 5,       // squads are bound to number keys 1–5
 };
 
+// Combat (§2, §8.6, §8.7). Positioning decides fights, so every number here is
+// about *where* units are, not how fast the player clicks.
+export const COMBAT = {
+  /** Shield wall: how close two Legionnaires must be to count as adjacent. */
+  shieldWallRadius: 1.5,
+  /** Defense added per adjacent Legionnaire. */
+  shieldWallPerNeighbour: 0.07,
+  /** Neighbours counted, at most. See assumption A12 — the design doc says
+   *  "up to cohesion cap", which is ambiguous between this local adjacency
+   *  limit and §8.6's ~20-unit squad cap (which arrives at 1.10). */
+  shieldWallMaxNeighbours: 5,
+  /** Defense can never exceed this, however tight the formation. */
+  maxDefense: 0.75,
+  /** Ticks of standing still before a unit is fully "set up". */
+  settleTicks: 20,
+};
+
 export const ECON = {
   gatherTicks: 30,      // 1.5s to fill up — Cohort is "flat and reliable" (§8.1)
   carryAmount: 8,       // essence per trip

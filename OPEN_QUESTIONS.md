@@ -63,6 +63,12 @@ concurrent chain; the first Outpost (+8) buys the second. See Q19.
 clicked**, not one specific node, so the step keeps working after that node is
 mined out. Consistent with how 1.4's set-and-forget loop re-targets on its own.
 
+**A12 — Shield-wall counts a local adjacency cap, not the squad cohesion cap.**
+See Q22.
+
+**A13 — A Marksman takes ~1s of standing still to be fully "set up."** The doc
+says it's better stationary; it never says how long that takes.
+
 ---
 
 ## ⚠️ New with 1.7 (squads & behaviour chains)
@@ -103,6 +109,72 @@ Mycora is measured against later.
 
 ---
 
+## ⚠️ New with 1.8 (core units)
+
+**Q22 — "Defense bonus per adjacent Legionnaire up to cohesion cap" (§8.7) —
+which cap?** Two readings: (a) a *local* limit on how many touching neighbours
+can help you, or (b) §8.6's ~20-unit squad cohesion cap. I built (a), capped at
+5, because that's the one that means something physically — only so many bodies
+fit around you — and because (b) is 1.10's job and would make the two mechanics
+do the same work twice. Worth confirming, since it changes what a big Cohort
+blob feels like.
+
+**Q23 — How long should a Marksman take to set up?** (A13) Currently ~1s of
+holding position to go from moving accuracy to full. Shorter makes kiting
+viable again; longer makes repositioning feel punishing. This is the dial that
+decides whether the unit reads as "reward for planning" or "annoying to move".
+
+**Q24 — Should the Marksman replace or sit beside the Legionnaire in the
+opening?** Both cost 2 Command and similar essence, so right now there's no
+real reason to build one over the other until combat exists at 1.9.
+
+---
+
+## ⚠️ Art direction (new reference received)
+
+**Q25 — When do we do the renderer pass, and how far?**
+You've given three constraints that mostly agree with each other and one that
+fights the others: BOTW/Ghibli look, don't be needlessly low-poly, lighting
+matters — and **it has to run on practically any machine from a website**.
+
+Reading the reference pen resolved most of that tension. The Ghibli quality is
+in the *shading model* (hue-path colour ramp, half-lambert wrap, hue-shifted
+shadows, tinting ambient, backlight rim), which is cheap fragment maths. The
+expensive parts — per-blade instanced grass, planar reflections, the full post
+chain — are what would break the low-end target, and at a far top-down RTS
+camera they buy far less than they do in first person.
+
+So "Ghibli" and "runs anywhere" are not really in conflict, **as long as we
+take the light model and not the technique stack.**
+
+On "not too low-poly": that's the easy one. Triangles are nearly free on any
+GPU made this decade; what actually kills low-end machines is draw calls,
+fillrate and overdraw. We can raise geometry detail substantially — the units
+are currently 6-sided cylinders, which is cruder than we need — provided we
+instance repeated meshes and keep the material count small.
+
+The real question is **scheduling**, because the blueprint puts polish in Phase
+4.4 and we're mid-Phase-1:
+- **(a) Now, scoped to the light model.** A shading pass plus a quality-tier
+  system, then back to 1.9. Costs a step's worth of time; the payoff is that
+  every asset after this is authored against the real look instead of being
+  redone later.
+- **(b) After 1.13 playtest.** Follows the plan as written, and the playtest is
+  about whether the *game* works, which doesn't need final art.
+- **(c) Full port of the reference's techniques.** I'd argue against this — it
+  contradicts the low-end requirement, and most of it is invisible from an RTS
+  camera.
+
+**Leaning (a) but scoped tightly**, mainly because art direction is the thing
+§10 calls expensive to un-make, and everything we build from here inherits it.
+
+**Q26 — What is the actual low-end target?** "Practically any machine" needs a
+number to design against. Integrated graphics from roughly 2017 on, at 1080p,
+30fps, with maybe 60 units on screen? That's a concrete budget I can hold the
+renderer to and test against. Without one I'm guessing.
+
+---
+
 ## ◐ Design gaps that will block Phase 2+
 
 **Q8 — Hero archetypes.** Section 11 lists these as undesigned, and blueprint 3.3 explicitly says they need a design pass with you before implementation. Not urgent, but it's the largest undesigned system.
@@ -137,4 +209,4 @@ These need a human at the controls; they can't be reasoned out.
 
 ---
 
-*Updated through v1.7.*
+*Updated through v1.8.*

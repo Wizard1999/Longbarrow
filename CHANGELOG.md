@@ -8,6 +8,99 @@ e.g. `v1.2` = Phase 1, step 1.2. Design-only entries (no code) are marked `[desi
 
 ---
 
+## [design] Ghibli art reference received — analysis, no code yet
+**Date:** 2026-07-27 · **File:** designer-supplied CodePen (`claude-opus-5-ghibli`)
+
+Designer supplied a reference scene as major art direction, plus three notes:
+**not too low-poly if it doesn't have to be**, **good lighting matters a lot**,
+and **it must run on practically any machine straight from the website**. The
+pen itself is unreachable from this environment (`codepen.io` is blocked by
+egress policy), so it arrived as a zip and was read as source.
+
+**What the reference actually is:** a first-person walker in a valley, ~6k
+lines, Three.js r180, hand-written `RawShaderMaterial` throughout. Instanced
+grass across four overlapping rings with per-blade view-cone culling and a
+depth prepass; planar water reflection as a second full scene render; cloud
+coverage and cloud-shadow render targets; a post chain of bloom, watercolour
+softening, chroma bleed, print curve, vignette and grain; sky drawn last. It
+already ships LOW/MED/HIGH quality presets, which tells you what it costs.
+
+**The useful finding: the Ghibli look is not coming from the expensive parts.**
+It comes from the shading model, which is cheap fragment maths:
+- `ramp3()` — a three-colour **hue path** (shade → mid → lit are different
+  hues, not one colour darkened), with soft but visibly banded transitions.
+- Half-lambert wrap (`ndl*0.62 + 0.46`) so a low sun doesn't crush the ground
+  into shadow — the comment notes plain Lambert made golden hour read as dusk.
+- Painterly jitter on the band edges, so the bands aren't machined.
+- **Shadows change hue rather than going black.**
+- Hemispheric ambient normalised to unit luminance so it *tints* without
+  bleaching the palette.
+- A backlight rim term the author calls "the connective tissue of the whole
+  image".
+- Aerial perspective, and subsurface transmission for thin things.
+
+That set transfers to an RTS almost for free. The per-blade grass, the planar
+reflection and the full post chain do not — and at a far, top-down RTS camera
+they buy much less than they do in first person, while being exactly what
+breaks the "runs on any machine" requirement.
+
+**No renderer code changed yet.** Scoping and scheduling are open — see
+`OPEN_QUESTIONS.md` Q25. Logged now so the reference and the analysis aren't
+lost.
+
+---
+
+## v1.8 — Core Units (Legionnaire shield-wall, Marksman setup)
+**Date:** 2026-07-27 · **Environment:** Claude Code · **Files:** `src/sim/combat.ts`, `src/data/units.ts`
+
+Gives Cohort's two core units the mechanics that make them *those* units rather
+than two stat blocks. No fighting yet — that's 1.9. What exists now is the
+answer to "how good is this unit right now, standing where it is standing",
+which is the part that has to be right first in a game where positioning beats
+micro (§2).
+
+**What changed:**
+- **Marksman added** — ranged, fragile, long reach, and deliberately punishing
+  to kite with.
+- **Combat stat block on every unit type** (hp, damage, range, attack interval,
+  accuracy stationary/moving, defense). Workers get one too, so 1.9 and the
+  1.12 win condition have something to act on.
+- **Legionnaire shield-wall (§8.7):** defense climbs with each adjacent
+  friendly Legionnaire, capped, with a hard ceiling. A formed line measurably
+  out-trades the same models scattered — tested directly rather than implied.
+  Drawn on the ground as a ring that brightens with the bonus, because §8.6 is
+  explicit that this should be legible on the battlefield rather than a hidden
+  stat.
+- **Marksman accuracy (§8.7):** far better set up than moving, and stopping
+  doesn't restore it instantly — accuracy ramps over `COMBAT.settleTicks` of
+  holding position. That ramp is the whole point: without it, kiting is free
+  and the unit becomes an execution test, which §2 explicitly doesn't want.
+- Silhouettes now carry role, since the battlefield has to read at a glance:
+  the Legionnaire is broad and low with a shield, the Marksman narrow and tall
+  with a long stave, the worker smallest.
+- `stillTicks` added to units and advanced by `stepSettle` after movement.
+
+**Testing:**
+- **146 passing** (110 previous + 20 new + others). New suites cover the wall
+  scaling with neighbours, interior-of-line beating the ends, formed vs.
+  scattered expected damage, the neighbour cap and defense ceiling, enemy and
+  wrong-type units not counting, the settle ramp in both directions, kiting
+  costing damage, and determinism of the new state.
+
+**Assumptions/notes:**
+- **A12 (new):** the design doc says the shield wall scales "up to cohesion
+  cap", which is ambiguous. I read it as a *local adjacency* cap
+  (`shieldWallMaxNeighbours`, currently 5 — roughly how many bodies can
+  actually touch you), separate from §8.6's ~20-unit squad cohesion cap that
+  arrives at 1.10. Flagged as Q22.
+- **A13 (new):** `settleTicks` (1s) is invented — the design doc says the
+  Marksman is better stationary but never says how long setting up takes.
+- Every number here is a placeholder; none of it is balanced.
+
+**How to test:** `VERIFICATION_CHECKLIST.md` §E4.
+
+---
+
 ## v1.7 — Squads & Behaviour Chains
 **Date:** 2026-07-26 · **Environment:** Claude Code · **Files:** `src/sim/squads.ts`, `src/ui/chainEditor.ts`, `src/render/chainVisuals.ts`
 

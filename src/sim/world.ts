@@ -5,6 +5,7 @@ import { stepBuild, stepConstruction } from './construction';
 import { stepGather } from './economy';
 import { stepMovement } from './movement';
 import { stepSquads } from './squads';
+import { stepSettle } from './combat';
 
 export function createWorld(seed: number): World {
   return {
@@ -33,4 +34,5 @@ export function simStep(world: World): void {
   for (const u of world.units) stepGather(world, u);   // decides where to go
   for (const u of world.units) stepBuild(world, u);    // ...or where to build
   for (const u of world.units) stepMovement(u);        // goes there
+  stepSettle(world);                                   // ...and settles, or doesn't
 }
