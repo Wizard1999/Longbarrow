@@ -129,6 +129,17 @@ export function hash(world: World): string {
   for (const n of world.nodes) { mix(n.id); mixF(n.amount); }
   for (const s of world.sites) { mix(s.id); mixS(s.type); mixF(s.progress); }
 
+  // Research changes every unit's effective stats, so peers disagreeing about
+  // it diverge on the next attack. Sorted: the researched list is append-order,
+  // which is deterministic, but sorting makes the hash independent of the order
+  // two equivalent research paths happened to complete in.
+  for (const team of ['player', 'rival'] as const) {
+    const t = world.tech[team];
+    for (const id of [...t.researched].sort()) mixS(id);
+    mixS(t.researching?.id ?? '-');
+    mix(t.researching?.ticksLeft ?? -1);
+  }
+
   for (const m of world.missions) {
     mix(m.id); mixS(m.team); mixS(m.objective); mixS(m.priority); mixS(m.status);
     mixF(m.fallback?.x ?? 0); mixF(m.fallback?.z ?? 0);

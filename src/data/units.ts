@@ -29,13 +29,23 @@ export interface UnitDef {
   cost: number;
   buildTicks: number;
   label: string;
+  /**
+   * Forms a defensive wall with adjacent units of the same type: defense
+   * climbs per neighbour, up to a cap.
+   *
+   * A declared trait rather than a check for `type === 'legionnaire'` in the
+   * combat code. The engine must not know Cohort's roster — if the races are
+   * ever scrapped and rebuilt, a new race declares this flag and inherits the
+   * mechanic with no change to `sim/`.
+   */
+  formsShieldWall?: boolean;
   combat: CombatDef;
 }
 
 export const UNIT_TYPES: Record<UnitTypeKey, UnitDef> = {
   legionnaire: {
     speed: 4.2, radius: 0.42, arriveEpsilon: 0.06, isWorker: false,
-    supply: 2, cost: 75, buildTicks: 120, label: 'Legionnaire',
+    supply: 2, cost: 75, buildTicks: 120, label: 'Legionnaire', formsShieldWall: true,
     // Core melee. Its whole identity is the shield wall — see
     // sim/combat.ts shieldWallStacks(): defense climbs with each adjacent
     // Legionnaire, so a formed line is worth far more than the same models

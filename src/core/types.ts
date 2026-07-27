@@ -1,3 +1,4 @@
+import type { TechId } from '../data/tech';
 // Shared ids, vectors and enums. Deliberately dependency-free so that both the
 // sim and the presentation layers can name the same things without the sim
 // ever reaching outward (06 §3).
@@ -250,6 +251,15 @@ export interface World {
    */
   ai: AiState | null;
   missions: Mission[];
+  /** Research per team. The researched list is the single source of truth for
+   *  stat modifiers — they are derived on demand, never baked into units, so
+   *  restore/replay cannot leave a unit carrying stats it should not have. */
+  tech: Record<Team, TeamTechState>;
+}
+
+export interface TeamTechState {
+  researched: TechId[];
+  researching: { id: TechId; ticksLeft: number } | null;
 }
 
 export interface AiState {

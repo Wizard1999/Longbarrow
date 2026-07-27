@@ -18,6 +18,8 @@ import {
   cmdAssignSquadToMission, cmdCancelMission, cmdCreateMission,
   cmdRemoveSquadFromMission, cmdSetMissionFallback, cmdSetMissionPriority,
 } from './missions';
+import { cmdCancelResearch, cmdResearch } from './tech';
+import type { TechId } from '../data/tech';
 
 /**
  * Match recording and playback.
@@ -31,7 +33,7 @@ import {
  */
 
 /** Bump when the meaning of a command or of a sim rule changes. */
-export const REPLAY_VERSION = 5;
+export const REPLAY_VERSION = 6;
 
 /**
  * Every player action, as plain serializable data.
@@ -75,7 +77,9 @@ export type Command =
   | { t: 'removeSquadFromMission'; mission: EntityId; squad: EntityId }
   | { t: 'setMissionPriority'; mission: EntityId; priority: MissionPriority }
   | { t: 'setMissionFallback'; mission: EntityId; fallback: Vec2 | null }
-  | { t: 'cancelMission'; mission: EntityId };
+  | { t: 'cancelMission'; mission: EntityId }
+  | { t: 'research'; team: Team; tech: TechId }
+  | { t: 'cancelResearch'; team: Team };
 
 export interface TimedCommand {
   tick: number;
@@ -157,6 +161,8 @@ export function dispatch(world: World, c: Command): void {
     case 'setMissionPriority': cmdSetMissionPriority(world, c.mission, c.priority); break;
     case 'setMissionFallback': cmdSetMissionFallback(world, c.mission, c.fallback); break;
     case 'cancelMission': cmdCancelMission(world, c.mission); break;
+    case 'research': cmdResearch(world, c.team, c.tech); break;
+    case 'cancelResearch': cmdCancelResearch(world, c.team); break;
   }
 }
 

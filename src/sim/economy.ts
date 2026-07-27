@@ -2,6 +2,7 @@ import type { Building, EntityId, ResourceNode, Team, Unit, Vec2, World } from '
 import { GOLDEN_ANGLE } from '../core/loop';
 import { BUILDING_TYPES } from '../data/buildings';
 import { ECON } from '../data/tuning';
+import { modifiersForUnit } from './tech';
 
 export function findNode(world: World, id: EntityId | null): ResourceNode | null {
   return world.nodes.find(n => n.id === id) ?? null;
@@ -100,7 +101,8 @@ export function stepGather(world: World, u: Unit): void {
     if (!node || node.amount <= 0) { g.state = 'toNode'; return; }
     g.timer--;
     if (g.timer <= 0) {
-      const taken = Math.min(ECON.carryAmount, node.amount);
+      const carry = ECON.carryAmount * modifiersForUnit(world, u.team, u.type).carryMul;
+      const taken = Math.min(carry, node.amount);
       node.amount -= taken;
       g.carrying = taken;
       g.state = 'toBase';

@@ -11,6 +11,7 @@ import { stepCombat, stepReaper, stepSettle, stepVictory } from './combat';
 import { stepAi } from './ai';
 import { mapBoundaryForSeed } from './mapBoundary';
 import { stepMissions } from './missions';
+import { createTechState, stepTech } from './tech';
 
 export function createWorld(seed: number, startHour = 8, mapSeed = seed): World {
   return {
@@ -35,6 +36,7 @@ export function createWorld(seed: number, startHour = 8, mapSeed = seed): World 
     // every test, replay and headless simulation silently ran against an AI.
     ai: null,
     missions: [],
+    tech: { player: createTechState(), rival: createTechState() },
   };
 }
 
@@ -44,6 +46,7 @@ export function simStep(world: World): void {
     u.prevX = u.x; u.prevZ = u.z; u.prevFacing = u.facing;
   }
   if (world.ai) stepAi(world, world.ai);               // the opponent decides first
+  stepTech(world);
   stepProduction(world);
   stepConstruction(world);
   stepSquads(world);                                   // standing orders first

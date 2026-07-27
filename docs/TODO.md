@@ -1,3 +1,31 @@
+## Cohort playability — the road to a real match
+
+Tech system landed (D-028). Remaining gap to a *satisfying* Cohort match is
+roster breadth: 3 of 7 ground units exist.
+
+- [x] **Research/tech system** — `src/data/tech.ts` + `src/sim/tech.ts`,
+      7 upgrades, 3 tiers, 1 doctrine pair. 24 tests.
+- [ ] **Outrider** (flanker/scout) — fast, weak head-on, exploits the flank
+      bonus that combat already implements. Highest value next unit: it makes
+      the existing positional combat mechanics *matter*.
+- [ ] **Ballista** (siege) — strong vs buildings, needs escort. Buildings
+      already have HP and `siegeMul` already exists in the tech effects.
+- [ ] **Chronicler** (support/detector) — extends Command range, reveals
+      stealth. Blocked on stealth/detection being designed at all (§11.1).
+- [ ] **Sentinel** (anti-air) — blocked on air units existing (Phase 4.2).
+- [ ] **Warbringer** (heavy) — doctrine-gated late game.
+- [ ] **Research UI** — the tech system has no interface yet; research can
+      only be issued programmatically.
+- [ ] **Teach the AI to research** — it currently never spends on tech, so it
+      falls behind a human who does.
+
+## Engine-first cleanup (D-029)
+
+- [ ] **Race-roster abstraction** — `sim/ai.ts` still hardcodes
+      `'legionnaire'`/`'marksman'`. Needs "give me this race's basic melee
+      unit" rather than a name. Deliberately deferred until the second race
+      exists to generalise against.
+
 # TODO
 
 Prioritized work queue. Newest decisions at the top of each section.

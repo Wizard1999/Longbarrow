@@ -1,4 +1,23 @@
-## ⚡ Session catch-up — 2026-07-27 (read this first)
+## ⚡ Latest — research lands, engine boundary tightened
+
+**340 tests · typecheck/lint/build clean.**
+
+- **Tech system (D-028).** Cohort's linear track: 7 upgrades, 3 tiers, one
+  doctrine pair that deliberately does *not* lock the other option out. Effects
+  are category-wide (melee/ranged/worker/all) and derived from the researched
+  list on demand rather than baked into units — baking would survive tests but
+  break `restore()` silently. Hashed, replayed (`REPLAY_VERSION` 6), 24 tests.
+  Research now genuinely changes damage, defense, HP, siege and income.
+- **Engine-first fix (D-029).** `combat.ts` was implementing the shield wall as
+  `if (unit.type !== 'legionnaire')` — a Cohort mechanic inside the engine. Now
+  a declared `formsShieldWall` trait the engine reads generically. `sim/` no
+  longer names any Cohort unit except in `ai.ts`, which is tracked.
+
+**Roster status: 3 of 7 Cohort ground units.** A match is playable but shallow;
+the Outrider (flanker) is the highest-value next unit because it makes the
+already-implemented flanking mechanics matter.
+
+## ⚡ Session catch-up — 2026-07-27
 
 **315 tests · typecheck/lint/build clean · `main` current at the commit after this one.**
 

@@ -2,6 +2,7 @@ import type { Building, EntityId, Team, Unit, World } from '../core/types';
 import { UNIT_TYPES } from '../data/units';
 import { COHESION, COMBAT, VICTORY } from '../data/tuning';
 import { HIGH_GROUND_THRESHOLD, terrainHeightAt } from './terrain';
+import { modifiersForUnit } from './tech';
 
 /**
  * Combat: derived stats, cohesion, positional resolution and elimination.
@@ -18,13 +19,19 @@ import { HIGH_GROUND_THRESHOLD, terrainHeightAt } from './terrain';
  * keeps combat off the RNG entirely, which keeps replays and lockstep simpler.
  */
 
-/** Legionnaires within shield-wall radius, excluding the unit itself. */
-export function adjacentLegionnaires(world: World, unit: Unit): number {
-  if (unit.type !== 'legionnaire') return 0;
+/**
+ * Same-type wall-forming allies within shield-wall radius, excluding self.
+ *
+ * Driven by the `formsShieldWall` trait rather than by unit name: the engine
+ * must not know Cohort's roster, so a future race declares the flag and
+ * inherits the mechanic without touching this file.
+ */
+export function adjacentWallmates(world: World, unit: Unit): number {
+  if (!UNIT_TYPES[unit.type].formsShieldWall) return 0;
   let n = 0;
   for (const other of world.units) {
     if (other.id === unit.id) continue;
-    if (other.type !== 'legionnaire') continue;
+    if (other.type !== unit.type) continue;
     if (other.team !== unit.team) continue;
     if (other.hp <= 0) continue;
     if (Math.hypot(other.x - unit.x, other.z - unit.z) <= COMBAT.shieldWallRadius) n++;
@@ -32,9 +39,12 @@ export function adjacentLegionnaires(world: World, unit: Unit): number {
   return n;
 }
 
-/** Adjacent Legionnaires that actually count, after the cap. */
+/** @deprecated Cohort-flavoured alias kept for existing call sites. */
+export const adjacentLegionnaires = adjacentWallmates;
+
+/** Adjacent wall-mates that actually count, after the cap. */
 export function shieldWallStacks(world: World, unit: Unit): number {
-  return Math.min(adjacentLegionnaires(world, unit), COMBAT.shieldWallMaxNeighbours);
+  return Math.min(adjacentWallmates(world, unit), COMBAT.shieldWallMaxNeighbours);
 }
 
 /**
@@ -43,7 +53,8 @@ export function shieldWallStacks(world: World, unit: Unit): number {
  * models standing apart — the mechanic §8.7 gives the unit.
  */
 export function effectiveDefense(world: World, unit: Unit): number {
-  const base = UNIT_TYPES[unit.type].combat.defense;
+  const base = UNIT_TYPES[unit.type].combat.defense
+    + modifiersForUnit(world, unit.team, unit.type).defenseAdd;
   const wall = shieldWallStacks(world, unit) * COMBAT.shieldWallPerNeighbour;
   return Math.min(base + wall, COMBAT.maxDefense);
 }
@@ -77,8 +88,10 @@ export function isAlive(unit: Unit): boolean {
   return unit.hp > 0;
 }
 
-export function maxHp(unit: Unit): number {
-  return UNIT_TYPES[unit.type].combat.hp;
+/** Max HP after research. Takes the world so tech applies — a unit's ceiling
+ *  is a function of what its team has researched, not of the unit alone. */
+export function maxHp(world: World, unit: Unit): number {
+  return UNIT_TYPES[unit.type].combat.hp * modifiersForUnit(world, unit.team, unit.type).hpMul;
 }
 
 /** Tracks how long each unit has held position. Runs after movement so that a
@@ -181,6 +194,7 @@ export function flankMultiplier(attacker: Unit, defender: Unit): number {
  */
 export function resolvedDamage(world: World, attacker: Unit, defender: Unit): number {
   return UNIT_TYPES[attacker.type].combat.damage
+    * modifiersForUnit(world, attacker.team, attacker.type).damageMul
     * effectiveAccuracy(attacker)
     * cohesionEffectiveness(world, attacker)
     * elevationMultiplier(attacker, defender)
@@ -258,7 +272,9 @@ export function stepCombat(world: World): void {
     // Nothing to shoot at, but there may be something to knock down.
     const building = findEnemyBuilding(world, u);
     if (building && inRange(u, building.x, building.z, building.radius)) {
+      const mods = modifiersForUnit(world, u.team, u.type);
       building.hp -= UNIT_TYPES[u.type].combat.damage
+        * mods.damageMul * mods.siegeMul
         * effectiveAccuracy(u)
         * cohesionEffectiveness(world, u)
         * COMBAT.buildingDamageScale;

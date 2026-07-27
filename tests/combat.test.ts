@@ -167,7 +167,7 @@ describe('[35] units carry combat state', () => {
     const w = createWorld(1);
     for (const type of ['legionnaire', 'marksman', 'worker'] as const) {
       const u = spawnUnit(w, type, 'player', 0, 0);
-      expect(u.hp).toBe(maxHp(u));
+      expect(u.hp).toBe(maxHp(w, u));
       expect(u.hp).toBeGreaterThan(0);
     }
   });

@@ -679,3 +679,68 @@ minimap, LOD, tutorial, direct orders, map boundary, World Turtle far-zoom
 silhouette — D-026) was fast-forward merged and independently re-verified:
 typecheck, lint, 302 tests, `architecture.test.ts` (sim purity), and a manual
 grep for `Math.random`/`Date.now`/`performance.now` in `sim/`. All clean.
+
+---
+
+## D-028 — Research: category-wide, derived-not-baked, engine-agnostic
+**Date:** 2026-07-27
+
+**Decision:** Cohort's tech track ships as `src/data/tech.ts` (content) plus
+`src/sim/tech.ts` (engine). Seven upgrades across three tiers, including one
+doctrine pair.
+
+**Three choices worth recording, because the obvious alternative is wrong in
+each case:**
+
+**1. Effects are category-wide, never per-unit.** §8.5 asks for upgrades that
+apply "broadly to a category of unit/behavior, not a single unit". A per-unit
+upgrade list turns the roster into independent tuning knobs; a category list is
+a doctrine. Categories are derived from unit stats (`isWorker`, weapon range),
+not from a hardcoded name list, so a new unit joins the right upgrades by
+declaring its stats.
+
+**2. Modifiers are derived on demand, never baked into units on completion.**
+Baking is faster and is what most engines do. It is also silently wrong under
+`restore()`: rewinding to a tick before a tech completed would leave units
+carrying stats they should not have, and nothing would catch it, because the
+baked stats are not themselves the hashed source of truth. Deriving keeps the
+researched list as the only truth — which is what `hash()` covers. A test
+asserts that clearing the researched list restores original stats.
+
+**3. Doctrine pairs do not lock each other out.** Taking Attrition first leaves
+Vanguard fully available. That is the specific property distinguishing Cohort
+(§8.5 "nothing permanently locked out", mastery is *timing*) from Conclave
+(genuine foreclosure). Easy to get wrong by copying the usual RTS branch model;
+a test guards it.
+
+**Consequence:** `World.tech` per team, hashed with the researched list sorted
+so two equivalent research orders agree. `REPLAY_VERSION` → 6.
+
+---
+
+## D-029 — Engine-first: race content declares traits, the engine reads them
+**Date:** 2026-07-27
+
+**Decision:** `src/sim/` must not name any specific unit, building or
+technology. Race-specific mechanics are declared as **traits in `src/data/`**
+and read generically by the engine.
+
+**Reason:** the stated project philosophy is that scrapping all four races and
+rebuilding should be cheap. That only holds if the simulation is a rules engine
+and races are content. It had already drifted: `combat.ts` implemented the
+shield wall as `if (unit.type !== 'legionnaire') return 0` — a Cohort mechanic
+living inside the engine, which a from-scratch race would have had to edit
+`sim/` to reuse.
+
+Now `UnitDef.formsShieldWall` is a declared trait and the engine counts
+same-type wall-forming neighbours generically. A future race gets the mechanic
+by setting a boolean.
+
+**Known remaining leak:** `sim/ai.ts` still names `'legionnaire'`/`'marksman'`
+when choosing what to build. Left deliberately — fixing it properly needs a
+race-roster abstraction ("give me this race's basic melee unit"), which is
+worth doing when the second race lands and there is a real second case to
+generalise against, rather than guessing the shape now. Tracked in TODO.
+
+**Test:** `tests/tech.test.ts` asserts the tech engine drives entirely off the
+data table and has no dangling prerequisites.
