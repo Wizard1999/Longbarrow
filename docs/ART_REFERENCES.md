@@ -1,5 +1,9 @@
 # Art References
 
+> Generating concept art? Start with `ART_PROMPTS.md` — ten prompts built from
+> the locked direction, including the negative prompts that stop a generator
+> defaulting to sci-fi clichés the design explicitly rejects.
+
 External references the designer has supplied, and what each is wanted *for*.
 Keep this file current — references given in chat are lost when context is.
 
