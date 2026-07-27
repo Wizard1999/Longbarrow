@@ -648,3 +648,34 @@ clipping, and far-distance composition must be designed together.
 placeholder. A later exploration may extend the cosmology into a restrained
 "turtles all the way down" recursive reveal, but that is not required for the
 first production World Turtle.
+
+
+---
+
+## D-027 — Mission lands as a sim entity, inert on its own
+**Date:** 2026-07-27
+
+**Decision:** `Mission` (D-007) is now real sim state — `src/sim/missions.ts`,
+hashed, replayed, tested. It does **not** yet drive squad behaviour.
+
+**Reason:** the UI blueprint's mission panel needs a real primitive to build
+against, not an ad-hoc UI state it invents itself and later has to retrofit
+into the sim. Landing the data model first (objective, priority, assigned
+squads, fallback, status) means that UI work is additive rather than a rewrite.
+
+Deliberately inert: a mission does not currently change what an assigned squad
+does. Deciding "assault mission -> squad behaviour X" is a real design
+question (does it override the squad's own chain? layer on top of it? require
+one?) that belongs with the mission-panel UI, not bundled into the primitive.
+
+**Consequence:** `World.missions`, `REPLAY_VERSION` -> 5. A squad serves at
+most one mission at a time — assigning it to a second silently drops the first,
+mirroring how forming a new squad supersedes a unit's old one. Missions are
+pruned of dead squad ids every tick by `stepMissions`, run after the reaper, so
+a mission can never hold a dangling id that diverges between replay peers.
+
+**Also verified this session:** the external "v1.23.0" import (fog of war,
+minimap, LOD, tutorial, direct orders, map boundary, World Turtle far-zoom
+silhouette — D-026) was fast-forward merged and independently re-verified:
+typecheck, lint, 302 tests, `architecture.test.ts` (sim purity), and a manual
+grep for `Math.random`/`Date.now`/`performance.now` in `sim/`. All clean.

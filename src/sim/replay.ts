@@ -1,5 +1,6 @@
 import type {
-  BehaviourKind, BuildingTypeKey, EntityId, RallyKind, Team, UnitTypeKey, World,
+  BehaviourKind, BuildingTypeKey, EntityId, MissionObjective, MissionPriority, RallyKind,
+  Team, UnitTypeKey, Vec2, World,
 } from '../core/types';
 import { TICK_HZ } from '../core/loop';
 import { createWorld, simStep } from './world';
@@ -13,6 +14,10 @@ import {
   cmdSetSelection,
   cmdStop, cmdStopChain, cmdTrain,
 } from './commands';
+import {
+  cmdAssignSquadToMission, cmdCancelMission, cmdCreateMission,
+  cmdRemoveSquadFromMission, cmdSetMissionFallback, cmdSetMissionPriority,
+} from './missions';
 
 /**
  * Match recording and playback.
@@ -26,7 +31,7 @@ import {
  */
 
 /** Bump when the meaning of a command or of a sim rule changes. */
-export const REPLAY_VERSION = 4;
+export const REPLAY_VERSION = 5;
 
 /**
  * Every player action, as plain serializable data.
@@ -61,7 +66,16 @@ export type Command =
   | { t: 'clearChain'; squad: EntityId }
   | { t: 'setChainLoop'; squad: EntityId; loop: boolean }
   | { t: 'runChain'; squad: EntityId }
-  | { t: 'stopChain'; squad: EntityId };
+  | { t: 'stopChain'; squad: EntityId }
+  | {
+      t: 'createMission'; team: Team; objective: MissionObjective;
+      priority?: MissionPriority; squadIds?: EntityId[]; fallback?: Vec2 | null;
+    }
+  | { t: 'assignSquadToMission'; mission: EntityId; squad: EntityId }
+  | { t: 'removeSquadFromMission'; mission: EntityId; squad: EntityId }
+  | { t: 'setMissionPriority'; mission: EntityId; priority: MissionPriority }
+  | { t: 'setMissionFallback'; mission: EntityId; fallback: Vec2 | null }
+  | { t: 'cancelMission'; mission: EntityId };
 
 export interface TimedCommand {
   tick: number;
@@ -131,6 +145,18 @@ export function dispatch(world: World, c: Command): void {
     case 'setChainLoop': cmdSetChainLoop(world, c.squad, c.loop); break;
     case 'runChain': cmdRunChain(world, c.squad); break;
     case 'stopChain': cmdStopChain(world, c.squad); break;
+    case 'createMission':
+      cmdCreateMission(world, c.team, c.objective, {
+        ...(c.priority !== undefined ? { priority: c.priority } : {}),
+        ...(c.squadIds !== undefined ? { squadIds: c.squadIds } : {}),
+        ...(c.fallback !== undefined ? { fallback: c.fallback } : {}),
+      });
+      break;
+    case 'assignSquadToMission': cmdAssignSquadToMission(world, c.mission, c.squad); break;
+    case 'removeSquadFromMission': cmdRemoveSquadFromMission(world, c.mission, c.squad); break;
+    case 'setMissionPriority': cmdSetMissionPriority(world, c.mission, c.priority); break;
+    case 'setMissionFallback': cmdSetMissionFallback(world, c.mission, c.fallback); break;
+    case 'cancelMission': cmdCancelMission(world, c.mission); break;
   }
 }
 

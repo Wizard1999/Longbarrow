@@ -126,8 +126,9 @@ Cycle, clock and sky are built. Open:
 
 Ordered by dependency. See `UI_BLUEPRINT.md` for the full target.
 
-1. [ ] `Mission` as a first-class sim entity (D-007) — **do this before any
-       mission UI**
+1. [x] `Mission` as a first-class sim entity (D-007) — `src/sim/missions.ts`,
+       11 tests, `REPLAY_VERSION` 5. Deliberately inert: does not yet drive
+       squad behaviour. See D-027.
 2. [ ] Mission panel + squad cards
 3. [ ] Operations log (click an event → camera moves there)
 4. [ ] Minimap with strategic overlays

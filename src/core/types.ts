@@ -178,6 +178,38 @@ export interface Squad {
   patrolHeading: 'to' | 'from';
 }
 
+/**
+ * A mission is the player's unit of intent, sitting above squads (D-007,
+ * UI_BLUEPRINT.md). It has to live in the sim, not the UI: objective,
+ * priority and assigned squads all affect what the game considers "assigned"
+ * and must be identical across replay/lockstep peers.
+ *
+ * This lands the data model and commands only — no auto-behaviour yet.
+ * Missions do not currently drive their squads' behaviour chains; a squad
+ * still needs its own chain or orders. Wiring "assigned to this mission"
+ * into automatic behaviour is deliberately left for the mission-panel UI
+ * work that depends on this landing first.
+ */
+export type MissionObjective =
+  | 'assault' | 'defend' | 'scout' | 'escort' | 'expand' | 'harvest' | 'custom';
+
+export type MissionPriority = 'low' | 'normal' | 'high';
+
+export type MissionStatus = 'active' | 'completed' | 'failed' | 'cancelled';
+
+export interface Mission {
+  id: EntityId;
+  team: Team;
+  objective: MissionObjective;
+  priority: MissionPriority;
+  status: MissionStatus;
+  /** Squads carrying out this mission. Ids, not references (D-010). */
+  squadIds: EntityId[];
+  /** Where assigned squads should retreat to if the mission is called off. */
+  fallback: Vec2 | null;
+  createdTick: number;
+}
+
 export interface World {
   seed: number;
   /** Plain-number PRNG state, not a closure — snapshot/restore and hashing
@@ -217,6 +249,7 @@ export interface World {
    * re-derives them exactly, and recording them too would apply each twice.
    */
   ai: AiState | null;
+  missions: Mission[];
 }
 
 export interface AiState {

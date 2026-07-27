@@ -1,3 +1,29 @@
+## ⚡ Session catch-up — 2026-07-27 (read this first)
+
+**315 tests · typecheck/lint/build clean · `main` current at the commit after this one.**
+
+Two independent tracks landed this session and were reconciled:
+
+1. **External import "v1.23.0"** (72 files, +3,248 lines) — fog of war,
+   minimap, direct orders (attack-move/patrol/stop/hold), map boundary polygon,
+   LOD, guided tutorial, and the **World Turtle** far-zoom silhouette (D-026,
+   a genuine scope addition to the presentation layer — see that entry before
+   assuming it's settled art direction rather than a first pass). Fast-forward
+   merged and **independently re-verified**: typecheck, lint, all 302 tests
+   including `architecture.test.ts` (sim purity), and a manual audit for
+   `Math.random`/`Date.now`/`performance.now` leaking into `sim/`. Clean.
+2. **`Mission` as a sim entity** (D-007/D-027) — built this session on top of
+   (1). `src/sim/missions.ts`, `REPLAY_VERSION` → 5, 11 tests. **Deliberately
+   inert** — a mission does not yet change what an assigned squad does; that
+   wiring is mission-panel UI work, intentionally left for later so it's built
+   against a real primitive instead of inventing its own state.
+
+**Known recurring hazard:** this session's `origin` remote reset to the old
+`RTS` repo mid-session (container recreation), *twice*. Always check
+`git remote -v` says `Longbarrow` before trusting a push succeeded.
+
+---
+
 ## v1.23.0 core direct RTS orders — 84%
 
 - Added deterministic attack-move, patrol, stop, and hold-position commands.

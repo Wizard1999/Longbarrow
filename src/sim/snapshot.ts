@@ -129,6 +129,12 @@ export function hash(world: World): string {
   for (const n of world.nodes) { mix(n.id); mixF(n.amount); }
   for (const s of world.sites) { mix(s.id); mixS(s.type); mixF(s.progress); }
 
+  for (const m of world.missions) {
+    mix(m.id); mixS(m.team); mixS(m.objective); mixS(m.priority); mixS(m.status);
+    mixF(m.fallback?.x ?? 0); mixF(m.fallback?.z ?? 0);
+    for (const id of m.squadIds) mix(id);
+  }
+
   for (const sq of world.squads) {
     mix(sq.id); mixS(sq.team); mix(sq.number); mix(sq.index); mix(sq.stepTicks);
     mix(sq.running ? 1 : 0); mix(sq.loop ? 1 : 0); mix(sq.dispatched ? 1 : 0);
