@@ -70,3 +70,13 @@ high-value deaths, relic discoveries, territory swings, Mycora surges, major
 resource swings, match points, and match end. The director must remain calm: it
 should hold shots long enough to understand them, avoid rapid cuts, and yield to
 manual input.
+
+## Replay visibility policy
+
+Fog of war is presentation state, not deterministic simulation state. Normal play
+uses the local player's explored/current-vision field. Opening the developer
+replay viewer switches presentation to omniscient vision so recorded events are
+not silently hidden from the reviewer. This override never changes commands,
+world snapshots, hashes, or replay verification. Future player-perspective
+replays may rebuild fog from the recorded world while spectator/director modes
+remain omniscient.

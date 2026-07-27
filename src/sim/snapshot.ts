@@ -99,6 +99,10 @@ export function hash(world: World): string {
     mixF(u.x); mixF(u.z); mixF(u.facing); mixF(u.hp);
     mix(u.stillTicks);
     mixF(u.target?.x ?? 0); mixF(u.target?.z ?? 0);
+    mixS(u.orderMode);
+    mixF(u.patrolFrom?.x ?? 0); mixF(u.patrolFrom?.z ?? 0);
+    mixF(u.patrolTo?.x ?? 0); mixF(u.patrolTo?.z ?? 0);
+    mixS(u.patrolHeading);
     mix(u.gather ? 1 : 0);
     if (u.gather) {
       mixS(u.gather.state); mix(u.gather.nodeId ?? -1);

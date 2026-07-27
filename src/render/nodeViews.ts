@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { EntityId, World } from '../core/types';
 import { GOLDEN_ANGLE } from '../core/loop';
 import { terrainHeightAt } from '../sim/terrain';
+import type { VisibilityController } from '../ui/visibility';
 
 /** Also used for the shard a worker carries on the return trip, so the thing
  *  being hauled is visibly the thing that came out of the node. */
@@ -37,13 +38,15 @@ export function buildNodeViews(scene: THREE.Scene, world: World): Map<EntityId, 
   return nodeViews;
 }
 
-export function syncNodeViews(world: World, nodeViews: Map<EntityId, THREE.Group>): void {
+export function syncNodeViews(
+  world: World, nodeViews: Map<EntityId, THREE.Group>, visibility: VisibilityController,
+): void {
   for (const n of world.nodes) {
     const v = nodeViews.get(n.id);
     if (!v) continue;
     const frac = n.maxAmount > 0 ? n.amount / n.maxAmount : 0;
     const s = 0.28 + 0.72 * frac;
     v.scale.set(s, s, s);
-    v.visible = n.amount > 0;
+    v.visible = n.amount > 0 && visibility.resourceVisible(n.x, n.z);
   }
 }

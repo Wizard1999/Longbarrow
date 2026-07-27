@@ -43,7 +43,9 @@ describe('[20] reassignment pauses, it does not cancel', () => {
   w.resources.player = 10000;
   const u = must(workersOf(w, 'player')[0]);
   const res = cmdPlaceBuilding(w, 'player', 'outpost', -2, 6, [u.id]);
-  run(w, 60);
+  for (let ticks = 0; ticks < 400 && must(w.sites[0]).progress === 0; ticks++) {
+    simStep(w);
+  }
   const partial = must(w.sites[0]).progress;
 
   cmdMove(w, [u.id], 20, 20);                 // yank the worker away
@@ -115,7 +117,12 @@ describe('[23] multiple workers do not rush a build', () => {
     const w = freshMap();
     w.resources.player = 10000;
     const ws = workersOf(w, 'player').slice(0, n).map(u => u.id);
-    cmdPlaceBuilding(w, 'player', 'outpost', -2, 6, ws);
+    const placed = cmdPlaceBuilding(w, 'player', 'outpost', -2, 6, ws);
+    const site = must(w.sites.find(candidate => candidate.id === placed.siteId));
+    for (const worker of workersOf(w, 'player').filter(u => ws.includes(u.id))) {
+      worker.x = site.x;
+      worker.z = site.z;
+    }
     let t = 0;
     while (w.sites.length && t < 2000) { simStep(w); t++; }
     return t;

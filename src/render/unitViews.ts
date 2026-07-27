@@ -5,6 +5,9 @@ import { terrainHeightAt } from '../sim/terrain';
 import { shieldWallStacks } from '../sim/combat';
 import { COMBAT } from '../data/tuning';
 import { essenceMat } from './nodeViews';
+import type { QualityTier } from './quality';
+import { lodDistance3D, lodForDistance, strategicMarkerScale } from './lod';
+import type { VisibilityController } from '../ui/visibility';
 
 export const TEAM_COLORS: Record<Team, number> = { player: 0x3b5bdb, rival: 0xb02e2e };
 
@@ -17,10 +20,15 @@ interface UnitViewData {
    *  is readable on the battlefield rather than hidden in a stat (§8.6). */
   wall: THREE.Mesh | null;
   pickTarget: THREE.Mesh;
+  detailPickTarget: THREE.Mesh;
+  detailRoot: THREE.Group;
+  strategicMarker: THREE.Mesh;
 }
 
 function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
   const g = new THREE.Group();
+  const detailRoot = new THREE.Group();
+  g.add(detailRoot);
   const isWorker = UNIT_TYPES[unit.type].isWorker;
   const isMarksman = unit.type === 'marksman';
   const bodyMat = new THREE.MeshStandardMaterial({ color: TEAM_COLORS[unit.team], flatShading: true });
@@ -39,7 +47,7 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
   head.position.y = bodyH + 0.35;
   body.castShadow = true;
   head.castShadow = true;
-  g.add(body, head);
+  detailRoot.add(body, head);
 
   if (isMarksman) {
     // Long bone stave, angled back over the shoulder — reads as "ranged"
@@ -48,7 +56,7 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
     stave.position.set(0.26, bodyH + 0.1, -0.05);
     stave.rotation.z = -0.32;
     stave.castShadow = true;
-    g.add(stave);
+    detailRoot.add(stave);
   }
 
   if (unit.type === 'legionnaire') {
@@ -56,7 +64,7 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
     const shield = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.62, 0.5), trimMat);
     shield.position.set(-0.36, bodyH * 0.72, 0.06);
     shield.castShadow = true;
-    g.add(shield);
+    detailRoot.add(shield);
   }
 
   // carried essence — only workers, only visible while hauling
@@ -65,7 +73,7 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
     carry = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), essenceMat);
     carry.position.y = bodyH + 0.85;
     carry.visible = false;
-    g.add(carry);
+    detailRoot.add(carry);
   }
 
   const ring = new THREE.Mesh(
@@ -105,7 +113,20 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
     g.add(wall);
   }
 
-  g.userData = { unitId: unit.id, ring, squadRing, carry, wall, pickTarget: body } satisfies UnitViewData;
+
+  const strategicMarker = new THREE.Mesh(
+    new THREE.CircleGeometry(isWorker ? 0.42 : 0.52, 10),
+    new THREE.MeshBasicMaterial({
+      color: TEAM_COLORS[unit.team], side: THREE.DoubleSide,
+      transparent: true, opacity: 0.92, depthWrite: false,
+    }),
+  );
+  strategicMarker.rotation.x = -Math.PI / 2;
+  strategicMarker.position.y = 0.08;
+  strategicMarker.visible = false;
+  g.add(strategicMarker);
+
+  g.userData = { unitId: unit.id, ring, squadRing, carry, wall, pickTarget: body, detailPickTarget: body, detailRoot, strategicMarker } satisfies UnitViewData;
   scene.add(g);
   return g;
 }
@@ -123,18 +144,30 @@ function lerpAngle(a: number, b: number, t: number): number {
  */
 export function syncUnitViews(
   scene: THREE.Scene, world: World, views: Map<EntityId, THREE.Group>,
-  alpha: number, squadMemberIds: Set<EntityId>,
+  alpha: number, squadMemberIds: Set<EntityId>, camera: THREE.Camera, qualityTier: QualityTier,
+  visibility: VisibilityController,
 ): void {
   for (const u of world.units) {
     let v = views.get(u.id);
     if (!v) { v = makeUnitView(scene, u); views.set(u.id, v); }
     const d = v.userData as UnitViewData;
+    const informationVisible = visibility.entityVisible(u.team, u.x, u.z);
+    v.visible = informationVisible;
+    if (!informationVisible) continue;
     const x = u.prevX + (u.x - u.prevX) * alpha;
     const z = u.prevZ + (u.z - u.prevZ) * alpha;
-    v.position.set(x, terrainHeightAt(x, z), z);
+    const y = terrainHeightAt(x, z);
+    v.position.set(x, y, z);
     v.rotation.y = lerpAngle(u.prevFacing, u.facing, alpha);
+    const distance = lodDistance3D(camera.position.x, camera.position.y, camera.position.z, x, y, z);
+    const lod = lodForDistance(distance, qualityTier);
+    d.detailRoot.visible = lod === 'close' || lod === 'tactical';
+    d.strategicMarker.visible = lod === 'strategic' || lod === 'world';
+    d.strategicMarker.scale.setScalar(strategicMarkerScale(distance, lod));
+    d.pickTarget = d.detailRoot.visible ? d.detailPickTarget : d.strategicMarker;
+    v.userData.pickTarget = d.pickTarget;
     d.ring.visible = u.selected;
-    d.squadRing.visible = squadMemberIds.has(u.id);
+    d.squadRing.visible = squadMemberIds.has(u.id) && lod !== 'world';
     if (d.carry) d.carry.visible = (u.gather?.carrying ?? 0) > 0;
     if (d.wall) {
       const frac = shieldWallStacks(world, u) / COMBAT.shieldWallMaxNeighbours;

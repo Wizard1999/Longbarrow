@@ -620,3 +620,31 @@ understanding inherited from a dead civilization, not a mineral.
 **Consequence:** `essenceMat` is aliased to `legacyMat` rather than renamed
 outright, because D-021 explicitly defers the global `essence` rename until the
 four-resource schema is settled. The colour changes now; the vocabulary waits.
+
+---
+
+## D-026 — Far-zoom world silhouette: the World Turtle
+**Date:** 2026-07-27 · **Status:** locked presentation direction
+
+**Decision:** At normal gameplay distance the battlefield remains a readable
+physical war table in a black void. As the camera pulls far enough away for the
+whole board to become small, the support form must resolve into a monumental,
+stylized world-bearing turtle: the land rests on its shell/back and the complete
+silhouette becomes legible only at strategic/cosmic scale.
+
+**Progressive reveal:**
+- Close and normal play: terrain surface and temporary descending skirts dominate;
+  the carrier is hidden or only subtly implied.
+- Mid zoom: shell curvature and the sculptural underside begin to read.
+- Maximum zoom: head, limbs, tail, and shell produce a clear mythic silhouette in
+  the black void while the battlefield remains visible on top.
+
+**Constraint:** This is not a cartoon turtle and not decorative scenery pasted
+under the map. It should feel like an ancient cosmological model, sacred gaming
+relic, and living world-support structure. Geometry, LOD, lighting, camera
+clipping, and far-distance composition must be designed together.
+
+**Future extension:** The current descending terrain body remains a temporary
+placeholder. A later exploration may extend the cosmology into a restrained
+"turtles all the way down" recursive reveal, but that is not required for the
+first production World Turtle.

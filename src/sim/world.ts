@@ -9,6 +9,7 @@ import { stepMovement } from './movement';
 import { stepSquads } from './squads';
 import { stepCombat, stepReaper, stepSettle, stepVictory } from './combat';
 import { stepAi } from './ai';
+import { mapBoundaryForSeed } from './mapBoundary';
 
 export function createWorld(seed: number, startHour = 8, mapSeed = seed): World {
   return {
@@ -46,7 +47,8 @@ export function simStep(world: World): void {
   stepSquads(world);                                   // standing orders first
   for (const u of world.units) stepGather(world, u);   // decides where to go
   for (const u of world.units) stepBuild(world, u);    // ...or where to build
-  for (const u of world.units) stepMovement(u);        // goes there
+  const boundary = mapBoundaryForSeed(world.mapSeed);
+  for (const u of world.units) stepMovement(u, boundary); // goes there, never off the table
   stepSettle(world);                                   // ...and settles, or doesn't
   stepCombat(world);                                   // then fights
   stepReaper(world);                                   // clear the dead before anything reads them

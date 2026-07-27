@@ -5,6 +5,7 @@ import { cmdGather, cmdMove, cmdPlaceBuilding, cmdTrain } from './commands';
 import { findTarget } from './combat';
 import { supplyCap, supplyFree } from './supply';
 import { SUPPLY_MAX } from '../data/tuning';
+import { circleInMapBoundary, mapBoundaryForSeed } from './mapBoundary';
 
 /**
  * A simple AI opponent (step 1.11).
@@ -153,7 +154,7 @@ function expansionSpot(
       const a = (i / AI.expandAngles) * Math.PI * 2;
       const x = cx + Math.cos(a) * r;
       const z = cz + Math.sin(a) * r;
-      if (Math.abs(x) > 34 || Math.abs(z) > 34) continue;
+      if (!circleInMapBoundary(mapBoundaryForSeed(world.mapSeed), x, z, 4.5)) continue;
       const clearOfBuildings = world.buildings.every(b => Math.hypot(b.x - x, b.z - z) > b.radius + 4);
       const clearOfSites = world.sites.every(st => Math.hypot(st.x - x, st.z - z) > st.radius + 4);
       const clearOfNodes = world.nodes.every(n => Math.hypot(n.x - x, n.z - z) > 4);

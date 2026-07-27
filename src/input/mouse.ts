@@ -2,7 +2,7 @@ import type * as THREE from 'three';
 import type { World } from '../core/types';
 import { BUILDING_TYPES } from '../data/buildings';
 import {
-  cmdAddChainStep, cmdAssignBuilders, cmdGather, cmdMove, cmdPlaceBuilding,
+  cmdAddChainStep, cmdAssignBuilders, cmdAttackMove, cmdGather, cmdMove, cmdPatrol, cmdPlaceBuilding,
   cmdSetRally, cmdSetSelection,
 } from '../sim/commands';
 import type { RtsCamera } from '../render/camera';
@@ -107,6 +107,38 @@ export function createMouse(deps: MouseDeps): void {
           : res.reason ?? 'cannot place there');
         if (res.ok && !e.shiftKey) { ui.placingType = null; ghost.hide(); }
       }
+      dragStart = null;
+      dragging = false;
+      return;
+    }
+
+    // ---- left while a direct order is armed: choose its destination ----
+    if (e.button === 0 && ui.armedOrder && !dragging) {
+      picker.setFromEvent(e);
+      const hit = picker.ground();
+      const units = selectedIds(world);
+      if (hit && units.length) {
+        const order = ui.armedOrder;
+        if (order === 'attackMove') {
+          issueCommand(
+            { t: 'attackMove', units, x: hit.point.x, z: hit.point.z },
+            () => cmdAttackMove(world, units, hit.point.x, hit.point.z),
+          );
+          commandFeedback(hit.point.x, hit.point.y, hit.point.z, 'attack');
+          flash('attack-move order');
+        } else {
+          issueCommand(
+            { t: 'patrol', units, x: hit.point.x, z: hit.point.z },
+            () => cmdPatrol(world, units, hit.point.x, hit.point.z),
+          );
+          commandFeedback(hit.point.x, hit.point.y, hit.point.z, 'move');
+          flash('patrol route set');
+        }
+      } else if (!units.length) {
+        flash('select units first');
+      }
+      ui.armedOrder = null;
+      if (selboxEl) selboxEl.style.display = 'none';
       dragStart = null;
       dragging = false;
       return;

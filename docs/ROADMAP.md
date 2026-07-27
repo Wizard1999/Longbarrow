@@ -5,6 +5,9 @@ against it*; the design doc holds the rationale.
 
 Version history lives in `CHANGELOG.md`. Active work is in `TODO.md`.
 
+The complete contents of this file are published on `/development.html` during
+`npm run sync:site`; the public roadmap must never be maintained by hand.
+
 ---
 
 ## ✅ Phase 0 — Tech Spike
@@ -41,13 +44,15 @@ core systems before asymmetry is layered on.
 | | What | Status |
 |---|---|---|
 | — | Painterly art pass (D-005) | ◐ in flight |
-| — | War table camera (D-014) | ⬜ deferred, precedes remaining art |
+| — | War table camera (D-014) | ◐ core freedom, whole-board view, table edge, LOD, minimap and World Turtle blockout complete; refinement continues |
 | — | Day/night cycle (D-013) | ✅ |
 | — | Snapshot/restore/hash (D-010) | ✅ |
 | — | Tick rate 20 → 30 Hz (D-004) | ✅ |
 | — | Dev console | ⬜ |
-| — | Replay system (D-008) | ◐ live capture/export/verification complete; timeline viewer and keyframes next |
-| — | Save/load files | ◐ versioned developer quick-save/import/export complete |
+| — | Replay system (D-008) | ✅ live capture, verification, deterministic keyframe seeking, and timeline viewer complete; cinematic event observation remains an extension |
+| — | Save/load files | ✅ versioned developer quick-save/import/export with compatibility and hash validation |
+| — | Guided tutorial mode | ✅ optional seven-step state-observing onboarding; dedicated tutorial scenario and polish remain |
+| — | Core direct RTS orders | ✅ attack-move, patrol, stop, and hold-position are deterministic, replay-safe, and exposed in the primary UI |
 
 **Out of scope for Phase 1:** heroes, tech tree, PvE bosses, air units, the
 other three races, multiplayer, audio.
@@ -140,7 +145,7 @@ creator workflow, package concept, guardrails, and success criteria.
 | D | Creator tools, schemas, editors, packaging, and export workflow | ⬜ |
 | E | Community ecosystem, reusable extensions, and compatibility policy | ⬜ |
 
-This platform track is not currently included in the 41% game-production score.
+This platform track is not currently included in the 84% game-production score.
 It is an ongoing post-foundation product track rather than a finite content phase.
 Its architectural constraints apply immediately so the game does not become
 needlessly difficult to generalize later.
@@ -149,3 +154,78 @@ needlessly difficult to generalize later.
 
 - Cinematic replay director (optional): event observation, importance ranking, smooth camera framing, free/follow/event/director modes, and manual-override protection.
 - This remains presentation-only; recorded commands and deterministic playback are the source of truth.
+
+
+## World presentation extension — World Turtle
+
+The current terrain skirts are temporary. The production far-zoom silhouette will
+be a stylized world-bearing turtle (D-026), revealed progressively by camera
+distance. Implementation should follow the LOD/material foundation so close play
+remains readable and maximum zoom gains a mythic cosmological identity without
+paying full-detail cost at all distances.
+
+
+## World generation extension — procedural polygon maps
+
+Replace the permanent square test board with deterministic, validated polygonal battlefields after the first world-presentation and navigation foundations are stable. The generator must share one canonical boundary across terrain, pathing, placement, minimap, fog, camera framing, descending edges, replay/save metadata, and World Turtle support geometry. See `MAP_GENERATION.md`.
+
+### v1.16.0 completed rendering foundation
+- Strategic markers retain readable screen presence across whole-board zoom.
+- Quality tier can be selected in-game and persists between sessions.
+- Camera depth precision adapts to zoom distance.
+
+### v1.17.0 completed polygon-map foundation
+
+- Seed-derived, rotationally symmetric irregular polygon boundary.
+- Polygon-clipped heightfield and matching descending terrain skirt.
+- Shared boundary for scenery, construction footprints, whole-board camera framing, and world-support proportions.
+- Next: polygon-aware movement clamping, spawn/resource layout generation, minimap, fog, and biome regions.
+
+
+### v1.21.0 completed full-world fog integration
+
+- One shared visibility policy drives minimap, 3D rendering, picking, and command target acquisition.
+- Rival units, buildings, construction sites, and territory rings disappear outside current vision and cannot be clicked through fog.
+- Discovered resources remain remembered while unseen rivals do not.
+- Instanced unexplored/explored terrain overlays provide the first full battlefield fog presentation.
+- Replay viewing and explicit spectator URLs can use omniscient presentation without altering deterministic simulation.
+- Next: soften fog boundaries, profile update cost, and define spectator/replay UX beyond developer controls.
+
+### v1.20.0 completed polygon fog and seed preview foundation
+
+- Tactical fog uses the canonical map polygon and retains explored space while separating it from current vision.
+- Rival tactical markers are information-safe: they appear only under current player vision.
+- Resource discoveries remain on the map after vision leaves them.
+- Map seeds can be loaded exactly or regenerated from the in-game tactical-map control.
+- Next: apply visibility rules to 3D world presentation, picking, command feedback, and eventual spectator/replay policies.
+
+### v1.19.0 completed polygon tactical-map integration
+
+- Tactical map consumes the canonical map polygon rather than assuming a square.
+- Live entities and camera focus are visible at a glance.
+- Click/drag navigation moves the tabletop camera while respecting the map boundary.
+- The same canvas path is reserved for later fog-of-war masking.
+
+### v1.18.0 completed polygon gameplay integration
+
+- Commands, rallies, formations, automation chains, production exits, and movement remain inside the map polygon.
+- Starting bases, resource clusters, workers, and armies come from deterministic mirrored boundary anchors.
+- AI expansion placement uses the polygon footprint rather than square coordinate limits.
+- Remaining polygon work: fog-of-war visibility masks, richer polygon families, safe concavity, biome regions, and map-browser previews.
+
+
+### v1.22.0 completed tutorial foundation
+
+- Optional tutorial can be launched in-game at any time or directly with `?tutorial=1`.
+- Seven state-observing steps teach worker selection, gathering, Standard selection, production, combat selection, movement, and whole-board camera framing.
+- Tutorial presentation never mutates deterministic simulation state and can be skipped or replayed.
+- Next: dedicated tutorial scenario, contextual visual highlighting, accessibility review, and real-player pacing validation.
+
+
+### v1.23.0 completed core direct-order foundation
+
+- Added attack-move, patrol, stop, and hold-position as serializable simulation commands.
+- Direct orders are recorded in replay format v4 and included in deterministic state hashing.
+- A/P/S/H hotkeys and selection-card controls expose the commands without requiring the squad-chain editor.
+- Patrol endpoints and direct destinations remain clamped to the canonical polygon boundary.
+- Next: browser feel validation, richer attack-target intent, command cursor states, and tutorial coverage.

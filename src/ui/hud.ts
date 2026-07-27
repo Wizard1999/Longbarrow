@@ -3,7 +3,7 @@ import { TICK_HZ } from '../core/loop';
 import { BUILDING_TYPES } from '../data/buildings';
 import { UNIT_TYPES } from '../data/units';
 import { canTrain } from '../sim/production';
-import { cmdCancelSite, cmdTrain } from '../sim/commands';
+import { cmdCancelSite, cmdHoldPosition, cmdStop, cmdTrain } from '../sim/commands';
 import { builderIsWorking, buildersOn } from '../sim/construction';
 import { countGathering, totalResourcesRemaining } from '../sim/economy';
 import { supplyCap, supplyUsed } from '../sim/supply';
@@ -115,9 +115,23 @@ export function createHud(world: World, ui: UiState): Hud {
           btn.onclick = () => { ui.placingType = 'outpost'; };
           cardBtns.appendChild(btn);
           cardHint.textContent = 'outposts add command, hold territory, and accept essence';
-        } else {
-          cardHint.textContent = '';
         }
+        const combat = sel.some(u => !u.gather);
+        if (combat) {
+          const orders: Array<[string, string, () => void]> = [
+            ['Attack Move (A)', 'engage along route', () => { ui.armedOrder = 'attackMove'; ui.armedBehaviour = null; flash('attack-move armed — click the battlefield'); }],
+            ['Patrol (P)', 'repeat between two points', () => { ui.armedOrder = 'patrol'; ui.armedBehaviour = null; flash('patrol armed — click the battlefield'); }],
+            ['Stop (S)', 'cancel current orders', () => { const ids = sel.map(u => u.id); issueCommand({ t: 'stop', units: ids }, () => cmdStop(world, ids)); flash('orders stopped'); }],
+            ['Hold (H)', 'defend this ground', () => { const ids = sel.map(u => u.id); issueCommand({ t: 'hold', units: ids }, () => cmdHoldPosition(world, ids)); flash('holding position'); }],
+          ];
+          for (const [label, note, action] of orders) {
+            const btn = document.createElement('button');
+            btn.innerHTML = `<b>${label}</b><span class="c">${note}</span>`;
+            btn.onclick = action;
+            cardBtns.appendChild(btn);
+          }
+        }
+        cardHint.textContent = workers ? 'workers can build; combat hotkeys remain available for mixed selections' : 'A attack-move · P patrol · S stop · H hold';
       } else {
         cardTitle.textContent = 'Nothing selected';
         cardHint.textContent = 'click the Standard to train units';

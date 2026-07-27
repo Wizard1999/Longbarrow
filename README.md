@@ -15,7 +15,11 @@ and doctrine to an army that executes them intelligently.
   <em>Fossilized memory meets an aggressive tide of iridescent life.</em>
 </p>
 
-Runs in the browser. No engine, no framework — TypeScript, Three.js and Vite.
+Runs in the browser. No engine, no framework — TypeScript, Three.js and Vite. Maps now use deterministic irregular polygon boundaries rather than a permanent square board.
+
+The current build also enforces polygon-aware fog of war across the tactical map and full 3D battlefield: unseen rival forces disappear from presentation and cannot be targeted through hidden information, while replay/spectator modes can opt into omniscient vision.
+
+An optional guided introduction is available from the in-game **Tutorial** button or by opening `/?tutorial=1`. It observes the live match state and teaches the core selection, economy, production, movement, and whole-board camera flow without changing deterministic simulation behavior.
 
 ## Visual direction
 
@@ -93,8 +97,11 @@ npm run dev
 
 ## Controls
 
+Core orders: **A** attack-move, **P** patrol, **S** stop, **H** hold position.
+
 | Key | Action |
 |---|---|
+| Tutorial button / `?tutorial=1` | Start the guided introduction |
 | Drag / click | Select units |
 | Right click | Move |
 | `1`–`5` | Select squad |
@@ -104,6 +111,7 @@ npm run dev
 | `G` | Select all gatherers |
 | `Esc` | Cancel current mode |
 | `T` | Toggle the slow-frame throttle (tick-rate independence test) |
+| `Home` | Frame the entire battlefield |
 
 ## Repository layout
 
@@ -150,3 +158,33 @@ reusing the deterministic simulation, commands, replay foundation, renderer,
 testing tools, and public development site. Development remains game-first: the
 engine is extracted from systems proven in Longbarrow rather than designed in the
 abstract. See [`docs/ENGINE_VISION.md`](docs/ENGINE_VISION.md).
+
+## The world beneath the war table
+
+Longbarrow is staged in a black void. At ordinary play distance the battlefield
+reads as a physical miniature war table; at maximum zoom the complete board will
+resolve into a monumental **World Turtle** carrying the terrain on its back. The
+current descending terrain edges are a temporary production scaffold for that
+future silhouette.
+
+
+
+## Future map shapes
+
+Production maps are planned as deterministic procedural polygons rather than permanently square boards. The canonical boundary will drive terrain, navigation, placement, camera framing, minimaps, fog, descending edges, and the World Turtle silhouette. See `docs/MAP_GENERATION.md`.
+
+### Polygon-safe gameplay
+
+The seeded battlefield boundary now governs starting layouts, resource placement, issued orders, rallies, production exits, and unit movement—not only the rendered terrain.
+
+
+### Latest development milestone
+
+The current build includes a polygon-aware tactical map with live unit, structure, resource, and camera markers. It uses the same seeded boundary as the battlefield, supports click-and-drag camera navigation, tracks unexplored/explored/currently visible space, filters unseen rival information, and provides exact or random map-seed loading.
+
+### Live development roadmap
+
+The public page at `/development.html` displays the **complete** canonical roadmap,
+not a hand-written summary. `npm run sync:site` publishes `docs/PROGRESS.md` and
+`docs/ROADMAP.md`; the same synchronization runs automatically before development
+and production builds.

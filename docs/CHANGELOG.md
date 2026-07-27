@@ -1,3 +1,107 @@
+## v1.23.0 — Core direct RTS orders (84%)
+
+- Added replay-safe attack-move, patrol, stop, and hold-position commands.
+- Added A/P/S/H hotkeys and selected-unit command buttons.
+- Added serializable per-unit order and patrol state, polygon-safe endpoints, and deterministic hash coverage.
+- Replay format advanced to v4 because the command stream gained new command meanings.
+- Added direct-order tests for arrival, patrol reversal, stopping, and holding.
+- Updated the roadmap, progress log, current state, TODO, README-facing website data, package version, and build metadata.
+- Reconciled the complete v1.23.0 working archive with current GitHub `main`.
+- Fixed strict-TypeScript defects in terrain geometry, the concept-art lightbox, and a visibility fixture.
+- Made construction and remote-placement tests deterministic against irregular polygon maps.
+- Verified a clean dependency install, site synchronization/consistency, typecheck, lint, all 302 tests, and the production Vite build.
+
+## v1.22.0 — Guided tutorial foundation (82%)
+**Date:** 2026-07-27 · **Environment:** ChatGPT working copy
+
+- Added an optional seven-step tutorial launched from an in-game button or `?tutorial=1`.
+- Tutorial progression observes deterministic world/UI state for selection, gathering, production, movement, and camera framing.
+- Added persistent completion/skip state without altering match simulation or replay data.
+- Added tutorial progression tests for prerequisites and full completion.
+- Updated the full roadmap, TODO, current state, README, progress tracker, website data, package version, and build metadata.
+- Full dependency-based verification remains pending because project dependencies are unavailable in the current container.
+
+## v1.20.1 — Full public roadmap and documentation consistency audit (77%)
+**Date:** 2026-07-27 · **Environment:** ChatGPT working copy
+
+- Published the complete canonical `docs/ROADMAP.md` on `/development.html` instead of exposing only the compact progress table.
+- Extended `scripts/sync-site-progress.mjs` to convert roadmap headings, paragraphs, lists, tables, emphasis, and inline code into generated public data.
+- Added responsive styling for the full roadmap and a direct Roadmap navigation link.
+- Added `npm run check:site` and made it part of `npm run verify`, rejecting stale progress percentages or omitted roadmap headings.
+- Corrected stale roadmap/TODO records for the implemented camera, replay recording, replay keyframes, save/load, CPU opponent, minimap, void presentation, and LOD foundations.
+- Corrected the open-engine track's stale 56% reference to the current 77% game-production checkpoint.
+- Kept the game-production score at 77%; this patch improves public accountability and project continuity rather than adding gameplay scope.
+
+## v1.20.0 — Polygon fog and map-seed preview controls (77%)
+**Date:** 2026-07-27 · **Environment:** ChatGPT working copy
+
+- Added a polygon-clipped fog-of-war field with unexplored, explored, and currently visible states.
+- Derived vision from player units, structures, and construction sites without adding presentation data to deterministic simulation state.
+- Hid rival units, structures, and sites from the tactical map unless currently visible; resource nodes persist after discovery.
+- Added compact map-seed controls above the tactical map with exact-seed loading and cryptographically random new-seed selection.
+- Added `?mapSeed=<integer>` match setup without coupling map browsing to the match RNG.
+- Added fog-field tests and passed a strict dependency-free TypeScript compile of the new visibility module.
+- Advanced package version to 1.20.0 and tracked production progress to 77%.
+- Full Vite/Vitest verification remains pending because project dependencies are unavailable in the current container.
+
+## v1.19.0 — Polygon tactical map and strategic navigation (74%)
+**Date:** 2026-07-27 · **Environment:** ChatGPT working copy
+
+- Added an in-game tactical map clipped to the same deterministic polygon used by terrain and simulation.
+- Added live markers for units, buildings, construction sites, and resource nodes.
+- Added a camera-focus/heading marker that remains useful at whole-board zoom.
+- Added click-and-drag minimap navigation, clamped to the canonical battlefield boundary.
+- Added pure minimap coordinate-transform tests.
+- Advanced package version to 1.19.0 and tracked production progress to 74%.
+- Full dependency-based verification remains pending because package installation is unavailable in the current container.
+
+## v1.18.0 — Polygon-safe movement and boundary-derived match layout (71%)
+**Date:** 2026-07-27 · **Environment:** ChatGPT working copy
+
+- Clamped manual move destinations, formation offsets, rally points, and behaviour-chain steps to the canonical polygon boundary.
+- Added a per-tick simulation safety clamp so units cannot drift or be driven beyond the table edge.
+- Kept production spawn points and rally destinations inside navigable space.
+- Replaced fixed square-map bases, resources, worker groups, and armies with deterministic mirrored anchors derived from each polygon.
+- Replaced the AI's square expansion bounds with polygon-footprint validation.
+- Advanced `MAP_VERSION` to 3 because the same seed now produces a new gameplay layout.
+- Added boundary-clamping, mirrored-layout, move, rally, and behaviour-chain tests.
+- Advanced package version to 1.18.0 and tracked production progress to 71%.
+- Full dependency-based verification remains pending in the current container.
+
+
+## v1.17.0 — Seeded polygon battlefields
+
+- Added deterministic, rotationally symmetric irregular map boundaries derived from `mapSeed`.
+- Replaced the square plane with a polygon-clipped heightfield and matching vertical perimeter geometry.
+- Routed building placement, scenery generation, camera framing, and World Turtle sizing through the canonical boundary.
+- Advanced `MAP_VERSION` to 2 and added boundary determinism/fairness/footprint tests.
+- Updated all production logs and public progress data to 68%.
+
+## v1.16.0 — Strategic readability and quality controls
+
+- Added capped distance-aware strategic marker scaling for units and buildings.
+- Added a persistent in-game Low/Medium/High quality selector.
+- Added adaptive camera near clipping across miniature and cosmological zoom.
+- Added LOD policy coverage for strategic marker scaling.
+- Updated roadmap, current state, progress data, website data, and build metadata.
+
+## v1.14.0 — Whole-board visibility and polygon-map planning
+
+- Removed global distance fog and extended the camera far plane to 10,000 world units.
+- Extended free-camera overview range to 520 units.
+- Added `Home` whole-board framing using aspect-aware tested camera math.
+- Added `MAP_GENERATION.md` for deterministic irregular polygon maps and shared boundary architecture.
+- Required versioned working-folder and archive names.
+- Advanced tracked production progress to 59%.
+
+## v1.13.0 — Replay timeline and World Turtle direction
+
+- Added deterministic replay seeking with lazy 300-tick keyframes.
+- Added sandbox replay timeline, scrubbing, play/pause, start/end, and ±10-second controls.
+- Added correctness tests comparing keyframe seeks against full playback.
+- Locked the far-zoom world presentation to a progressive World Turtle reveal (D-026).
+- Updated roadmap, current state, TODO, and progress score to 56%.
+
 
 
 - Added a repeatable performance harness with a fixed 200-unit scenario, temporary `?quality=` tier overrides, p50/p95/worst frame timing, and downloadable JSON reports.
@@ -61,6 +165,17 @@
 
 # Changelog
 
+## v1.21.0 — Full-world fog enforcement
+
+- Added one shared presentation-side visibility controller for player and omniscient modes.
+- Added an instanced 3D fog overlay for unexplored and explored polygon-map cells.
+- Hidden rival units, buildings, sites, and territory rings no longer render or participate in picking.
+- Hidden rival targets can no longer receive click-based attack orders through fog.
+- Discovered resource nodes remain visible as remembered information.
+- Replay viewer switches to omniscient vision; developer sandbox and `?vision=omniscient` expose explicit overrides.
+- Added visibility-policy tests and synchronized the public roadmap/progress data.
+
+
 - Added the VoXelo CodePen (`yygKOVy`) to the high-fidelity WebGL inspiration list for later technical review.
 Tracks every buildable version and every locked design decision, regardless of
 which environment produced it (this chat, or Claude Code). Newest entry on top.
@@ -69,6 +184,19 @@ Versioning follows the blueprint's phase.step numbering (`02_development_bluepri
 e.g. `v1.2` = Phase 1, step 1.2. Design-only entries (no code) are marked `[design]`.
 
 ---
+
+## v1.15.0 — Zoom-aware LOD and first World Turtle blockout (62%)
+**Date:** 2026-07-27 · **Environment:** ChatGPT working copy
+
+- Added quality-aware close, tactical, strategic, and world LOD tiers.
+- Units and buildings swap to low-cost team markers at long range while remaining selectable.
+- Distant scenery is culled outside tactical viewing distance.
+- Added pure LOD distance/reveal tests.
+- Added the first far-zoom World Turtle silhouette: shell, head, limbs, and tail.
+- The temporary slab is hidden when the turtle support is revealed.
+- Advanced package and build version to 1.15.0.
+- Full verification remains pending because dependency repair timed out.
+
 
 ## 2026-07-27 — Cinematic replay-director groundwork (45%)
 
@@ -577,3 +705,11 @@ war-table camera iteration one.
 - Added browser quick-save/load and portable JSON save import/export to every developer sandbox mode.
 - Added save round-trip, incompatibility, metadata, and tamper-detection tests.
 - Added `docs/SAVE_AND_REPLAY.md` and synchronized roadmap/current-state/progress documentation.
+
+
+### 2026-07-27 tabletop freedom and website usability
+- Public site uses one obvious top-navigation button labelled **Play**.
+- Concept-art gallery supports full-screen click/keyboard viewing.
+- Hero war-table artwork is smaller and visually farther back in black negative space.
+- Camera envelope supports miniature-level inspection, near-overhead overview, full orbit, and travel beyond the authored terrain.
+- World backdrop is pure black and the terrain has temporary descending table edges pending the later support-world concept.

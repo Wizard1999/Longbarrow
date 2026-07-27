@@ -101,3 +101,12 @@ npm run build      # typecheck + vite build
 ```
 
 Run `npm test && npm run typecheck` before every commit.
+
+
+## Versioned handoff naming
+
+Extracted work folders and packaged archives must include the build version, for example `Longbarrow-v1.14.0-work` and `Longbarrow-v1.14.0-59pct.zip`. Do not hand off generic `Longbarrow-main` folders when a version is known.
+
+## Public roadmap invariant
+
+- Treat `docs/ROADMAP.md` as public product data: run `npm run sync:site` after roadmap/progress edits and verify the full roadmap appears on `/development.html`.

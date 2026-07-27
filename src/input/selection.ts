@@ -13,6 +13,8 @@ export interface UiState {
   selectedSquadId: EntityId | null;
   /** A behaviour picked but not yet placed — the next map click sites it. */
   armedBehaviour: BehaviourKind | null;
+  /** One-shot direct order awaiting a ground click. */
+  armedOrder: 'attackMove' | 'patrol' | null;
 }
 
 export function createUiState(): UiState {
@@ -22,6 +24,7 @@ export function createUiState(): UiState {
     selectedSiteId: null,
     selectedSquadId: null,
     armedBehaviour: null,
+    armedOrder: null,
   };
 }
 
@@ -42,8 +45,12 @@ export function createPicker(
 
   const pickTargets = (map: Map<EntityId, THREE.Group>): THREE.Object3D[] =>
     [...map.values()]
+      .filter(v => v.visible)
       .map(v => (v.userData as { pickTarget?: THREE.Object3D }).pickTarget)
-      .filter((o): o is THREE.Object3D => o !== undefined);
+      .filter((o): o is THREE.Object3D => o !== undefined && o.visible);
+
+  const visibleGroups = (map: Map<EntityId, THREE.Group>): THREE.Group[] =>
+    [...map.values()].filter(group => group.visible);
 
   return {
     setFromEvent(e: MouseEvent): void {
@@ -55,16 +62,16 @@ export function createPicker(
     unit: (): THREE.Intersection | undefined => raycaster.intersectObjects(pickTargets(views.units))[0],
     building: (): THREE.Intersection | undefined => raycaster.intersectObjects(pickTargets(views.buildings))[0],
     unitDeep: (): THREE.Intersection | undefined =>
-      raycaster.intersectObjects([...views.units.values()], true)[0],
+      raycaster.intersectObjects(visibleGroups(views.units), true)[0],
     buildingDeep: (): THREE.Intersection | undefined =>
-      raycaster.intersectObjects([...views.buildings.values()], true)[0],
+      raycaster.intersectObjects(visibleGroups(views.buildings), true)[0],
     site: (): THREE.Intersection | undefined => raycaster.intersectObjects(pickTargets(views.sites))[0],
     /** Nodes and sites are picked through the whole group for right-click
      *  orders, so clipping a shard still counts as clicking the node. */
     nodeDeep: (): THREE.Intersection | undefined =>
-      raycaster.intersectObjects([...views.nodes.values()], true)[0],
+      raycaster.intersectObjects(visibleGroups(views.nodes), true)[0],
     siteDeep: (): THREE.Intersection | undefined =>
-      raycaster.intersectObjects([...views.sites.values()], true)[0],
+      raycaster.intersectObjects(visibleGroups(views.sites), true)[0],
   };
 }
 

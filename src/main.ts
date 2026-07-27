@@ -4,7 +4,7 @@ import { createLoop } from './core/loop';
 import { createWorld, simStep } from './sim/world';
 import { buildTestMap } from './sim/map';
 import { enableAi } from './sim/ai';
-import { cmdCancelSite, cmdFormSquad, cmdSetSelection } from './sim/commands';
+import { cmdCancelSite, cmdFormSquad, cmdHoldPosition, cmdSetSelection, cmdStop } from './sim/commands';
 import { squadByNumber } from './sim/squads';
 import { AUTOMATION } from './data/tuning';
 import { createRenderer } from './render/renderer';
@@ -28,6 +28,13 @@ import { createHud } from './ui/hud';
 import { createChainEditor } from './ui/chainEditor';
 import { createSandbox } from './dev/sandbox';
 import { mountBuildBadge } from './ui/buildBadge';
+import { mountQualityControl } from './ui/qualityControl';
+import { createMinimap } from './ui/minimap';
+import { mountMapSeedControl } from './ui/mapSeedControl';
+import { FogOfWarField, playerVisionSources } from './ui/fogOfWar';
+import { createVisibilityController, visibilityModeFromSearch } from './ui/visibility';
+import { createFogOverlay } from './render/fogOverlay';
+import { createTutorial } from './ui/tutorial';
 import { Recorder } from './sim/replay';
 import { configureLiveRecording, issueCommand } from './replay/live';
 
@@ -36,14 +43,22 @@ void mountBuildBadge();
 // Opt in to the opponent explicitly — a bare world is inert (see sim/world.ts).
 const MATCH_SEED = 1337;
 const MATCH_START_HOUR = 8;
-const world = enableAi(buildTestMap(createWorld(MATCH_SEED, MATCH_START_HOUR)));
-const recorder = new Recorder(MATCH_SEED, MATCH_START_HOUR, MATCH_SEED, 'standardAi');
+const requestedMapSeed = Number(new URLSearchParams(window.location.search).get('mapSeed'));
+const MAP_SEED = Number.isSafeInteger(requestedMapSeed) ? requestedMapSeed : MATCH_SEED;
+const world = enableAi(buildTestMap(createWorld(MATCH_SEED, MATCH_START_HOUR, MAP_SEED)));
+const recorder = new Recorder(MATCH_SEED, MATCH_START_HOUR, MAP_SEED, 'standardAi');
 configureLiveRecording(world, recorder);
 
 const quality = QUALITY[detectTier()];
+mountQualityControl(quality.tier);
+mountMapSeedControl(MAP_SEED);
 const { scene, renderer, sun } = createRenderer(quality);
-const terrainMesh = buildTerrainMesh(scene, quality);
-buildSceneryViews(scene, world);
+const terrainPresentation = buildTerrainMesh(scene, quality, world.mapSeed);
+const terrainMesh = terrainPresentation.mesh;
+const fog = new FogOfWarField(terrainPresentation.boundary);
+const visibility = createVisibilityController(fog, visibilityModeFromSearch(window.location.search));
+const fogOverlay = createFogOverlay(scene, fog, visibility);
+const sceneryViews = buildSceneryViews(scene, world);
 
 const views = {
   units: new Map<EntityId, THREE.Group>(),
@@ -52,7 +67,7 @@ const views = {
   nodes: buildNodeViews(scene, world),
 };
 
-const cam = createCamera(terrainMesh);
+const cam = createCamera(terrainMesh, terrainPresentation.boundary);
 const ghost = createPlacementGhost(scene);
 const ui = createUiState();
 const picker = createPicker(cam.camera, terrainMesh, views);
@@ -60,6 +75,8 @@ const hud = createHud(world, ui);
 const chainEditor = createChainEditor(world, ui, hud.flash);
 const chainVisuals = createChainVisuals(scene);
 const commandFeedback = createCommandFeedback(scene);
+const minimap = createMinimap(world, terrainPresentation.boundary, cam, fog, visibility);
+const tutorial = createTutorial(world, ui);
 
 createMouse({
   world, domElement: renderer.domElement, cam, picker, ghost, ui, flash: hud.flash,
@@ -104,6 +121,39 @@ const keyboard = createKeyboard({
       return;
     }
 
+    if (k === 'a') {
+      e.preventDefault();
+      const units = world.units.filter(u => u.selected && u.team === 'player' && !u.gather).map(u => u.id);
+      if (!units.length) hud.flash('select combat units first');
+      else { ui.armedOrder = 'attackMove'; ui.armedBehaviour = null; hud.flash('attack-move armed — click the battlefield'); }
+      return;
+    }
+    if (k === 'p') {
+      e.preventDefault();
+      const units = world.units.filter(u => u.selected && u.team === 'player').map(u => u.id);
+      if (!units.length) hud.flash('select units first');
+      else { ui.armedOrder = 'patrol'; ui.armedBehaviour = null; hud.flash('patrol armed — click the battlefield'); }
+      return;
+    }
+    if (k === 's') {
+      e.preventDefault();
+      const units = world.units.filter(u => u.selected && u.team === 'player').map(u => u.id);
+      if (units.length) { issueCommand({ t: 'stop', units }, () => cmdStop(world, units)); hud.flash('orders stopped'); }
+      return;
+    }
+    if (k === 'h') {
+      e.preventDefault();
+      const units = world.units.filter(u => u.selected && u.team === 'player').map(u => u.id);
+      if (units.length) { issueCommand({ t: 'hold', units }, () => cmdHoldPosition(world, units)); hud.flash('holding position'); }
+      return;
+    }
+
+    if (k === 'home') {
+      e.preventDefault();
+      cam.frameBoard();
+      tutorial.notify('frameBoard');
+      hud.flash('whole board framed');
+    }
     if (k === 't') loop.setThrottle(!loop.isThrottled());
     if (k === 'g') {
       ui.selectedBuildingId = null;
@@ -114,7 +164,8 @@ const keyboard = createKeyboard({
       }
     }
     if (k === 'escape') {
-      if (ui.armedBehaviour) { ui.armedBehaviour = null; }
+      if (ui.armedOrder) { ui.armedOrder = null; }
+      else if (ui.armedBehaviour) { ui.armedBehaviour = null; }
       else if (ui.placingType) { ui.placingType = null; ghost.hide(); }
       else if (ui.selectedSiteId !== null) {
         issueCommand(
@@ -147,25 +198,32 @@ const loop = createLoop({
     sun.position.copy(sky.sunDir).multiplyScalar(60);
     sun.color.copy(sky.sunColor);
     sun.intensity = 0.35 + sky.light * 1.65;
-    scene.background = sky.background;
-    (scene.fog as THREE.Fog).color.copy(sky.fog);
+    // The terrain is a physical table suspended in an unlit void. Day/night
+    // still drives surface lighting, but never paints a conventional sky dome.
+    scene.background = new THREE.Color(0x000000);
     renderer.toneMappingExposure = 0.85 + sky.light * 0.3;
     cam.pan(realDt, keyboard.keys, keyboard.mouseX, keyboard.mouseY);
     cam.update();
+    fog.update(playerVisionSources(world));
+    fogOverlay.update();
     const squadMemberIds = new Set(world.squads.flatMap(s => s.memberIds));
-    syncUnitViews(scene, world, views.units, alpha, squadMemberIds);
-    syncNodeViews(world, views.nodes);
-    syncSiteViews(scene, world, views.sites);
-    syncBuildingViews(scene, world, views.buildings, ui.selectedBuildingId);
+    syncUnitViews(scene, world, views.units, alpha, squadMemberIds, cam.camera, quality.tier, visibility);
+    syncNodeViews(world, views.nodes, visibility);
+    syncSiteViews(scene, world, views.sites, visibility);
+    syncBuildingViews(scene, world, views.buildings, ui.selectedBuildingId, cam.camera, quality.tier, visibility);
+    sceneryViews.sync(cam.camera, quality.tier);
+    terrainPresentation.update(cam.camera);
     chainVisuals.sync(world.squads.find(s => s.id === ui.selectedSquadId) ?? null);
     commandFeedback.update(realDt);
     hud.update(now, loop.isThrottled());
     chainEditor.update();
     sandbox.update(now);
+    minimap.update();
+    tutorial.update();
     renderer.render(scene, cam.camera);
   },
 });
 
-const sandbox = createSandbox({ world, loop, camera: cam, renderer, ui, scene, quality, recorder });
+const sandbox = createSandbox({ world, loop, camera: cam, renderer, ui, scene, quality, recorder, visibility });
 cam.update();
 loop.start();

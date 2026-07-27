@@ -1,8 +1,19 @@
 import * as THREE from 'three';
 import type { World } from '../core/types';
 import { terrainHeightAt } from '../sim/terrain';
+import type { QualityTier } from './quality';
+import { lodForDistance } from './lod';
 
-export function buildSceneryViews(scene: THREE.Scene, world: World): void {
+export interface SceneryViews {
+  root: THREE.Group;
+  sync(camera: THREE.Camera, qualityTier: QualityTier): void;
+}
+
+export function buildSceneryViews(scene: THREE.Scene, world: World): SceneryViews {
+  const root = new THREE.Group();
+  root.name = 'scenery-root';
+  scene.add(root);
+
   const rockMat = new THREE.MeshStandardMaterial({ color: 0x8d897f, flatShading: true });
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2f, flatShading: true });
   const leafMat = new THREE.MeshStandardMaterial({ color: 0x4f8f3d, flatShading: true });
@@ -14,7 +25,7 @@ export function buildSceneryViews(scene: THREE.Scene, world: World): void {
       rock.position.set(s.x, y + s.scale * 0.6, s.z);
       rock.rotation.set(s.spin, s.spin * 1.7, s.spin * 0.4);
       rock.castShadow = true;
-      scene.add(rock);
+      root.add(rock);
     } else {
       const tree = new THREE.Group();
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.22, 1.4, 6), trunkMat);
@@ -26,7 +37,15 @@ export function buildSceneryViews(scene: THREE.Scene, world: World): void {
       tree.add(trunk, leaves);
       tree.position.set(s.x, y, s.z);
       tree.rotation.y = s.spin;
-      scene.add(tree);
+      root.add(tree);
     }
   }
+
+  return {
+    root,
+    sync(camera, qualityTier) {
+      const lod = lodForDistance(camera.position.length(), qualityTier);
+      root.visible = lod === 'close' || lod === 'tactical';
+    },
+  };
 }

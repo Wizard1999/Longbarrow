@@ -150,3 +150,18 @@ When adding a feature, ask:
 
 The target layering and staged extraction plan are documented in
 `docs/ENGINE_VISION.md`.
+
+
+## Canonical map boundary
+
+Future irregular maps must expose one deterministic polygon boundary shared by simulation and presentation. Rendering, navigation, placement, minimaps, fog, camera framing, and terrain skirts must consume that same data. See `MAP_GENERATION.md`.
+
+## Presentation visibility boundary
+
+`src/ui/fogOfWar.ts` derives explored/current vision from deterministic world
+state, while `src/ui/visibility.ts` defines what the local presentation is
+allowed to reveal. Rendering, minimap markers, picking, and click-based target
+acquisition consume that shared policy. Simulation modules must never read it:
+fog cannot change combat, movement, AI, snapshots, hashes, or replay outcomes.
+`player` and `omniscient` are presentation modes; replay/spectator tooling may
+switch modes without mutating the world.

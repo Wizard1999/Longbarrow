@@ -1,7 +1,7 @@
 import type { BuildingTypeKey, CommandResult, EntityId, Site, Team, Unit, World } from '../core/types';
 import { BUILDING_TYPES } from '../data/buildings';
 import { BUILD, PLACE_CLEARANCE } from '../data/tuning';
-import { TERRAIN_SIZE } from './terrain';
+import { circleInMapBoundary, mapBoundaryForSeed } from './mapBoundary';
 import { spawnBuilding } from './entities';
 import { approachPoint } from './economy';
 
@@ -14,8 +14,8 @@ export function canPlaceBuilding(
   world: World, team: Team, typeKey: BuildingTypeKey, x: number, z: number,
 ): CommandResult {
   const t = BUILDING_TYPES[typeKey];
-  const half = TERRAIN_SIZE / 2 - 2;
-  if (Math.abs(x) > half || Math.abs(z) > half) return { ok: false, reason: 'off the map' };
+  const boundary = mapBoundaryForSeed(world.mapSeed);
+  if (!circleInMapBoundary(boundary, x, z, t.radius + 2)) return { ok: false, reason: 'off the map' };
   if (world.resources[team] < t.cost) return { ok: false, reason: 'not enough essence' };
   for (const b of world.buildings) {
     if (Math.hypot(b.x - x, b.z - z) < t.radius + b.radius + PLACE_CLEARANCE) {

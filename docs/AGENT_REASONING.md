@@ -134,3 +134,8 @@ The useful, durable project decision is to adopt these as explicit quality
 checklists. Claims in the original note about hidden modes, measured percentage
 improvements, or matching a model's internal architecture are not treated as
 established facts.
+
+
+## Versioned handoff naming
+
+Extracted work folders and packaged archives must include the build version, for example `Longbarrow-v1.14.0-work` and `Longbarrow-v1.14.0-59pct.zip`. Do not hand off generic `Longbarrow-main` folders when a version is known.

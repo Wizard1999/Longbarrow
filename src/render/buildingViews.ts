@@ -2,12 +2,19 @@ import * as THREE from 'three';
 import type { Building, EntityId, World } from '../core/types';
 import { BUILDING_TYPES } from '../data/buildings';
 import { terrainHeightAt } from '../sim/terrain';
+import type { QualityTier } from './quality';
+import { lodDistance3D, lodForDistance, strategicMarkerScale } from './lod';
+import type { VisibilityController } from '../ui/visibility';
 
 interface BuildingViewData {
   core: THREE.Mesh;
   sel: THREE.Mesh;
   buildingId: EntityId;
   pickTarget: THREE.Mesh;
+  detailPickTarget: THREE.Mesh;
+  detailRoot: THREE.Group;
+  strategicMarker: THREE.Mesh;
+  territoryRing: THREE.Mesh;
 }
 
 /**
@@ -30,12 +37,14 @@ function makeBuildingView(scene: THREE.Scene, b: Building): THREE.Group {
   const mossMat = new THREE.MeshStandardMaterial({ color: 0x5f8a45, flatShading: true, roughness: 1 });
 
   const g = new THREE.Group();
+  const detailRoot = new THREE.Group();
+  g.add(detailRoot);
 
   const drum = new THREE.Mesh(new THREE.CylinderGeometry(2.0 * s, 2.4 * s, 1.5 * s, 6), stoneMat);
   drum.position.y = 0.75 * s;
   drum.castShadow = true;
   drum.receiveShadow = true;
-  g.add(drum);
+  detailRoot.add(drum);
 
   // Ribs — fossil, not machinery: no joints, no gears, just weathered bone.
   const ribCount = b.type === 'outpost' ? 4 : 6;
@@ -46,22 +55,22 @@ function makeBuildingView(scene: THREE.Scene, b: Building): THREE.Group {
     rib.rotation.z = Math.cos(a) * 0.16;
     rib.rotation.x = -Math.sin(a) * 0.16;
     rib.castShadow = true;
-    g.add(rib);
+    detailRoot.add(rib);
     if (i % 2 === 0) {   // moss gathers in the seams
       const moss = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3 * s, 0), mossMat);
       moss.position.set(Math.cos(a) * 1.85 * s, (0.35 + (i % 3) * 0.2) * s, Math.sin(a) * 1.85 * s);
       moss.scale.set(1, 0.55, 1);
-      g.add(moss);
+      detailRoot.add(moss);
     }
   }
 
   // The "still faintly alive" tell.
   const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.72 * s, 0), glowMat);
   core.position.y = 2.5 * s;
-  g.add(core);
+  detailRoot.add(core);
   const light = new THREE.PointLight(isPlayer ? 0xffcc66 : 0xff8866, 6, 11 * s);
   light.position.y = 2.5 * s;
-  g.add(light);
+  detailRoot.add(light);
 
   const sel = new THREE.Mesh(
     new THREE.RingGeometry(t.radius + 0.15, t.radius + 0.38, 28),
@@ -72,8 +81,20 @@ function makeBuildingView(scene: THREE.Scene, b: Building): THREE.Group {
   sel.visible = false;
   g.add(sel);
 
+
+  const strategicMarker = new THREE.Mesh(
+    new THREE.CircleGeometry(Math.max(0.9, t.radius * 0.42), 14),
+    new THREE.MeshBasicMaterial({
+      color: isPlayer ? 0x6ea8ff : 0xff7a6e,
+      side: THREE.DoubleSide, transparent: true, opacity: 0.9, depthWrite: false,
+    }),
+  );
+  strategicMarker.rotation.x = -Math.PI / 2;
+  strategicMarker.position.y = 0.12;
+  strategicMarker.visible = false;
+  g.add(strategicMarker);
+
   g.position.set(b.x, terrainHeightAt(b.x, b.z), b.z);
-  g.userData = { core, sel, buildingId: b.id, pickTarget: drum } satisfies BuildingViewData;
   scene.add(g);
 
   // Control range — territory held, drawn flat on the ground. Follows the
@@ -89,22 +110,49 @@ function makeBuildingView(scene: THREE.Scene, b: Building): THREE.Group {
   }));
   ring.position.set(b.x, 0, b.z);
   scene.add(ring);
+  g.userData = {
+    core, sel, buildingId: b.id, pickTarget: drum, detailPickTarget: drum,
+    detailRoot, strategicMarker, territoryRing: ring,
+  } satisfies BuildingViewData;
 
   return g;
 }
 
 export function syncBuildingViews(
   scene: THREE.Scene, world: World, views: Map<EntityId, THREE.Group>,
-  selectedBuildingId: EntityId | null,
+  selectedBuildingId: EntityId | null, camera: THREE.Camera, qualityTier: QualityTier,
+  visibility: VisibilityController,
 ): void {
   for (const b of world.buildings) {
     if (!views.has(b.id)) views.set(b.id, makeBuildingView(scene, b));
   }
   // slow pulse on the cores — "still faintly alive", not machinery
   const pulse = 1 + Math.sin(world.tick * 0.045) * 0.09;
-  for (const v of views.values()) {
+  for (const [id, v] of views) {
     const d = v.userData as BuildingViewData;
+    const building = world.buildings.find(candidate => candidate.id === id);
+    if (!building) { scene.remove(v); views.delete(id); continue; }
+    const informationVisible = visibility.entityVisible(building.team, building.x, building.z);
+    v.visible = informationVisible;
+    d.territoryRing.visible = informationVisible;
+    if (!informationVisible) continue;
     d.core.scale.setScalar(pulse);
+    const distance = lodDistance3D(
+      camera.position.x, camera.position.y, camera.position.z,
+      v.position.x, v.position.y, v.position.z,
+    );
+    const lod = lodForDistance(distance, qualityTier);
+    d.detailRoot.visible = lod === 'close' || lod === 'tactical';
+    d.strategicMarker.visible = lod === 'strategic' || lod === 'world';
+    d.strategicMarker.scale.setScalar(strategicMarkerScale(distance, lod));
+    d.pickTarget = d.detailRoot.visible ? d.detailPickTarget : d.strategicMarker;
+    v.userData.pickTarget = d.pickTarget;
     d.sel.visible = d.buildingId === selectedBuildingId;
+  }
+  for (const [id, v] of views) {
+    if (world.buildings.some(building => building.id === id)) continue;
+    const d = v.userData as BuildingViewData;
+    scene.remove(d.territoryRing, v);
+    views.delete(id);
   }
 }

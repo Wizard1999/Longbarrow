@@ -3,6 +3,7 @@ import type { EntityId, Site, World } from '../core/types';
 import { BUILDING_TYPES } from '../data/buildings';
 import { terrainHeightAt } from '../sim/terrain';
 import { builderIsWorking, buildersOn } from '../sim/construction';
+import type { VisibilityController } from '../ui/visibility';
 
 const SITE_SINK = 4.2;
 
@@ -50,12 +51,15 @@ function makeSiteView(scene: THREE.Scene, site: Site): THREE.Group {
 }
 
 export function syncSiteViews(
-  scene: THREE.Scene, world: World, views: Map<EntityId, THREE.Group>,
+  scene: THREE.Scene, world: World, views: Map<EntityId, THREE.Group>, visibility: VisibilityController,
 ): void {
   for (const site of world.sites) {
     let v = views.get(site.id);
     if (!v) { v = makeSiteView(scene, site); views.set(site.id, v); }
     const d = v.userData as SiteViewData;
+    const informationVisible = visibility.entityVisible(site.team, site.x, site.z);
+    v.visible = informationVisible;
+    if (!informationVisible) continue;
     const frac = site.progress / site.required;
     v.position.set(site.x, terrainHeightAt(site.x, site.z) - (1 - frac) * SITE_SINK, site.z);
     const working = buildersOn(world, site.id).some(u => builderIsWorking(world, u));

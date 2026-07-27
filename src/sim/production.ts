@@ -6,6 +6,7 @@ import { MAX_QUEUE } from '../data/tuning';
 import { supplyFree } from './supply';
 import { spawnUnit } from './entities';
 import { assignGather } from './economy';
+import { clampPointToMapBoundary, mapBoundaryForSeed } from './mapBoundary';
 
 export function canTrain(world: World, buildingId: EntityId, unitType: UnitTypeKey): CommandResult {
   const b = world.buildings.find(x => x.id === buildingId);
@@ -29,14 +30,19 @@ export function stepProduction(world: World): void {
     // pop out at the building edge, then walk to the rally point
     const t = BUILDING_TYPES[b.type];
     const a = (world.tick * GOLDEN_ANGLE) % (Math.PI * 2);
-    const u = spawnUnit(world, item.type, b.team,
+    const boundary = mapBoundaryForSeed(world.mapSeed);
+    const spawn = clampPointToMapBoundary(
+      boundary,
       b.x + Math.cos(a) * (t.radius + 0.9),
-      b.z + Math.sin(a) * (t.radius + 0.9));
+      b.z + Math.sin(a) * (t.radius + 0.9),
+      UNIT_TYPES[item.type].radius,
+    );
+    const u = spawnUnit(world, item.type, b.team, spawn.x, spawn.z);
 
     // Per-type rally wins over the building default, so a base can feed workers
     // to a patch and soldiers to the front at the same time.
     const rally = b.rallyByType[item.type] ?? b.rally;
-    u.target = { x: rally.x, z: rally.z };
+    u.target = clampPointToMapBoundary(boundary, rally.x, rally.z, u.radius);
 
     // A rally can carry a standing job. Applied here rather than on arrival:
     // gather and build are both "walk there, then work", and the existing job

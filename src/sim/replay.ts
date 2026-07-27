@@ -8,10 +8,10 @@ import { hash } from './snapshot';
 import { MAP_VERSION, buildTestMap } from './map';
 import {
   cmdAddChainStep, cmdAssignBuilders, cmdCancelSite, cmdCancelTrain, cmdClearChain,
-  cmdDisbandSquad, cmdFormSquad, cmdGather, cmdMove, cmdPlaceBuilding,
+  cmdAttackMove, cmdDisbandSquad, cmdFormSquad, cmdGather, cmdHoldPosition, cmdMove, cmdPatrol, cmdPlaceBuilding,
   cmdClearRally, cmdRemoveChainStep, cmdRunChain, cmdSetChainLoop, cmdSetRally,
   cmdSetSelection,
-  cmdStopChain, cmdTrain,
+  cmdStop, cmdStopChain, cmdTrain,
 } from './commands';
 
 /**
@@ -26,7 +26,7 @@ import {
  */
 
 /** Bump when the meaning of a command or of a sim rule changes. */
-export const REPLAY_VERSION = 3;
+export const REPLAY_VERSION = 4;
 
 /**
  * Every player action, as plain serializable data.
@@ -38,6 +38,10 @@ export const REPLAY_VERSION = 3;
  */
 export type Command =
   | { t: 'move'; units: EntityId[]; x: number; z: number }
+  | { t: 'attackMove'; units: EntityId[]; x: number; z: number }
+  | { t: 'patrol'; units: EntityId[]; x: number; z: number }
+  | { t: 'stop'; units: EntityId[] }
+  | { t: 'hold'; units: EntityId[] }
   | { t: 'gather'; units: EntityId[]; node: EntityId }
   | { t: 'train'; building: EntityId; unit: UnitTypeKey }
   | { t: 'cancelTrain'; building: EntityId; index: number }
@@ -100,6 +104,10 @@ export interface Replay {
 export function dispatch(world: World, c: Command): void {
   switch (c.t) {
     case 'move': cmdMove(world, c.units, c.x, c.z); break;
+    case 'attackMove': cmdAttackMove(world, c.units, c.x, c.z); break;
+    case 'patrol': cmdPatrol(world, c.units, c.x, c.z); break;
+    case 'stop': cmdStop(world, c.units); break;
+    case 'hold': cmdHoldPosition(world, c.units); break;
     case 'gather': cmdGather(world, c.units, c.node); break;
     case 'train': cmdTrain(world, c.building, c.unit); break;
     case 'cancelTrain': cmdCancelTrain(world, c.building, c.index); break;

@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import {
-  cameraOffset, clampCameraState, panDelta, type CameraState,
+  cameraOffset, clampCameraState, distanceToFrameBoard, panDelta, type CameraState,
 } from './cameraMath';
 import { terrainHeightAt } from '../sim/terrain';
+import type { MapBoundary } from '../sim/mapBoundary';
 
 export interface RtsCamera {
   camera: THREE.PerspectiveCamera;
@@ -11,12 +12,17 @@ export interface RtsCamera {
   pan: (realDt: number, keys: Record<string, boolean>, mouseX: number, mouseY: number) => void;
   zoom: (deltaY: number, clientX?: number, clientY?: number) => void;
   orbit: (deltaX: number, deltaY: number) => void;
+  frameBoard: () => void;
+  focusAt: (x: number, z: number) => void;
   update: () => void;
   onResize: () => void;
 }
 
-export function createCamera(terrain?: THREE.Object3D): RtsCamera {
-  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 600);
+export function createCamera(terrain?: THREE.Object3D, boundary?: MapBoundary): RtsCamera {
+  // The table exists in a black void, so there is no atmospheric render cutoff.
+  // A large far plane keeps the complete board and eventual World Turtle visible
+  // even when the viewer pulls far outside the authored play surface.
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.05, 10000);
   const target = new THREE.Vector3();
   let state: CameraState = {
     focusX: -12,
@@ -33,6 +39,14 @@ export function createCamera(terrain?: THREE.Object3D): RtsCamera {
   const fallbackGroundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
 
   function syncCamera(): void {
+    // A single static near plane either clips miniature-level inspection or
+    // wastes depth precision at cosmological zoom. Scale it conservatively with
+    // distance while always preserving close tabletop inspection.
+    const desiredNear = THREE.MathUtils.clamp(state.distance / 1800, 0.025, 0.35);
+    if (Math.abs(camera.near - desiredNear) > 0.002) {
+      camera.near = desiredNear;
+      camera.updateProjectionMatrix();
+    }
     target.set(state.focusX, terrainHeightAt(state.focusX, state.focusZ), state.focusZ);
     const offset = cameraOffset(state);
     camera.position.set(target.x + offset.x, offset.y, target.z + offset.z);
@@ -70,6 +84,27 @@ export function createCamera(terrain?: THREE.Object3D): RtsCamera {
         syncCamera();
       }
     }
+  }
+
+  function frameBoard(): void {
+    const desired = distanceToFrameBoard(
+      boundary?.bounds.width ?? 80,
+      boundary?.bounds.depth ?? 80,
+      THREE.MathUtils.degToRad(camera.fov),
+      camera.aspect,
+    );
+    state = clampCameraState({
+      focusX: 0,
+      focusZ: 0,
+      yaw: THREE.MathUtils.degToRad(45),
+      pitch: THREE.MathUtils.degToRad(78),
+      distance: desired,
+    });
+    panVelocityX = 0;
+    panVelocityZ = 0;
+    zoomVelocity = 0;
+    zoomAnchor = null;
+    syncCamera();
   }
 
   function pan(realDt: number, keys: Record<string, boolean>, mouseX: number, mouseY: number): void {
@@ -115,8 +150,18 @@ export function createCamera(terrain?: THREE.Object3D): RtsCamera {
         const world = groundAt(ndc);
         if (world) zoomAnchor = { ndc, world };
       }
-      zoomVelocity += deltaY * 0.018;
-      zoomVelocity = THREE.MathUtils.clamp(zoomVelocity, -5, 5);
+      zoomVelocity += deltaY * Math.max(0.006, state.distance * 0.00065);
+      zoomVelocity = THREE.MathUtils.clamp(zoomVelocity, -18, 18);
+    },
+    frameBoard,
+    focusAt: (x: number, z: number) => {
+      state.focusX = x;
+      state.focusZ = z;
+      panVelocityX = 0;
+      panVelocityZ = 0;
+      zoomAnchor = null;
+      state = clampCameraState(state);
+      syncCamera();
     },
     orbit: (deltaX: number, deltaY: number) => {
       state.yaw -= deltaX * 0.006;

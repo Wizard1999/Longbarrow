@@ -17,6 +17,8 @@ export interface Vec2 {
 
 /** Four-state worker job machine. Once it leaves 'idle' it never returns
  *  without a new order — that is the whole of §8.2 set-and-forget. */
+export type UnitOrderMode = 'idle' | 'move' | 'attackMove' | 'patrol' | 'hold';
+
 export type GatherState = 'idle' | 'toNode' | 'gathering' | 'toBase' | 'depositing';
 
 export interface GatherJob {
@@ -45,6 +47,11 @@ export interface Unit {
   speed: number;
   radius: number;
   target: Vec2 | null;
+  /** Current direct player order. Plain data for saves, replays and lockstep. */
+  orderMode: UnitOrderMode;
+  patrolFrom: Vec2 | null;
+  patrolTo: Vec2 | null;
+  patrolHeading: 'to' | 'from';
   selected: boolean;
   gather: GatherJob | null;
   build: BuildJob | null;

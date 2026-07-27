@@ -4,6 +4,7 @@ import type {
 import { AUTOMATION } from '../data/tuning';
 import { assignGather, nearestNodeWithResources } from './economy';
 import { supplyCap } from './supply';
+import { clampPointToMapBoundary, mapBoundaryForSeed } from './mapBoundary';
 
 /**
  * A chain is a short list of steps the squad walks through on its own. Two
@@ -96,13 +97,16 @@ export function squadCentre(world: World, squad: Squad): Vec2 | null {
  *  so an automated move looks exactly like a hand-issued one. */
 function dispatchTo(world: World, squad: Squad, x: number, z: number): void {
   const ms = squadMembers(world, squad);
+  const boundary = mapBoundaryForSeed(world.mapSeed);
   ms.forEach((u, i) => {
     if (u.gather) { u.gather.state = 'idle'; u.gather.nodeId = null; }
     if (u.build) u.build.siteId = null;
-    if (ms.length === 1) { u.target = { x, z }; return; }
+    if (ms.length === 1) { u.target = clampPointToMapBoundary(boundary, x, z, u.radius); return; }
     const a = (i / ms.length) * Math.PI * 2;
     const spread = Math.min(0.5 * ms.length, 3.0);
-    u.target = { x: x + Math.cos(a) * spread, z: z + Math.sin(a) * spread };
+    u.target = clampPointToMapBoundary(
+      boundary, x + Math.cos(a) * spread, z + Math.sin(a) * spread, u.radius,
+    );
   });
 }
 
@@ -156,7 +160,9 @@ export function stepSquads(world: World): void {
           if (ids.length) assignGather(world, ids, node.id);
           // members that cannot gather just stand guard at the point
           for (const u of ms) {
-            if (!u.gather) u.target = { x: step.x, z: step.z };
+            if (!u.gather) u.target = clampPointToMapBoundary(
+              mapBoundaryForSeed(world.mapSeed), step.x, step.z, u.radius,
+            );
           }
         }
         squad.dispatched = true;

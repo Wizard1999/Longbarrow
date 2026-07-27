@@ -7,6 +7,22 @@ import { canPlaceBuilding } from '../src/sim/construction';
 import { isInControl, supplyCap, supplyUsed } from '../src/sim/supply';
 import { nearestDropoff } from '../src/sim/economy';
 import { BUILDING_TYPES } from '../src/data/buildings';
+import type { World } from '../src/core/types';
+
+function remoteBuildablePoint(w: World): { x: number; z: number } {
+  for (let distance = 30; distance >= 12; distance -= 2) {
+    for (let degrees = 0; degrees < 360; degrees += 15) {
+      const angle = degrees * Math.PI / 180;
+      const x = Math.cos(angle) * distance;
+      const z = Math.sin(angle) * distance;
+      if (!isInControl(w, 'player', x, z)
+        && canPlaceBuilding(w, 'player', 'outpost', x, z).ok) {
+        return { x, z };
+      }
+    }
+  }
+  throw new Error('expected a remote buildable point inside the generated map');
+}
 import { UNIT_TYPES } from '../src/data/units';
 import { MAX_QUEUE } from '../src/data/tuning';
 
@@ -87,8 +103,9 @@ describe('[16] outpost placement', () => {
   const onStructure = canPlaceBuilding(w, 'player', 'outpost', base.x + 0.5, base.z);
   const onNode = canPlaceBuilding(w, 'player', 'outpost', must(w.nodes[0]).x, must(w.nodes[0]).z);
   const offMap = canPlaceBuilding(w, 'player', 'outpost', 999, 0);
-  const farAway = canPlaceBuilding(w, 'player', 'outpost', 0, 30);
-  const res = cmdPlaceBuilding(w, 'player', 'outpost', 0, 30);
+  const remote = remoteBuildablePoint(w);
+  const farAway = canPlaceBuilding(w, 'player', 'outpost', remote.x, remote.z);
+  const res = cmdPlaceBuilding(w, 'player', 'outpost', remote.x, remote.z);
 
   const poor = freshMap();
   poor.resources.player = 0;
@@ -107,7 +124,7 @@ describe('[16] outpost placement', () => {
     expect(supplyCap(w, 'player')).toBe(capBefore);
   });
   it('cannot afford, cannot place', () => {
-    expect(canPlaceBuilding(poor, 'player', 'outpost', 0, 30).ok).toBe(false);
+    expect(canPlaceBuilding(poor, 'player', 'outpost', remote.x, remote.z).ok).toBe(false);
   });
 });
 
@@ -147,7 +164,8 @@ describe('[18] control range is territory, not a build restriction', () => {
     expect(isInControl(w, 'player', -base.x, -base.z)).toBe(false);
   });
   it('control does not gate placement', () => {
-    expect(canPlaceBuilding(w, 'player', 'outpost', 0, 30).ok).toBe(true);
-    expect(isInControl(w, 'player', 0, 30)).toBe(false);
+    const remote = remoteBuildablePoint(w);
+    expect(canPlaceBuilding(w, 'player', 'outpost', remote.x, remote.z).ok).toBe(true);
+    expect(isInControl(w, 'player', remote.x, remote.z)).toBe(false);
   });
 });

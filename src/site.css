@@ -275,6 +275,47 @@ p { margin: .9rem 0 0; color: var(--bone-dim); }
 .milestone-list span { font-family: var(--font-mono); font-size: .68rem; color: var(--gold); }
 .milestone-list p { margin: 0; font-size: .87rem; }
 
+/* ---- Full roadmap -------------------------------------------------------- */
+.roadmap-document {
+  margin-top: 3rem;
+  padding: clamp(1.5rem, 4vw, 3.2rem);
+  overflow: hidden;
+}
+.roadmap-document > h2 {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+  font-size: clamp(1.7rem, 4vw, 2.65rem);
+}
+.roadmap-document h2 {
+  margin: 3rem 0 1rem;
+  padding-top: 2.2rem;
+  border-top: 1px solid rgba(255,255,255,.09);
+  font-size: clamp(1.45rem, 3vw, 2.15rem);
+}
+.roadmap-document h3 {
+  margin: 2.2rem 0 .75rem;
+  color: var(--legacy);
+  font-size: 1.05rem;
+  letter-spacing: .02em;
+}
+.roadmap-document h4 { margin: 1.5rem 0 .65rem; font-size: .95rem; }
+.roadmap-document p,
+.roadmap-document li { color: #cbd1dd; font-size: .92rem; line-height: 1.75; }
+.roadmap-document ul,
+.roadmap-document ol { display: grid; gap: .45rem; margin: 1rem 0 1.5rem; padding-left: 1.35rem; }
+.roadmap-document hr { margin: 2.4rem 0; border: 0; border-top: 1px solid rgba(255,255,255,.08); }
+.roadmap-document code {
+  padding: .1rem .32rem; border-radius: .3rem; color: var(--gold);
+  background: rgba(255,255,255,.055); font-family: var(--font-mono); font-size: .82em;
+}
+.roadmap-table-wrap { width: 100%; margin: 1.25rem 0 1.8rem; overflow-x: auto; }
+.roadmap-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: .84rem; }
+.roadmap-table th,
+.roadmap-table td { padding: .72rem .8rem; border-bottom: 1px solid rgba(255,255,255,.07); text-align: left; vertical-align: top; }
+.roadmap-table th { color: var(--gold); font-family: var(--font-mono); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; }
+.roadmap-table tbody tr:hover { background: rgba(255,255,255,.025); }
+
 /* ---- Gallery ------------------------------------------------------------ */
 /* align-items:start so a figure hugs its image instead of stretching to the
    tallest cell in the row and leaving dead space beneath it. */
@@ -349,4 +390,47 @@ p { margin: .9rem 0 0; color: var(--bone-dim); }
 @supports not ((backdrop-filter: blur(4px)) or (-webkit-backdrop-filter: blur(4px))) {
   .glass, .hero-stats div { background: rgba(12,18,32,.94); }
   .site-header.is-scrolled { background: rgba(6,9,17,.97); }
+}
+
+/* ---- Full-size concept viewer ------------------------------------------ */
+.gallery-grid img[role='button'] { cursor: zoom-in; }
+.gallery-grid img[role='button']:focus-visible { outline: 2px solid var(--gold); outline-offset: -4px; }
+.art-lightbox {
+  width: 100vw; height: 100vh; max-width: none; max-height: none; margin: 0;
+  padding: clamp(1rem, 3vw, 2.5rem); border: 0; background: rgba(0,0,0,.94);
+  color: var(--bone); overflow: hidden;
+}
+.art-lightbox::backdrop { background: rgba(0,0,0,.88); backdrop-filter: blur(10px); }
+.art-lightbox[open] { display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 1rem; }
+.art-lightbox figure { margin: 0; min-width: 0; height: 100%; display: grid; grid-template-rows: minmax(0,1fr) auto; place-items: center; gap: .8rem; }
+.art-lightbox figure img { max-width: 100%; max-height: calc(100vh - 7rem); object-fit: contain; border-radius: 10px; }
+.art-lightbox figcaption { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--bone-dim); text-align: center; }
+.lightbox-close, .lightbox-nav {
+  border: 1px solid var(--edge); background: rgba(11,17,32,.82); color: var(--bone);
+  width: 3rem; height: 3rem; border-radius: 999px; cursor: pointer; font-size: 2rem;
+}
+.lightbox-close { position: fixed; top: 1rem; right: 1rem; z-index: 2; }
+.lightbox-nav:hover, .lightbox-close:hover { border-color: var(--gold); }
+
+/* Keep the war-table concept visually distant: a miniature object floating in
+   black negative space, not a full-bleed screenshot pretending to be gameplay. */
+.hero-art {
+  inset: 8% -2% 7% auto;
+  width: min(66vw, 980px);
+  height: 82%;
+  object-fit: contain;
+  object-position: center;
+  opacity: .44;
+  transform: scale(.84);
+}
+@keyframes breathe {
+  from { transform: scale(.84) translate3d(0,0,0); }
+  to   { transform: scale(.88) translate3d(0,-1%,0); }
+}
+@media (max-width: 760px) {
+  .hero-art { inset: 13% -28% auto auto; width: 115vw; height: 65%; opacity: .32; }
+  .art-lightbox[open] { grid-template-columns: 1fr; }
+  .lightbox-nav { position: fixed; bottom: 1rem; z-index: 2; }
+  .lightbox-prev { left: 1rem; }
+  .lightbox-next { right: 1rem; }
 }

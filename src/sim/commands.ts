@@ -11,26 +11,85 @@ import { assignGather } from './economy';
 import {
   automationSlots, createSquad, findSquad, runningSquads, stopSquadsContaining,
 } from './squads';
+import { clampPointToMapBoundary, mapBoundaryForSeed } from './mapBoundary';
 
 // The ONLY way anything outside the sim mutates the sim.
+
+function clearDirectOrder(u: World['units'][number]): void {
+  u.patrolFrom = null;
+  u.patrolTo = null;
+  u.patrolHeading = 'to';
+}
 
 export function cmdMove(world: World, unitIds: EntityId[], x: number, z: number): void {
   stopSquadsContaining(world, unitIds);
   const ids = new Set(unitIds);
   const group = world.units.filter(u => ids.has(u.id));
+  const boundary = mapBoundaryForSeed(world.mapSeed);
   group.forEach((u, i) => {
     // An explicit move order cancels a gather job. Standard RTS expectation,
     // and it's the player's escape hatch from "set and forget".
     if (u.gather) { u.gather.state = 'idle'; u.gather.nodeId = null; }
     // Releasing a builder PAUSES its site — progress stays on the site (§8.1).
     if (u.build) u.build.siteId = null;
-    if (group.length === 1) { u.target = { x, z }; return; }
+    clearDirectOrder(u);
+    u.orderMode = 'move';
+    if (group.length === 1) { u.target = clampPointToMapBoundary(boundary, x, z, u.radius); return; }
     const angle = (i / group.length) * Math.PI * 2;
     const spread = Math.min(0.5 * group.length, 2.5);
-    u.target = { x: x + Math.cos(angle) * spread, z: z + Math.sin(angle) * spread };
+    u.target = clampPointToMapBoundary(
+      boundary, x + Math.cos(angle) * spread, z + Math.sin(angle) * spread, u.radius,
+    );
   });
 }
 
+
+
+/** Move toward a destination while retaining normal autonomous combat. */
+export function cmdAttackMove(world: World, unitIds: EntityId[], x: number, z: number): void {
+  cmdMove(world, unitIds, x, z);
+  const ids = new Set(unitIds);
+  for (const u of world.units) if (ids.has(u.id) && !u.gather) u.orderMode = 'attackMove';
+}
+
+/** Repeatedly travel between the current position and a chosen destination. */
+export function cmdPatrol(world: World, unitIds: EntityId[], x: number, z: number): void {
+  stopSquadsContaining(world, unitIds);
+  const ids = new Set(unitIds);
+  const boundary = mapBoundaryForSeed(world.mapSeed);
+  for (const u of world.units) {
+    if (!ids.has(u.id)) continue;
+    if (u.gather) { u.gather.state = 'idle'; u.gather.nodeId = null; }
+    if (u.build) u.build.siteId = null;
+    u.orderMode = 'patrol';
+    u.patrolFrom = { x: u.x, z: u.z };
+    u.patrolTo = clampPointToMapBoundary(boundary, x, z, u.radius);
+    u.patrolHeading = 'to';
+    u.target = { ...u.patrolTo };
+  }
+}
+
+/** Cancel jobs and movement, but retain normal defensive auto-fire. */
+export function cmdStop(world: World, unitIds: EntityId[]): void {
+  stopSquadsContaining(world, unitIds);
+  const ids = new Set(unitIds);
+  for (const u of world.units) {
+    if (!ids.has(u.id)) continue;
+    if (u.gather) { u.gather.state = 'idle'; u.gather.nodeId = null; }
+    if (u.build) u.build.siteId = null;
+    u.target = null;
+    u.targetId = null;
+    clearDirectOrder(u);
+    u.orderMode = 'idle';
+  }
+}
+
+/** Hold the current ground. Units still fire at enemies already in range. */
+export function cmdHoldPosition(world: World, unitIds: EntityId[]): void {
+  cmdStop(world, unitIds);
+  const ids = new Set(unitIds);
+  for (const u of world.units) if (ids.has(u.id)) u.orderMode = 'hold';
+}
 /** One command, indefinite loop, no further input — §8.2 "set-and-forget".
  *  Returns the ids that actually accepted the order (workers only). */
 export function cmdGather(world: World, unitIds: EntityId[], nodeId: EntityId): EntityId[] {
@@ -82,6 +141,10 @@ export function cmdSetRally(
 ): CommandResult {
   const b = world.buildings.find(x2 => x2.id === buildingId);
   if (!b) return { ok: false, reason: 'no such building' };
+
+  const boundary = mapBoundaryForSeed(world.mapSeed);
+  const safe = clampPointToMapBoundary(boundary, x, z, 0.5);
+  x = safe.x; z = safe.z;
 
   const kind: RallyKind = opts.kind ?? 'move';
   const targetId = opts.targetId ?? null;
@@ -199,7 +262,8 @@ export function cmdAddChainStep(
   if (squad.chain.length >= AUTOMATION.maxChainSteps) {
     return { ok: false, reason: `chains are capped at ${AUTOMATION.maxChainSteps} steps` };
   }
-  squad.chain.push({ kind, x, z });
+  const safe = clampPointToMapBoundary(mapBoundaryForSeed(world.mapSeed), x, z, 0.5);
+  squad.chain.push({ kind, x: safe.x, z: safe.z });
   return { ok: true };
 }
 

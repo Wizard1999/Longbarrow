@@ -13,6 +13,7 @@ type ProgressData = {
   currentWork: string[];
   phases: Phase[];
   milestones: string[];
+  roadmapHtml: string;
 };
 
 const art = {
@@ -73,6 +74,7 @@ const fallback: ProgressData = {
   ],
   phases: [],
   milestones: [],
+  roadmapHtml: '<p>The full roadmap could not be loaded. Open <code>docs/ROADMAP.md</code> in the repository.</p>',
 };
 
 function renderProgress(data: ProgressData): void {
@@ -123,6 +125,10 @@ function renderProgress(data: ProgressData): void {
       return item;
     }));
   }
+
+
+  const roadmap = document.querySelector<HTMLElement>('[data-full-roadmap]');
+  if (roadmap) roadmap.innerHTML = data.roadmapHtml;
 }
 
 function escapeHtml(value: string): string {
@@ -152,3 +158,60 @@ document.querySelectorAll('.reveal').forEach((element) => observer.observe(eleme
 
 const header = document.querySelector<HTMLElement>('[data-header]');
 window.addEventListener('scroll', () => header?.classList.toggle('is-scrolled', window.scrollY > 24), { passive: true });
+
+
+// Concept-art lightbox ------------------------------------------------------
+// Gallery images are references worth studying, not decorative thumbnails.
+// Keep the viewer dependency-free and keyboard accessible.
+const galleryImages = [...document.querySelectorAll<HTMLImageElement>('.gallery-grid img')];
+if (galleryImages.length) {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'art-lightbox';
+  dialog.setAttribute('aria-label', 'Concept art viewer');
+  dialog.innerHTML = `
+    <button class="lightbox-close" type="button" aria-label="Close concept art viewer">×</button>
+    <button class="lightbox-nav lightbox-prev" type="button" aria-label="Previous image">‹</button>
+    <figure><img alt="" /><figcaption></figcaption></figure>
+    <button class="lightbox-nav lightbox-next" type="button" aria-label="Next image">›</button>`;
+  document.body.appendChild(dialog);
+
+  const fullImage = dialog.querySelector<HTMLImageElement>('figure img')!;
+  const caption = dialog.querySelector<HTMLElement>('figcaption')!;
+  let active = 0;
+
+  const show = (index: number): void => {
+    active = (index + galleryImages.length) % galleryImages.length;
+    const source = galleryImages[active]!;
+    fullImage.src = source.currentSrc || source.src;
+    fullImage.alt = source.alt;
+    caption.textContent = source.closest('figure')?.querySelector('figcaption')?.textContent ?? '';
+  };
+  const open = (index: number): void => {
+    show(index);
+    dialog.showModal();
+  };
+
+  galleryImages.forEach((image, index) => {
+    image.tabIndex = 0;
+    image.setAttribute('role', 'button');
+    image.setAttribute('aria-label', `${image.alt}. Open full-size image.`);
+    image.addEventListener('click', () => open(index));
+    image.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        open(index);
+      }
+    });
+  });
+
+  dialog.querySelector('.lightbox-close')?.addEventListener('click', () => dialog.close());
+  dialog.querySelector('.lightbox-prev')?.addEventListener('click', () => show(active - 1));
+  dialog.querySelector('.lightbox-next')?.addEventListener('click', () => show(active + 1));
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+  dialog.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowLeft') show(active - 1);
+    if (event.key === 'ArrowRight') show(active + 1);
+  });
+}

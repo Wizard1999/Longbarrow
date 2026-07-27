@@ -5,9 +5,8 @@ Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
 
 ## In flight
 
-> ⚠️ **Sequencing note:** the war table camera (D-014) should land before the
-> remaining art work on units, buildings and scenery. Styling them against the
-> current top-down camera means doing it twice.
+> ✅ **Sequencing checkpoint complete:** the war-table camera foundation now exists.
+> Remaining art work should be authored and evaluated against its miniature-to-cosmological zoom range.
 
 - [ ] **Art pass — painterly shading model.** `palette.ts`, `quality.ts`,
       `painterly.ts` and `renderer.ts` are written. Remaining: apply the
@@ -15,6 +14,8 @@ Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
       quality selector to the HUD; verify against the 100-unit perf target.
 
 ## Next up
+
+- [x] **Core direct RTS orders.** Attack-move, patrol, stop, and hold-position are now plain deterministic commands, recorded in replay format v4, exposed through A/P/S/H and selection-card controls, and hashed as simulation state. Remaining polish: command cursors, audio, target-following attack orders, and browser feel validation.
 
 - [ ] **In-game dev console.** Backtick to open. Commands operate through
       `sim/commands.ts` so they stay replay-safe. Minimum set:
@@ -24,7 +25,7 @@ Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
       competitive match. **Log every console command into the replay stream** —
       a replay that silently omits them will desync.
 
-- [ ] **Basic CPU opponent.** See `DECISIONS.md` D-009. Grow it alongside
+- [x] **Basic CPU opponent.** See `DECISIONS.md` D-009. Grow it alongside
       features rather than writing it late. First version: build workers,
       gather, expand at a threshold, train army, attack when supply crosses a
       line. It must go through `sim/commands.ts` like a human.
@@ -48,10 +49,10 @@ Foundation is in place: `sim/snapshot.ts` (snapshot/restore/hash) and
       Only revisit rollback via D-011's measurement gate.
 - [x] **Replay format** — `{ version, seed, startHour, tickRate, commands[] }`,
       recording + playback + validation in `sim/replay.ts`, 11 tests.
-- [ ] **Wire recording into live play** — input/UI still call `cmd*` directly.
+- [x] **Wire recording into live play** — input/UI still call `cmd*` directly.
       Route them through `Recorder.apply()` so real matches are recorded. This
       is complete through the browser-side `issueCommand()` gateway; player orders now record while preserving command return values.
-- [ ] **Replay keyframes** — periodic snapshots so seeking does not re-simulate
+- [x] **Replay keyframes** — periodic snapshots so seeking does not re-simulate
       from tick 0.
 - [ ] **Per-tick hash comparison** for desync detection, reporting the exact
       divergent tick.
@@ -64,17 +65,16 @@ Foundation is in place: `sim/snapshot.ts` (snapshot/restore/hash) and
 Direction locked, deferred by the designer. Should land **before** the remaining
 art work, so units/buildings/scenery are styled once against the real camera.
 
-- [ ] Free-flight orbital camera: any angle, any distance
-- [ ] Player scaling — miniature (inside the map) through to full-table view
-- [ ] Table edge: rim, underside, silhouette against the void
-- [ ] LOD system — impostors at table scale, real detail at miniature scale.
+- [x] Free-flight orbital camera: any angle, any distance
+- [x] Player scaling — miniature (inside the map) through to full-table view
+- [x] Table edge: temporary descending polygon skirt plus World Turtle silhouette against the void; final art remains
+- [x] LOD system foundation — strategic markers at table scale, real detail at miniature scale.
       No longer optional; arbitrary angle + arbitrary scale make it load-bearing
       for the 100-unit target
-- [ ] Frustum culling for arbitrary orientations
-- [ ] Rework `render/skyCycle.ts` for a void surround — light the table, not a
+- [x] Frustum-aware object visibility for arbitrary orientations; profiling/refinement remains
+- [x] Rework `render/skyCycle.ts` for a void surround — light the table, not a
       landscape; fog becomes edge falloff, not distance haze
-- [ ] Decide whether the minimap survives, and if so whether it becomes fast
-      travel rather than overview
+- [x] Keep the polygon-aware tactical map as fast navigation and information display
 - [ ] Re-examine the D-005 art omissions: close-range detail was dropped on the
       assumption of a far top-down camera, which no longer holds
 
@@ -168,8 +168,8 @@ current sandbox → camera → interaction sequence.
 - [ ] Produce a fuller Conclave water-and-fabric visual bible.
 
 ### Gameplay
-- [ ] Add tutorial mode after command/camera UX stabilizes; tutorial events must
-  observe deterministic sim state rather than mutate it from ad-hoc UI timers.
+- [x] Add tutorial mode after command/camera UX stabilizes; tutorial events observe deterministic sim state rather than mutate it from ad-hoc UI timers.
+- [ ] Add a dedicated tutorial scenario, contextual highlights, screen-reader review, and browser playtest pacing pass.
 - [ ] Add Mycora infection/domain prototype in a dedicated sandbox before faction
   production rules are implemented.
 
@@ -250,3 +250,50 @@ current sandbox → camera → interaction sequence.
 - [ ] Add free/follow/event/director camera modes to the replay viewer.
 - [ ] Smoothly frame event subjects and preserve manual camera control.
 - [ ] Consider event queue and picture-in-picture only after the primary director is readable.
+
+
+### 2026-07-27 tabletop freedom and website usability
+- Public site uses one obvious top-navigation button labelled **Play**.
+- Concept-art gallery supports full-screen click/keyboard viewing.
+- Hero war-table artwork is smaller and visually farther back in black negative space.
+- Camera envelope supports miniature-level inspection, near-overhead overview, full orbit, and travel beyond the authored terrain.
+- World backdrop is pure black and the terrain has temporary descending table edges pending the later support-world concept.
+
+
+## Replay presentation follow-up
+
+- [x] Deterministic timeline seeking with lazy keyframes and sandbox controls.
+- [ ] Emit replay-observed events and connect them to free/follow/event/director camera modes.
+- [ ] Add smooth event framing, shot blending, and manual-control suppression.
+
+## World Turtle presentation (D-026)
+
+- [ ] Replace the temporary terrain skirt with a distance-tiered shell/support form.
+- [ ] Author a low-detail far silhouette for head, limbs, tail, and shell.
+- [ ] Keep the carrier mostly hidden during normal RTS play and fully legible only at maximum zoom.
+- [ ] Profile far-zoom geometry and lighting before exploring recursive “turtles all the way down” staging.
+
+
+## Procedural polygon maps
+
+- [ ] Define canonical deterministic map-boundary data and schema.
+- [ ] Generate seeded irregular polygons with minimum-angle and corridor validation.
+- [ ] Triangulate polygon terrain and generate boundary-following descending edges.
+- [ ] Make pathing, placement, minimap, fog, camera framing, saves, and replays consume the same boundary.
+- [ ] Add generator presets and expose them to future RTS-engine content packs.
+
+- [x] Persistent in-game Low/Medium/High quality selector.
+
+## Polygon-map follow-up
+
+- [x] Create deterministic canonical polygon boundary from map seed.
+- [x] Render polygon terrain and matching descending perimeter.
+- [x] Validate construction footprints and scenery against the boundary.
+- [x] Clamp movement, rally points, and issued destinations to navigable polygon space.
+- [x] Generate spawn/resource layouts from boundary anchors rather than fixed coordinates.
+- [x] Use the boundary for tactical-map masking.
+- [x] Add polygon-clipped tactical fog with persistent exploration and current player vision.
+- [x] Add exact/random map-seed preview controls without advancing match RNG.
+- [x] Apply fog visibility to 3D rendering, selection/picking, commands, and spectator/replay policy.
+- [ ] Replace coarse fog cells with softened edge blending and profile large-map update cost.
+- [ ] Add multiple polygon families, concavity policy, biome regions, and map-browser previews.

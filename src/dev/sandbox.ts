@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { World } from '../core/types';
-import type { Loop } from '../core/loop';
+import { TICK_HZ, type Loop } from '../core/loop';
 import type { RtsCamera } from '../render/camera';
 import type { UiState } from '../input/selection';
 import { spawnSquad, spawnUnit } from '../sim/entities';
@@ -9,8 +9,10 @@ import { PerformanceMonitor, downloadPerformanceReport } from './performanceMoni
 import type { QualitySettings } from '../render/quality';
 import { createSave, loadSave, parseSave, serializeSave } from '../sim/save';
 import type { Recorder } from '../sim/replay';
-import { parseReplay, playback, serializeReplay, verifyReplay } from '../sim/replay';
+import { parseReplay, serializeReplay, verifyReplay } from '../sim/replay';
 import { restore } from '../sim/snapshot';
+import { ReplayTimeline } from '../replay/timeline';
+import type { VisibilityController } from '../ui/visibility';
 
 export type SandboxMode = 'camera' | 'battle' | 'units' | 'economy' | 'performance';
 
@@ -45,6 +47,7 @@ export interface SandboxOptions {
   scene: THREE.Scene;
   quality: QualitySettings;
   recorder: Recorder;
+  visibility: VisibilityController;
 }
 
 function modeFromUrl(): SandboxMode {
@@ -98,11 +101,12 @@ function seedScenario(world: World, mode: SandboxMode): void {
 }
 
 export function createSandbox(options: SandboxOptions): Sandbox {
-  const { world, loop, camera, renderer, ui, scene, quality, recorder } = options;
+  const { world, loop, camera, renderer, ui, scene, quality, recorder, visibility } = options;
   const params = new URLSearchParams(window.location.search);
   const enabled = params.has('dev');
   const mode = modeFromUrl();
   if (!enabled) return { enabled, mode, update: () => undefined };
+  document.body.classList.add('dev-mode');
 
   const panel = document.createElement('aside');
   panel.id = 'dev-sandbox';
@@ -131,6 +135,7 @@ export function createSandbox(options: SandboxOptions): Sandbox {
     <div class="dev-row">
       <button data-toggle="orders">Orders: off</button>
       <button data-toggle="radii">Radii: off</button>
+      <button data-toggle="vision">Vision: ${visibility.mode}</button>
     </div>
     <div class="dev-row">
       <button data-action="quick-save">Quick save</button>
@@ -141,8 +146,21 @@ export function createSandbox(options: SandboxOptions): Sandbox {
     <div class="dev-row">
       <button data-action="replay-export">Export replay</button>
       <button data-action="replay-verify">Verify replay</button>
-      <button data-action="replay-import">Load replay</button>
+      <button data-action="replay-view-current">Open viewer</button>
+      <button data-action="replay-import">Import replay</button>
     </div>
+    <section class="dev-replay" data-role="replay-controls" hidden>
+      <div class="dev-row">
+        <button data-replay-nav="start">|&lt;</button>
+        <button data-replay-nav="back">-10s</button>
+        <button data-replay-nav="play">Play</button>
+        <button data-replay-nav="forward">+10s</button>
+        <button data-replay-nav="end">&gt;|</button>
+      </div>
+      <label class="dev-timeline-label">Replay tick <output data-role="replay-tick">0</output>
+        <input data-role="replay-timeline" type="range" min="0" max="0" value="0" step="1">
+      </label>
+    </section>
     <div class="dev-row">
       <button data-action="benchmark-reset">Reset benchmark</button>
       <button data-action="benchmark-export">Export report</button>
@@ -158,8 +176,15 @@ export function createSandbox(options: SandboxOptions): Sandbox {
   const readout = panel.querySelector<HTMLElement>('.dev-readout');
   const saveFileInput = panel.querySelector<HTMLInputElement>('[data-role="save-file"]');
   const replayFileInput = panel.querySelector<HTMLInputElement>('[data-role="replay-file"]');
+  const replayControls = panel.querySelector<HTMLElement>('[data-role="replay-controls"]');
+  const replayTimelineInput = panel.querySelector<HTMLInputElement>('[data-role="replay-timeline"]');
+  const replayTickOutput = panel.querySelector<HTMLOutputElement>('[data-role="replay-tick"]');
   let saveStatus = 'save: none';
   let replayStatus = 'replay: recording';
+  let replayTimeline: ReplayTimeline | null = null;
+  let replayTick = 0;
+  let replayPlaying = false;
+  let replayClock = 0;
   let seeded = false;
   let frames = 0;
   let lastSample = performance.now();
@@ -169,6 +194,35 @@ export function createSandbox(options: SandboxOptions): Sandbox {
   const diagnosticVisuals = createDiagnosticVisuals(scene);
   const performanceMonitor = new PerformanceMonitor();
 
+  function showReplay(replay: ReturnType<Recorder['finish']>, startAtEnd = false): void {
+    replayTimeline = new ReplayTimeline(replay);
+    replayTick = startAtEnd ? replayTimeline.endTick : 0;
+    replayPlaying = false;
+    replayClock = 0;
+    if (replayControls) replayControls.hidden = false;
+    if (replayTimelineInput) {
+      replayTimelineInput.max = String(replayTimeline.endTick);
+      replayTimelineInput.value = String(replayTick);
+    }
+    restore(world, replayTimeline.seek(replayTick));
+    visibility.setMode('omniscient');
+    loop.setPaused(true);
+    recorder.invalidate('replay viewer opened');
+    ui.selectedSquadId = null;
+    ui.selectedBuildingId = null;
+    ui.selectedSiteId = null;
+    replayStatus = `replay viewer: tick ${replayTick}/${replayTimeline.endTick}`;
+  }
+
+  function seekReplay(nextTick: number): void {
+    if (!replayTimeline) return;
+    replayTick = Math.max(0, Math.min(replayTimeline.endTick, Math.floor(nextTick)));
+    restore(world, replayTimeline.seek(replayTick));
+    if (replayTimelineInput) replayTimelineInput.value = String(replayTick);
+    if (replayTickOutput) replayTickOutput.value = String(replayTick);
+    replayStatus = `replay viewer: tick ${replayTick}/${replayTimeline.endTick}`;
+  }
+
   panel.addEventListener('click', event => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('button');
     if (!button) return;
@@ -176,6 +230,7 @@ export function createSandbox(options: SandboxOptions): Sandbox {
     const spawn = button.dataset['spawn'];
     const action = button.dataset['action'];
     const toggle = button.dataset['toggle'];
+    const replayNav = button.dataset['replayNav'];
 
     if (speed) loop.setSpeed(Number(speed));
     if (spawn === 'player') spawnSquad(world, 'legionnaire', 'player', -10, 2, 8);
@@ -211,6 +266,13 @@ export function createSandbox(options: SandboxOptions): Sandbox {
     }
     if (action === 'save-import') saveFileInput?.click();
     if (action === 'replay-import') replayFileInput?.click();
+    if (action === 'replay-view-current') {
+      try {
+        showReplay(recorder.finish(world), false);
+      } catch (error) {
+        replayStatus = `replay: ${error instanceof Error ? error.message : 'viewer failed'}`;
+      }
+    }
     if (action === 'replay-export') {
       try {
         const replay = recorder.finish(world);
@@ -242,6 +304,19 @@ export function createSandbox(options: SandboxOptions): Sandbox {
     if (toggle === 'radii') {
       showRadii = !showRadii;
       button.textContent = `Radii: ${showRadii ? 'on' : 'off'}`;
+    }
+    if (toggle === 'vision') {
+      const mode = visibility.toggle();
+      button.textContent = `Vision: ${mode}`;
+    }
+    if (replayNav === 'start') seekReplay(0);
+    if (replayNav === 'back') seekReplay(replayTick - 10 * TICK_HZ);
+    if (replayNav === 'forward') seekReplay(replayTick + 10 * TICK_HZ);
+    if (replayNav === 'end' && replayTimeline) seekReplay(replayTimeline.endTick);
+    if (replayNav === 'play' && replayTimeline) {
+      replayPlaying = !replayPlaying;
+      replayClock = 0;
+      button.textContent = replayPlaying ? 'Pause replay' : 'Play';
     }
     if (action === 'clear') {
       world.units = world.units.filter(unit => unit.gather !== null);
@@ -276,13 +351,8 @@ export function createSandbox(options: SandboxOptions): Sandbox {
       if (replay.endTick === undefined) throw new Error('replay has no recorded endpoint');
       const verification = verifyReplay(replay);
       if (!verification.ok) throw new Error(verification.reason ?? 'replay verification failed');
-      restore(world, playback(replay, replay.endTick));
-      loop.setPaused(true);
-      recorder.invalidate('a replay was loaded');
-      ui.selectedSquadId = null;
-      ui.selectedBuildingId = null;
-      ui.selectedSiteId = null;
-      replayStatus = `replay: loaded and verified tick ${replay.endTick} · ${replay.commands.length} commands`;
+      showReplay(replay, false);
+      replayStatus = `replay: imported and verified · ${replay.commands.length} commands`;
     } catch (error) {
       replayStatus = `replay: ${error instanceof Error ? error.message : 'import failed'}`;
     } finally {
@@ -290,10 +360,24 @@ export function createSandbox(options: SandboxOptions): Sandbox {
     }
   });
 
+  replayTimelineInput?.addEventListener('input', () => {
+    replayPlaying = false;
+    seekReplay(Number(replayTimelineInput.value));
+  });
+
   return {
     enabled,
     mode,
     update: now => {
+      if (replayPlaying && replayTimeline) {
+        if (replayClock === 0) replayClock = now;
+        const elapsedTicks = Math.floor((now - replayClock) / (1000 / TICK_HZ));
+        if (elapsedTicks > 0) {
+          replayClock += elapsedTicks * (1000 / TICK_HZ);
+          seekReplay(replayTick + elapsedTicks);
+          if (replayTick >= replayTimeline.endTick) replayPlaying = false;
+        }
+      }
       frames++;
       performanceMonitor.sample(now);
       if (now - lastSample >= 500) {
@@ -302,6 +386,7 @@ export function createSandbox(options: SandboxOptions): Sandbox {
         lastSample = now;
       }
       diagnosticVisuals.sync(world, showOrders, showRadii);
+      if (replayTickOutput) replayTickOutput.value = String(replayTick);
       if (pauseButton) pauseButton.textContent = loop.isPaused() ? 'Resume' : 'Pause';
       if (readout) {
         const state = camera.state;

@@ -24,14 +24,17 @@ export interface CameraOffset {
 }
 
 export const DEFAULT_CAMERA_LIMITS: CameraLimits = {
-  minX: -38,
-  maxX: 38,
-  minZ: -38,
-  maxZ: 38,
-  minPitch: Math.PI * 0.20,
-  maxPitch: Math.PI * 0.43,
-  minDistance: 14,
-  maxDistance: 72,
+  // Deliberately wider than the authored terrain: the battlefield is a physical
+  // table floating in a void, so the viewer may move beyond its edge and inspect
+  // it from miniature level through an almost map-like overhead view.
+  minX: -180,
+  maxX: 180,
+  minZ: -180,
+  maxZ: 180,
+  minPitch: Math.PI * 0.025,
+  maxPitch: Math.PI * 0.495,
+  minDistance: 2.5,
+  maxDistance: 520,
 };
 
 export function clampCameraState(state: CameraState, limits = DEFAULT_CAMERA_LIMITS): CameraState {
@@ -42,6 +45,29 @@ export function clampCameraState(state: CameraState, limits = DEFAULT_CAMERA_LIM
     pitch: Math.min(limits.maxPitch, Math.max(limits.minPitch, state.pitch)),
     distance: Math.min(limits.maxDistance, Math.max(limits.minDistance, state.distance)),
   };
+}
+
+/**
+ * Returns a conservative perspective-camera distance that frames a rectangular
+ * board with breathing room. The calculation uses the tighter vertical or
+ * horizontal field of view, so ultrawide and portrait windows both receive a
+ * complete-board overview.
+ */
+export function distanceToFrameBoard(
+  width: number,
+  depth: number,
+  verticalFovRadians: number,
+  aspect: number,
+  padding = 1.18,
+): number {
+  const safeAspect = Math.max(0.1, aspect);
+  const verticalHalfFov = Math.max(0.01, verticalFovRadians / 2);
+  const horizontalHalfFov = Math.atan(Math.tan(verticalHalfFov) * safeAspect);
+  const halfWidth = Math.max(0, width) * 0.5 * padding;
+  const halfDepth = Math.max(0, depth) * 0.5 * padding;
+  const forWidth = halfWidth / Math.tan(horizontalHalfFov);
+  const forDepth = halfDepth / Math.tan(verticalHalfFov);
+  return Math.hypot(Math.max(forWidth, forDepth), Math.max(halfWidth, halfDepth));
 }
 
 export function normalizeAngle(angle: number): number {

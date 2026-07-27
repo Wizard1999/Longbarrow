@@ -11,9 +11,11 @@ export interface Renderer {
 export function createRenderer(q: QualitySettings): Renderer {
   const scene = new THREE.Scene();
   scene.background = LIGHT.background.clone();
-  // Aerial perspective: distance fades toward the sky colour, never toward
-  // grey. Cheap, and it is most of what gives a stylised scene depth.
-  scene.fog = new THREE.Fog(LIGHT.fog.getHex(), 52, 135);
+  // No distance fog: the battlefield is a finite mythic object suspended in a
+  // black void, and the complete board must remain visible at maximum zoom.
+  // Local atmospheric effects can be added later without imposing a global
+  // render-distance cutoff.
+  scene.fog = null;
 
   const renderer = new THREE.WebGLRenderer({
     antialias: q.antialias,

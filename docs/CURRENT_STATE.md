@@ -1,19 +1,56 @@
+## v1.23.0 core direct RTS orders — 84%
+
+- Added deterministic attack-move, patrol, stop, and hold-position commands.
+- Commands are available from A/P/S/H hotkeys and the selected-unit card.
+- Patrol state is plain snapshot-safe data; replay format advanced to v4 and state hashing now includes direct-order state.
+- Orders remain constrained by the generated polygon boundary.
+- Clean dependency installation, site consistency, typecheck, lint, all 302 tests, and the production build pass.
+
 # Current State
 
+## v1.22.0 guided tutorial foundation
+
+Longbarrow now includes an optional seven-step browser tutorial, launchable from the permanent in-game **Tutorial** button or with `?tutorial=1`. The guide observes existing deterministic world and UI state rather than injecting timer-driven simulation changes. It teaches worker selection, set-and-forget gathering, Standard selection, Legionnaire production, combat-unit selection, movement orders, and whole-board camera framing. Completion/skip state is stored locally, and the guide can be reopened at any time. Pure progression tests cover prerequisite ordering and completion. Dedicated tutorial-map setup, contextual world highlights, accessibility review, and real-player pacing validation remain.
+
+## v1.21.0 full-world fog enforcement
+
+A single presentation-side visibility controller now governs the tactical map, 3D unit/building/site/resource views, world picking, right-click target acquisition, and replay/spectator overrides. Unseen rival entities are hidden and cannot be clicked or attacked through fog; discovered resource nodes remain remembered. The battlefield now carries an instanced polygon-clipped fog overlay with distinct unexplored and explored treatments. Replay viewing automatically switches to omniscient vision, developer sandbox modes can toggle player/omniscient visibility, and `?vision=omniscient` supports explicit spectator testing. Deterministic simulation remains untouched.
+
+## v1.20.1 documentation and public-roadmap synchronization
+
+The public development page now embeds the complete contents of `docs/ROADMAP.md`, including all phases, tables, extensions, multiplayer staging, engine-platform stages, World Turtle direction, and polygon-map milestones. `scripts/sync-site-progress.mjs` is the only publication path, so editing the canonical roadmap and running or building the project updates the site automatically. A documentation audit also corrected stale camera, replay, save/load, minimap, AI, and engine-progress statuses across the roadmap and TODO list.
+
+## v1.20.0 tactical fog and seed browsing
+
+The tactical map now maintains a polygon-clipped presentation-side visibility field with unexplored, explored, and currently visible states. Player units, buildings, and sites provide vision; rival markers appear only under current vision, while discovered resources remain known. A compact seed control loads an exact `mapSeed` or generates a new one without consuming the deterministic match RNG. The next visibility milestone applies the same information policy to the 3D world, picking, and commands.
+
+
 **Date:** 2026-07-27
-**Repository:** `Wizard1999/Longbarrow` (private) — migrated from `Wizard1999/RTS`
-**Branch:** `claude/project-plan-review-34kyva` · `main` is current
+**Repository:** `Wizard1999/Longbarrow` (public) — migrated from `Wizard1999/RTS`
+**Branch:** `main` is the canonical public branch for this handoff
 **Last known upstream verification:** 226 passing · typecheck clean · lint clean · build clean
-**Current working-copy verification:** blocked pending dependency installation; no source failure established
+**Current working-copy verification:** 302 passing; site consistency, typecheck, lint, and production build clean
 
 ---
 
+
+
+## 2026-07-27 active production checkpoint — 84% / v1.23.0
+
+The renderer now has its first camera-distance LOD architecture. Units and buildings retain their authored silhouettes at close and tactical distance, then swap to inexpensive, team-readable strategic markers at overview and whole-world distance. Selection remains available because the active pick target follows the visible representation. Decorative scenery is culled beyond tactical range. The policy is quality-tier aware and isolated in `src/render/lod.ts` with dedicated tests.
+
+The temporary terrain slab now gives way at cosmological zoom to a first World Turtle blockout: shell, head, four limbs, and tail. This is deliberately silhouette-first and not final art. It remains hidden during ordinary RTS play and exists to validate scale, reveal distance, framing, and the transition from battlefield to mythic world-object.
+
+Verification note: a clean `npm ci` completed successfully. `npm run verify`
+passes site synchronization and consistency, typecheck, lint, all 302 tests,
+and the production Vite build.
 
 ## 2026-07-27 active production checkpoint — 44%
 
 The developer sandbox foundation is now complete: scenario presets, simulation controls, render metrics, selected-order diagnostics, and toggleable world overlays are available through `?dev=<mode>`. The war-table camera pans and orbits smoothly, zooms around the cursor, focuses at the actual terrain height, and uses the rendered terrain for anchoring. Selection now rejects hidden projections and resolves overlapping unit/site/building hits through a tested RTS priority policy. Move, gather, rally, attack, and invalid commands all provide immediate world-space acknowledgement.
 
-Browser verification is still pending because dependencies could not be installed in the execution environment used for this handoff. Source changes and tests are present, but must not be described as executed until `npm run verify` succeeds locally.
+Automated verification now passes. Manual browser feel, accessibility, and
+real-machine performance checks remain pending and are tracked separately.
 
 
 ### Deterministic save files
@@ -121,7 +158,7 @@ the final one; a replay agreeing only at the end could be right by luck. Also
 tested: JSON round trip, correct time-of-day restoration, and rejection of
 mismatched tick rate or version rather than playing them wrong.
 
-**Live recording is now wired.** Browser input and UI commands pass through a single `issueCommand()` gateway that records the serializable command before invoking the normal `cmd*` function, preserving command results needed by the interface. Replay v3 also records whether the standard AI was enabled plus an optional endpoint tick/hash. The sandbox can export, independently verify, and load the exact verified endpoint. The remaining work is an interactive timeline/keyframe viewer and observed-event integration for the cinematic director.
+**Live recording is now wired.** Browser input and UI commands pass through a single `issueCommand()` gateway that records the serializable command before invoking the normal `cmd*` function, preserving command results needed by the interface. Replay v3 also records whether the standard AI was enabled plus an optional endpoint tick/hash. The sandbox can export, independently verify, and load the exact verified endpoint. The sandbox now includes an interactive timeline viewer with deterministic lazy keyframes, start/end navigation, 10-second skips, play/pause, and direct scrubbing. Remaining replay work is observed-event integration and cinematic camera framing.
 
 ### Map seeds separated from match seeds
 `mapSeed` + `MAP_VERSION`, 12 tests.
@@ -189,7 +226,7 @@ Active next work:
 1. Re-test picking, drag selection, and commands at all camera angles.
 2. Validate the new move/gather/rally markers and add expanded diagnostics.
 3. Refine cursor anchoring against actual terrain height after browser validation.
-4. Validate the full suite once dependencies are available.
+4. Continue manual cross-browser and real-machine performance validation.
 
 The war-table camera (D-014) remains the next major feature and unblocks the
 remaining art pass.
@@ -355,3 +392,55 @@ A pure optional cinematic replay-director policy now exists in
 shot duration, switch cooldowns, score thresholds, distance penalties, and a
 manual-camera override window. It is not yet connected to live replay playback
 or camera interpolation.
+
+
+### 2026-07-27 tabletop freedom and website usability
+- Public site uses one obvious top-navigation button labelled **Play**.
+- Concept-art gallery supports full-screen click/keyboard viewing.
+- Hero war-table artwork is smaller and visually farther back in black negative space.
+- Camera envelope supports miniature-level inspection, near-overhead overview, full orbit, and travel beyond the authored terrain.
+- World backdrop is pure black and the terrain has temporary descending table edges pending the later support-world concept.
+
+
+### Replay timeline and far-zoom cosmology
+
+`src/replay/timeline.ts` now provides deterministic keyframe-backed seeking. The
+developer sandbox can open the current recording or import a verified replay,
+scrub to any tick, jump by ten seconds, and play from the timeline while the main
+simulation loop remains paused. The first seek builds keyframes lazily and later
+seeks restore the nearest cached state.
+
+D-026 locks the maximum-zoom world silhouette to a stylized World Turtle. The
+current black void and descending terrain body are intentionally temporary; the
+carrier geometry should be introduced through LOD so normal play reads as a war
+table and cosmic zoom reveals the complete mythic support creature.
+
+
+## Whole-board visibility and future map silhouettes
+
+Global distance fog has been removed so the board is never erased by an arbitrary render cutoff. The perspective far plane is 10,000 world units, camera overview range extends to 520 units, and `Home` invokes a tested aspect-aware whole-board framing calculation. Production maps are planned as seeded polygonal boundaries rather than permanent squares; see `MAP_GENERATION.md`.
+
+
+## v1.17.0 seeded polygon battlefield
+
+The test map is no longer rendered or bounded as a permanent square. A seeded,
+rotationally symmetric twelve-vertex polygon is now the canonical battlefield
+boundary. The terrain top, descending perimeter, construction validation,
+scenery placement, whole-board camera framing, and World Turtle proportions all
+consume that same boundary. `MAP_VERSION` advanced to 3 because identical seeds
+now produce a different physical map shape.
+
+## v1.16.0 strategic-view readability
+
+The first LOD pass now keeps strategic unit and building markers readable as the camera moves from tactical play to whole-world overview. Marker scale grows sublinearly with camera distance and remains capped, so it does not explode during transition shots. Players can choose Low, Medium, or High rendering quality inside the running game; the choice is persisted and applied through a clean reload because terrain and renderer construction depend on the tier. Perspective near clipping now adapts to camera distance to preserve close inspection while improving depth precision at extreme zoom.
+
+
+## v1.19.0 polygon tactical map
+
+The HUD now includes a polygon-aware tactical map derived from the same canonical boundary as terrain and gameplay. It renders live units, structures, sites, resources, and the current camera focus/heading. Clicking or dragging on the map recentres the tabletop camera while clamping the requested focus to valid battlefield space. The coordinate transform is pure and covered by tests, leaving a clean future insertion point for fog-of-war masking.
+
+## v1.18.0 polygon-safe gameplay layout
+
+The polygon boundary is now a gameplay constraint rather than only a rendering shape. Manual moves, formation offsets, rallies, behaviour-chain steps, unit-production exits, and per-tick movement are projected into safe navigable space. The simulation safety clamp prevents future systems from accidentally driving units off the table even if they bypass the normal command UI.
+
+Match setup no longer assumes square-map coordinates. Bases, mirrored resource clusters, starting workers, and starting armies are derived from the actual seeded boundary through a deterministic symmetric layout. The AI expansion search now validates circular footprints against the polygon instead of using hard-coded `±34` square limits. `MAP_VERSION` is 3 because this changes the physical setup produced by existing seeds.
