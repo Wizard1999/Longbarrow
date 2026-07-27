@@ -1,5 +1,22 @@
 # START HERE
 
+> **First, check the git remote.** The home of this project is
+> **`Wizard1999/Longbarrow`**, not the older `Wizard1999/RTS`.
+>
+> ```bash
+> git remote -v          # origin must be .../Wizard1999/Longbarrow
+> ```
+>
+> Remote-execution containers are recreated between sessions and re-clone from
+> whichever repository the session was originally attached to, which silently
+> resets `origin` back to `RTS`. This has already happened once and sent a
+> commit to the wrong repository. If `origin` is wrong, fix it before pushing:
+>
+> ```bash
+> git remote rename origin rts-old
+> git remote add origin https://github.com/Wizard1999/Longbarrow
+> ```
+
 Every new session begins here. Read these, in order:
 
 1. **`CLAUDE.md`** — what the project is, the architecture rule, the coding rules
