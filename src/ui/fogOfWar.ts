@@ -92,6 +92,33 @@ export class FogOfWarField {
     return this.visible[index] ? 2 : this.explored[index] ? 1 : 0;
   }
 
+  /**
+   * Write the field into a byte per cell, for upload as a texture.
+   *
+   * `0` fogged, `128` explored-but-unseen, `255` clear. Ground outside the map
+   * polygon is written as clear rather than unexplored: there is no terrain out
+   * there to conceal, and letting the sampler blend from "clear" to "unexplored"
+   * across the rim is what gives the fog a soft edge at the table's edge instead
+   * of a cut line.
+   *
+   * A texture rather than one quad per cell because the tiling in B-004 was
+   * structural — more, smaller squares is still squares. Interpolation between
+   * cells is what actually removes it, and it costs one upload of a few kilobytes
+   * per frame instead of thousands of instanced draws.
+   */
+  coverage(out: Uint8Array): void {
+    for (let row = 0; row < this.rows; row++) {
+      for (let col = 0; col < this.columns; col++) {
+        const index = row * this.columns + col;
+        const p = this.cellCenter(col, row);
+        if (!pointInMapBoundary(this.boundary, p.x, p.z)) { out[index] = 255; continue; }
+        out[index] = this.visible[index] ? 255 : this.explored[index] ? 128 : 0;
+      }
+    }
+  }
+
+  get coverageLength(): number { return this.columns * this.rows; }
+
   cells(): FogCell[] {
     const width = this.boundary.bounds.width / this.columns;
     const depth = this.boundary.bounds.depth / this.rows;
