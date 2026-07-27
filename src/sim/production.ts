@@ -5,6 +5,7 @@ import { UNIT_TYPES } from '../data/units';
 import { MAX_QUEUE } from '../data/tuning';
 import { supplyFree } from './supply';
 import { spawnUnit } from './entities';
+import { assignGather } from './economy';
 
 export function canTrain(world: World, buildingId: EntityId, unitType: UnitTypeKey): CommandResult {
   const b = world.buildings.find(x => x.id === buildingId);
@@ -31,6 +32,22 @@ export function stepProduction(world: World): void {
     const u = spawnUnit(world, item.type, b.team,
       b.x + Math.cos(a) * (t.radius + 0.9),
       b.z + Math.sin(a) * (t.radius + 0.9));
-    u.target = { x: b.rally.x, z: b.rally.z };
+
+    // Per-type rally wins over the building default, so a base can feed workers
+    // to a patch and soldiers to the front at the same time.
+    const rally = b.rallyByType[item.type] ?? b.rally;
+    u.target = { x: rally.x, z: rally.z };
+
+    // A rally can carry a standing job. Applied here rather than on arrival:
+    // gather and build are both "walk there, then work", and the existing job
+    // state machines already handle the walking.
+    if (rally.kind === 'gather' && rally.targetId !== null && u.gather) {
+      // Silently ignored if the node has since been exhausted and removed —
+      // the unit still walks to the point, which is the sane fallback.
+      assignGather(world, [u.id], rally.targetId);
+    } else if (rally.kind === 'build' && rally.targetId !== null && u.build) {
+      const site = world.sites.find(st => st.id === rally.targetId);
+      if (site && site.team === u.team) u.build.siteId = site.id;
+    }
   }
 }

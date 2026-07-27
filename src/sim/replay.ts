@@ -1,5 +1,5 @@
 import type {
-  BehaviourKind, BuildingTypeKey, EntityId, Team, UnitTypeKey, World,
+  BehaviourKind, BuildingTypeKey, EntityId, RallyKind, Team, UnitTypeKey, World,
 } from '../core/types';
 import { TICK_HZ } from '../core/loop';
 import { createWorld, simStep } from './world';
@@ -9,7 +9,8 @@ import { MAP_VERSION, buildTestMap } from './map';
 import {
   cmdAddChainStep, cmdAssignBuilders, cmdCancelSite, cmdCancelTrain, cmdClearChain,
   cmdDisbandSquad, cmdFormSquad, cmdGather, cmdMove, cmdPlaceBuilding,
-  cmdRemoveChainStep, cmdRunChain, cmdSetChainLoop, cmdSetRally, cmdSetSelection,
+  cmdClearRally, cmdRemoveChainStep, cmdRunChain, cmdSetChainLoop, cmdSetRally,
+  cmdSetSelection,
   cmdStopChain, cmdTrain,
 } from './commands';
 
@@ -40,7 +41,11 @@ export type Command =
   | { t: 'gather'; units: EntityId[]; node: EntityId }
   | { t: 'train'; building: EntityId; unit: UnitTypeKey }
   | { t: 'cancelTrain'; building: EntityId; index: number }
-  | { t: 'rally'; building: EntityId; x: number; z: number }
+  | {
+      t: 'rally'; building: EntityId; x: number; z: number;
+      unitType?: UnitTypeKey; kind?: RallyKind; targetId?: EntityId | null;
+    }
+  | { t: 'clearRally'; building: EntityId; unitType: UnitTypeKey }
   | { t: 'place'; team: Team; type: BuildingTypeKey; x: number; z: number; builders: EntityId[] }
   | { t: 'assignBuilders'; units: EntityId[]; site: EntityId }
   | { t: 'cancelSite'; site: EntityId }
@@ -98,7 +103,14 @@ export function dispatch(world: World, c: Command): void {
     case 'gather': cmdGather(world, c.units, c.node); break;
     case 'train': cmdTrain(world, c.building, c.unit); break;
     case 'cancelTrain': cmdCancelTrain(world, c.building, c.index); break;
-    case 'rally': cmdSetRally(world, c.building, c.x, c.z); break;
+    case 'rally':
+      cmdSetRally(world, c.building, c.x, c.z, {
+        ...(c.unitType ? { unitType: c.unitType } : {}),
+        ...(c.kind ? { kind: c.kind } : {}),
+        ...(c.targetId !== undefined ? { targetId: c.targetId } : {}),
+      });
+      break;
+    case 'clearRally': cmdClearRally(world, c.building, c.unitType); break;
     case 'place': cmdPlaceBuilding(world, c.team, c.type, c.x, c.z, c.builders); break;
     case 'assignBuilders': cmdAssignBuilders(world, c.units, c.site); break;
     case 'cancelSite': cmdCancelSite(world, c.site); break;

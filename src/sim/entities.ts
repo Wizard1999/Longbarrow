@@ -39,7 +39,8 @@ export function spawnBuilding(
     radius: t.radius,
     hp: t.hp,
     queue: [],
-    rally: { x, z: z + t.radius + 2.5 },
+    rally: { x, z: z + t.radius + 2.5, kind: 'move', targetId: null },
+    rallyByType: {},
   };
   world.buildings.push(b);
   return b;

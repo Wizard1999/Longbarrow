@@ -28,9 +28,39 @@ const art = {
   titanfolk: new URL('../docs/assets/concept-art/titanfolk-creature.webp', import.meta.url).href,
 } as const;
 
+/**
+ * Stamp every piece of art as concept art, at the one place art is injected.
+ *
+ * None of these images are in-game footage — they are AI-generated exploration
+ * of the design language. A visitor scrolling a hero image has no way to know
+ * that unless the page says so, and letting them assume otherwise would
+ * misrepresent how far along the game actually is.
+ *
+ * Done here rather than in the markup deliberately: a caption written by hand
+ * is one someone forgets when adding the next image. Labelling at the injection
+ * point means unlabelled art is not possible.
+ */
 for (const image of document.querySelectorAll<HTMLImageElement>('[data-art]')) {
   const key = image.dataset.art as keyof typeof art;
-  if (key in art) image.src = art[key];
+  if (!(key in art)) continue;
+  image.src = art[key];
+
+  // Purely decorative backdrops are aria-hidden and carry no alt text; badging
+  // them would add visual noise without informing anyone.
+  if (image.getAttribute('aria-hidden') === 'true') continue;
+
+  image.title = 'Concept art — not in-game footage';
+  if (image.alt && !/concept art/i.test(image.alt)) {
+    image.alt = `Concept art: ${image.alt}`;
+  }
+
+  const host = image.closest('figure') ?? image.parentElement;
+  if (!host || host.querySelector('.concept-badge')) continue;
+  if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+  const badge = document.createElement('span');
+  badge.className = 'concept-badge';
+  badge.textContent = 'Concept art';
+  host.appendChild(badge);
 }
 
 const fallback: ProgressData = {

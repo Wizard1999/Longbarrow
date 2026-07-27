@@ -1,5 +1,10 @@
 # Concept Art Prompts
 
+> Output from these prompts is **concept art, not in-game footage**, and must be
+> labelled as such anywhere it is shown. `src/site.ts` badges every image
+> automatically at the injection point, so new art cannot be published
+> unlabelled — keep it that way rather than hand-writing captions.
+
 Ten prompts for image generation (Stable Diffusion / Midjourney / Flux), built
 from the locked art direction in `GAME_DESIGN.md § 8.8`, `§ 10.1` and
 `DECISIONS.md` D-005.

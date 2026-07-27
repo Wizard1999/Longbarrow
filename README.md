@@ -34,6 +34,17 @@ Runs in the browser. No engine, no framework — TypeScript, Three.js and Vite.
 
 See the full [original concept-art gallery](docs/CONCEPT_ART.md).
 
+## About the artwork
+
+**All imagery in this repository and on the development site is concept art —
+not in-game footage.** The pieces in `docs/assets/concept-art/` are AI-generated
+explorations produced from the prompts in `docs/ART_PROMPTS.md`, and they exist
+to pin down silhouette, material and faction identity before any of it is
+modelled.
+
+The game itself currently renders stylized placeholder geometry. Nothing in the
+gallery has been built yet.
+
 ## Downloading a versioned copy
 
 Use the **Releases** page, or any tag. A download taken from tag `v1.12.0`

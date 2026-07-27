@@ -1,5 +1,10 @@
 # Original Concept Art
 
+> **These are concept art, not in-game footage.** AI-generated exploration of
+> the design language, produced from `ART_PROMPTS.md`. None of it has been
+> modelled or rendered by the game. Anywhere these images appear publicly they
+> must be labelled — `src/site.ts` does this automatically.
+
 These images are the project's first-party visual targets. They are **directional
 references**, not promises that the shipping game will reproduce hero-shot detail
 at RTS scale. Every asset and effect must still satisfy the war-table camera,

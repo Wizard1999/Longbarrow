@@ -111,6 +111,15 @@ export function hash(world: World): string {
   for (const b of world.buildings) {
     mix(b.id); mixS(b.type); mixS(b.team); mixF(b.x); mixF(b.z); mixF(b.hp);
     for (const q of b.queue) { mixS(q.type); mix(q.ticksLeft); }
+    // Rally is player intent that changes what future units do, so two peers
+    // disagreeing about it would diverge the moment anything finishes training.
+    mixF(b.rally.x); mixF(b.rally.z); mixS(b.rally.kind); mix(b.rally.targetId ?? -1);
+    // Sorted, because object key order must never decide a hash.
+    for (const k of Object.keys(b.rallyByType).sort()) {
+      const r = b.rallyByType[k as keyof typeof b.rallyByType];
+      if (!r) continue;
+      mixS(k); mixF(r.x); mixF(r.z); mixS(r.kind); mix(r.targetId ?? -1);
+    }
   }
 
   for (const n of world.nodes) { mix(n.id); mixF(n.amount); }

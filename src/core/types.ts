@@ -64,6 +64,26 @@ export interface QueueItem {
   ticksLeft: number;
 }
 
+/**
+ * A rally point that can carry intent, not just a destination.
+ *
+ * "Send new workers to that patch" is one decision the player should make once,
+ * not a move order they reissue after every worker. That is the §8.2
+ * set-and-forget economy pillar, and the UI blueprint's "constant worker
+ * babysitting" listed explicitly as a thing the interface must not require.
+ */
+export interface RallyPoint {
+  x: number;
+  z: number;
+  /** What the arriving unit does: walk there, mine there, or help build there. */
+  kind: RallyKind;
+  /** Node or site the rally refers to. Null for a plain move. An id rather
+   *  than a reference, so the world stays snapshot-safe (D-010). */
+  targetId: EntityId | null;
+}
+
+export type RallyKind = 'move' | 'gather' | 'build';
+
 export interface Building {
   id: EntityId;
   type: BuildingTypeKey;
@@ -75,7 +95,18 @@ export interface Building {
    *  (§2), so a base has to be something an army can actually knock down. */
   hp: number;
   queue: QueueItem[];
-  rally: Vec2;
+  /** Where units go when they finish training, and what they do on arrival. */
+  rally: RallyPoint;
+  /**
+   * Per-unit-type overrides. A base can send new workers straight to a mineral
+   * patch while new soldiers go to the front, without the player retargeting
+   * the rally between every build.
+   *
+   * A plain object keyed by unit type, deliberately — it has to survive
+   * structuredClone and JSON for snapshots and replays (D-010), which a Map
+   * would not.
+   */
+  rallyByType: Partial<Record<UnitTypeKey, RallyPoint>>;
 }
 
 export interface ResourceNode {

@@ -1,5 +1,6 @@
 import type {
-  BehaviourKind, BuildingTypeKey, CommandResult, EntityId, Squad, Team, UnitTypeKey, World,
+  BehaviourKind, Building, BuildingTypeKey, CommandResult, EntityId, RallyKind, RallyPoint,
+  Squad, Team, UnitTypeKey, World,
 } from '../core/types';
 import { BUILDING_TYPES } from '../data/buildings';
 import { UNIT_TYPES } from '../data/units';
@@ -57,11 +58,69 @@ export function cmdCancelTrain(world: World, buildingId: EntityId, index: number
   return { ok: true };
 }
 
-export function cmdSetRally(world: World, buildingId: EntityId, x: number, z: number): CommandResult {
+export interface RallyOptions {
+  /** Set the rally for one unit type only. Omit for the building default. */
+  unitType?: UnitTypeKey;
+  /** What arriving units should do. Defaults to walking there. */
+  kind?: RallyKind;
+  /** The node or site a 'gather' or 'build' rally refers to. */
+  targetId?: EntityId | null;
+}
+
+/**
+ * Set a rally point, optionally for a single unit type and optionally with a
+ * standing job attached.
+ *
+ * Validates the target up front rather than at spawn time. A rally that points
+ * at a node which no longer exists should be refused when the player sets it,
+ * while they are looking at it — discovering it silently three workers later,
+ * when they walk to an empty patch and idle, is exactly the babysitting the
+ * design is trying to remove.
+ */
+export function cmdSetRally(
+  world: World, buildingId: EntityId, x: number, z: number, opts: RallyOptions = {},
+): CommandResult {
   const b = world.buildings.find(x2 => x2.id === buildingId);
   if (!b) return { ok: false, reason: 'no such building' };
-  b.rally = { x, z };
+
+  const kind: RallyKind = opts.kind ?? 'move';
+  const targetId = opts.targetId ?? null;
+
+  if (kind === 'gather') {
+    if (targetId === null) return { ok: false, reason: 'gather rally needs a node' };
+    if (!world.nodes.some(n => n.id === targetId)) return { ok: false, reason: 'no such node' };
+  }
+  if (kind === 'build') {
+    if (targetId === null) return { ok: false, reason: 'build rally needs a site' };
+    const site = world.sites.find(st => st.id === targetId);
+    if (!site) return { ok: false, reason: 'no such site' };
+    if (site.team !== b.team) return { ok: false, reason: 'not your site' };
+  }
+
+  if (opts.unitType) {
+    if (!BUILDING_TYPES[b.type].produces.includes(opts.unitType)) {
+      return { ok: false, reason: 'this building does not make that unit' };
+    }
+    b.rallyByType[opts.unitType] = { x, z, kind, targetId };
+  } else {
+    b.rally = { x, z, kind, targetId };
+  }
   return { ok: true };
+}
+
+/** Drop a per-type override so that unit type falls back to the default. */
+export function cmdClearRally(
+  world: World, buildingId: EntityId, unitType: UnitTypeKey,
+): CommandResult {
+  const b = world.buildings.find(x2 => x2.id === buildingId);
+  if (!b) return { ok: false, reason: 'no such building' };
+  delete b.rallyByType[unitType];
+  return { ok: true };
+}
+
+/** The rally a given unit type will actually use. */
+export function rallyFor(b: Building, unitType: UnitTypeKey): RallyPoint {
+  return b.rallyByType[unitType] ?? b.rally;
 }
 
 /** Placing does not build. It commits the essence and creates a site; a worker
