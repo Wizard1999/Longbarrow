@@ -19,6 +19,14 @@
   }
   #res .big { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
   #res .sub { color: #666; font-size: 12px; }
+  #clock { display: flex; align-items: center; gap: 7px; }
+  #clock .sub { text-transform: capitalize; min-width: 34px; }
+  /* The dial is the at-a-glance read; the digits are the precise one. Its
+     background is set per-frame from the same light level the scene uses. */
+  #clock .dial {
+    width: 15px; height: 15px; border-radius: 50%;
+    border: 1.5px solid rgba(0,0,0,.28); display: inline-block; flex: none;
+  }
   #debug { top: 12px; right: 12px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; min-width: 210px; }
   #debug .row { display: flex; justify-content: space-between; gap: 16px; }
   #debug .k { color: #666; }
@@ -98,6 +106,11 @@
   <div><span class="big" id="r-supply">0/0</span> <span class="sub">command</span></div>
   <div><span class="big" id="r-chains">0/0</span> <span class="sub">chains</span></div>
   <div><span id="r-remaining">0</span> <span class="sub">left on map</span></div>
+  <div id="clock">
+    <span id="c-dial" class="dial"></span>
+    <span class="big" id="c-time">08:00</span>
+    <span class="sub" id="c-period">day</span>
+  </div>
 </div>
 <div id="card" class="panel">
   <h3 id="card-title">Nothing selected</h3>

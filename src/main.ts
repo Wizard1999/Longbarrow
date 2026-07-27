@@ -1,5 +1,5 @@
 import type { EntityId } from './core/types';
-import type * as THREE from 'three';
+import * as THREE from 'three';
 import { createLoop } from './core/loop';
 import { createWorld, simStep } from './sim/world';
 import { buildTestMap } from './sim/map';
@@ -9,6 +9,7 @@ import { AUTOMATION } from './data/tuning';
 import { createRenderer } from './render/renderer';
 import { QUALITY, detectTier } from './render/quality';
 import { updatePainterlyGlobals } from './render/painterly';
+import { sampleSky } from './render/skyCycle';
 import { buildTerrainMesh } from './render/terrainMesh';
 import { buildSceneryViews } from './render/sceneryViews';
 import { buildNodeViews, syncNodeViews } from './render/nodeViews';
@@ -27,7 +28,7 @@ import { createChainEditor } from './ui/chainEditor';
 const world = buildTestMap(createWorld(1337));
 
 const quality = QUALITY[detectTier()];
-const { scene, renderer } = createRenderer(quality);
+const { scene, renderer, sun } = createRenderer(quality);
 const terrainMesh = buildTerrainMesh(scene, quality);
 buildSceneryViews(scene, world);
 
@@ -110,7 +111,16 @@ window.addEventListener('resize', () => {
 const loop = createLoop({
   step: () => simStep(world),
   render: (alpha, realDt, now) => {
-    updatePainterlyGlobals(now, quality.cloudShadows ? 0.28 : 0);
+    // Drive the whole sky from the sim clock, so what the player sees and
+    // what a replay records are the same time of day.
+    const sky = sampleSky(world);
+    updatePainterlyGlobals(now, quality.cloudShadows ? 0.28 * sky.light : 0, sky);
+    sun.position.copy(sky.sunDir).multiplyScalar(60);
+    sun.color.copy(sky.sunColor);
+    sun.intensity = 0.35 + sky.light * 1.65;
+    scene.background = sky.background;
+    (scene.fog as THREE.Fog).color.copy(sky.fog);
+    renderer.toneMappingExposure = 0.85 + sky.light * 0.3;
     cam.pan(realDt, keyboard.keys, keyboard.mouseX, keyboard.mouseY);
     cam.update();
     const squadMemberIds = new Set(world.squads.flatMap(s => s.memberIds));

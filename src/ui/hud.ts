@@ -9,6 +9,7 @@ import { countGathering, totalResourcesRemaining } from '../sim/economy';
 import { supplyCap, supplyUsed } from '../sim/supply';
 import { automationSlots, runningSquads } from '../sim/squads';
 import type { UiState } from '../input/selection';
+import { dayNumber, dayPeriod, daylight, formatClock } from '../sim/daynight';
 
 const el = (id: string): HTMLElement => {
   const found = document.getElementById(id);
@@ -32,6 +33,7 @@ export function createHud(world: World, ui: UiState): Hud {
     workers: el('r-workers'), remaining: el('r-remaining'), supply: el('r-supply'),
     chains: el('r-chains'),
   };
+  const clockUi = { time: el('c-time'), period: el('c-period'), dial: el('c-dial') };
   const cardTitle = el('card-title');
   const cardBtns = el('card-btns');
   const cardQueue = el('card-queue');
@@ -171,6 +173,16 @@ export function createHud(world: World, ui: UiState): Hud {
     dbg.sel.textContent = String(world.units.filter(u => u.selected).length);
     dbg.throttle.textContent = throttled ? 'ON (~12fps)' : 'off';
     dbg.throttle.className = throttled ? 'warn' : '';
+
+    // Always visible, never hidden behind a toggle — the designer's ask is that
+    // the player can tell the time of day at any moment.
+    clockUi.time.textContent = formatClock(world);
+    const period = dayPeriod(world);
+    clockUi.period.textContent = period;
+    const lit = Math.round(daylight(world) * 100);
+    clockUi.dial.style.background =
+      `conic-gradient(#ffd9a0 0 ${lit}%, #2b3557 ${lit}% 100%)`;
+    clockUi.dial.title = `Day ${dayNumber(world) + 1} — ${period}`;
 
     resUi.essence.textContent = String(world.resources.player);
     resUi.gathering.textContent = String(countGathering(world, 'player'));

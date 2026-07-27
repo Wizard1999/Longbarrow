@@ -223,11 +223,28 @@ export function setOpacity(mat: THREE.ShaderMaterial, value: number): void {
 
 /** Cloud shadows drifting across the ground: one of the strongest Ghibli
  *  signals available, and it costs two noise lookups. */
-export function updatePainterlyGlobals(elapsed: number, cloudAmount: number): void {
+export function updatePainterlyGlobals(
+  elapsed: number, cloudAmount: number, sky?: SkyGlobals,
+): void {
   for (const mat of registry) {
     const amt = mat.uniforms['uCloudAmount'];
     const off = mat.uniforms['uCloudOffset'];
     if (amt) amt.value = cloudAmount;
     if (off) (off.value as THREE.Vector2).set(elapsed * 0.0065, elapsed * 0.0032);
+    if (!sky) continue;
+    // Every painterly surface reads the same sun, so the whole world turns
+    // over together rather than each material drifting on its own schedule.
+    (mat.uniforms['uSunDir']?.value as THREE.Vector3 | undefined)?.copy(sky.sunDir);
+    (mat.uniforms['uSunColor']?.value as THREE.Color | undefined)?.copy(sky.sunColor);
+    (mat.uniforms['uSkyColor']?.value as THREE.Color | undefined)?.copy(sky.skyColor);
+    (mat.uniforms['uGroundColor']?.value as THREE.Color | undefined)?.copy(sky.groundColor);
   }
+}
+
+/** The subset of the sky cycle the shading model needs. */
+export interface SkyGlobals {
+  sunDir: THREE.Vector3;
+  sunColor: THREE.Color;
+  skyColor: THREE.Color;
+  groundColor: THREE.Color;
 }

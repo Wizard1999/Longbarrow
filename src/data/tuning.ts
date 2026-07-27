@@ -55,3 +55,14 @@ export const ECON = {
   dropoffRange: 2.6,    // how close a worker must be to a base
   nodeCapacity: 1200,   // finite: matches can run until the map is exhausted (§3)
 };
+
+// Day/night cycle (§ designer request 2026-07-27). Ten real minutes per full
+// in-game day. Expressed in real seconds here and converted to ticks once, in
+// sim/daynight.ts, so changing TICK_HZ cannot silently change day length.
+export const DAY = {
+  realSecondsPerDay: 600,   // 10 real minutes
+  dawnStart: 5,             // hour the sky begins to lift
+  dawnEnd: 7,               // ...and is fully daylight
+  duskStart: 19,            // hour the light begins to fail
+  duskEnd: 21,              // ...and is fully night
+};
