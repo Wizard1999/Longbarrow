@@ -744,3 +744,43 @@ generalise against, rather than guessing the shape now. Tracked in TODO.
 
 **Test:** `tests/tech.test.ts` asserts the tech engine drives entirely off the
 data table and has no dangling prerequisites.
+
+---
+
+## D-030 — Project codename becomes Greenmantle (supersedes D-015)
+**Date:** 2026-07-27
+
+**Decision:** The project is renamed from **Longbarrow** to **Greenmantle**.
+
+**Reason:** Longbarrow named a burial mound — bones, a dead thing grassed over.
+That was right when the project was a fossil race and a terrain slab. It is no
+longer what the project is. The build now carries four races framed as living
+elemental forces, an overgrowth-first art direction where weathering is a real
+material across *all* races, a day/night world, and a world-bearing turtle at
+cosmological zoom. The old name described only the dead half.
+
+*Greenmantle* keeps the same duality — a mantle is both a cloak and a layer of
+the earth — but leads with the living side: the green that has grown over the
+ancient machine, rather than the barrow underneath it. It carries forward
+rather than replacing, which is the right relationship to a codename that was
+never wrong, only outgrown.
+
+**Unchanged deliberately:**
+
+- **The GitHub repository is still `Wizard1999/Longbarrow`.** The codename
+  moved first; renaming the repo is a separate manual step. `START_HERE.md`
+  says so explicitly, because an agent that "corrects" the remote to match the
+  codename would point it at nothing.
+- **The save-file magic string stays `longbarrow-save`.** It is a format
+  identifier, not a display name. Renaming it would make every save written
+  before today fail to load, in exchange for nothing. Format identifiers follow
+  the format's history, not the project's branding.
+- **`CHANGELOG.md` and earlier decisions keep the old name.** They are dated
+  records of what was true then; rewriting history to match present branding
+  would make them lies.
+
+**Consequence:** `package.json`, all live docs, page titles, the launcher
+scripts (`PLAY_GREENMANTLE.bat`, `OPEN_GREENMANTLE_WEBSITE.bat`) and versioned
+handoff naming (`Greenmantle-v1.23.0-work`) now use Greenmantle. D-015 is
+superseded but retained — the reasoning that produced Longbarrow is still the
+reasoning that produced its successor.

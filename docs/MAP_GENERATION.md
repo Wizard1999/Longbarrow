@@ -1,6 +1,6 @@
 # Procedural Polygon Map Generation
 
-Longbarrow's current test map is a square heightfield. Production maps should eventually be seeded, irregular polygons so each battlefield has a distinctive silhouette and the far-zoom World Turtle carries a visibly unique landmass.
+Greenmantle's current test map is a square heightfield. Production maps should eventually be seeded, irregular polygons so each battlefield has a distinctive silhouette and the far-zoom World Turtle carries a visibly unique landmass.
 
 ## Design goals
 

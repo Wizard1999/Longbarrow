@@ -1,12 +1,12 @@
 # Agent Reasoning and Work Quality Protocol
 
-This document defines how coding agents should approach Longbarrow work. It is
+This document defines how coding agents should approach Greenmantle work. It is
 part of the project memory and must be considered before implementing, reviewing,
 or planning substantial changes.
 
 ## Purpose
 
-Longbarrow is large enough that plausible-looking edits are not sufficient.
+Greenmantle is large enough that plausible-looking edits are not sufficient.
 Agents must understand the request, inspect the relevant systems, reason about
 architecture and downstream effects, implement the smallest coherent change,
 and verify both code and documentation.
@@ -79,7 +79,7 @@ performance, testability, and player experience.
 Reproduce first, isolate the failing layer, generate targeted hypotheses, test
 those hypotheses, then fix the root cause rather than masking symptoms.
 
-## Longbarrow-specific questions
+## Greenmantle-specific questions
 
 Every meaningful change should consider these questions:
 
@@ -138,4 +138,4 @@ established facts.
 
 ## Versioned handoff naming
 
-Extracted work folders and packaged archives must include the build version, for example `Longbarrow-v1.14.0-work` and `Longbarrow-v1.14.0-59pct.zip`. Do not hand off generic `Longbarrow-main` folders when a version is known.
+Extracted work folders and packaged archives must include the build version, for example `Greenmantle-v1.14.0-work` and `Greenmantle-v1.14.0-59pct.zip`. Do not hand off generic `Greenmantle-main` folders when a version is known.

@@ -5,8 +5,8 @@ import { readFile } from 'node:fs/promises';
  * Tag a release from package.json.
  *
  * The tag is what makes a GitHub download carry its version: an archive taken
- * from tag `v1.12.0` extracts to `Longbarrow-1.12.0/`, whereas one taken from a
- * branch extracts to `Longbarrow-main/`. GitHub names archives after the ref and
+ * from tag `v1.12.0` extracts to `Greenmantle-1.12.0/`, whereas one taken from a
+ * branch extracts to `Greenmantle-main/`. GitHub names archives after the ref and
  * that is not something a repository can override, so tagging is the mechanism,
  * not a convention.
  *
@@ -30,7 +30,7 @@ if (existing) {
   process.exit(1);
 }
 
-git('tag', '-a', tag, '-m', `Longbarrow ${tag}`);
+git('tag', '-a', tag, '-m', `Greenmantle ${tag}`);
 console.log(`Created ${tag} at ${git('rev-parse', '--short', 'HEAD')}`);
 console.log(`Push it with:  git push origin ${tag}`);
-console.log(`Downloads from this tag will extract to:  Longbarrow-${version}/`);
+console.log(`Downloads from this tag will extract to:  Greenmantle-${version}/`);

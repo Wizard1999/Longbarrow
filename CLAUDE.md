@@ -1,8 +1,8 @@
-# Project: Longbarrow
+# Project: Greenmantle
 
 > Read `START_HERE.md` at the beginning of every session.
 
-**Codename:** Longbarrow — a prehistoric burial mound, grassed over: ancient
+**Codename:** Greenmantle — a prehistoric burial mound, grassed over: ancient
 machinery of death gently overgrown. It names the *project*. *Cohort* names a
 race inside the game. Keep the two distinct: the codename should not change
 when the roster does.
@@ -115,7 +115,7 @@ Run `npm run verify` before every commit.
 
 ## Versioned handoff naming
 
-Extracted work folders and packaged archives must include the build version, for example `Longbarrow-v1.14.0-work` and `Longbarrow-v1.14.0-59pct.zip`. Do not hand off generic `Longbarrow-main` folders when a version is known.
+Extracted work folders and packaged archives must include the build version, for example `Greenmantle-v1.14.0-work` and `Greenmantle-v1.14.0-59pct.zip`. Do not hand off generic `Greenmantle-main` folders when a version is known.
 
 ## Public roadmap invariant
 

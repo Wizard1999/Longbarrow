@@ -1,8 +1,8 @@
 {
-  "id": "v1.23.0-9b7a3d0-20260727",
+  "id": "v1.23.0-dc12067-20260727",
   "version": "1.23.0",
-  "revision": "9b7a3d0",
-  "describe": "v1.12.0-9-g9b7a3d0-dirty",
+  "revision": "dc12067",
+  "describe": "v1.12.0-10-gdc12067-dirty",
   "source": "git",
-  "builtAt": "2026-07-27T20:59:40.618Z"
+  "builtAt": "2026-07-27T21:02:50.894Z"
 }

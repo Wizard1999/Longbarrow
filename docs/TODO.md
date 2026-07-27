@@ -254,13 +254,13 @@ current sandbox → camera → interaction sequence.
 
 ## Open RTS engine / creator platform
 
-- [ ] Audit new gameplay code for avoidable Longbarrow-specific hard-coding.
+- [ ] Audit new gameplay code for avoidable Greenmantle-specific hard-coding.
 - [ ] Define a typed `GameDefinition`/manifest boundary for game identity and enabled systems.
 - [ ] Define schemas for units, buildings, factions, resources, and victory conditions.
 - [ ] Separate presentation metadata (names, lore, icons, palettes) from simulation stats.
 - [ ] Add authored-content validation with useful file/field error messages.
 - [ ] Add hot reload for safe content-only changes.
-- [ ] Create a minimal non-Longbarrow example game to test real reuse.
+- [ ] Create a minimal non-Greenmantle example game to test real reuse.
 - [ ] Design mod/package versioning and deterministic compatibility declarations.
 - [ ] Decide the project code license and contributor policy.
 - [ ] Define a security policy before supporting untrusted custom scripts.

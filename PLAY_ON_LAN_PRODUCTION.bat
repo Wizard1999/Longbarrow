@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Longbarrow Production LAN Test
+title Greenmantle Production LAN Test
 
 echo ========================================
 echo   LONGBARROW - PRODUCTION LAN BUILD

@@ -99,14 +99,14 @@ performance validation remain active work rather than environment blockers.
 
 ## Strategic platform direction
 
-Longbarrow is now formally planned as the proving ground for an open,
+Greenmantle is now formally planned as the proving ground for an open,
 browser-first RTS engine and creator ecosystem. The platform track includes
 content-defined factions, units, resources, lore, balance, scenarios, custom
 landing pages, validation, templates, and eventual creator tools.
 
 This does **not** change the current 84% game-production score. It is tracked as a
 long-term platform track whose architectural rules apply now, while extraction and
-creator tooling follow only after Longbarrow proves the systems in real play.
+creator tooling follow only after Greenmantle proves the systems in real play.
 See `ENGINE_VISION.md`.
 
 

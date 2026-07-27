@@ -1,8 +1,8 @@
-# Longbarrow as an Open RTS Engine
+# Greenmantle as an Open RTS Engine
 
-Longbarrow is both a game and, over time, a reusable browser-first RTS engine.
+Greenmantle is both a game and, over time, a reusable browser-first RTS engine.
 The game remains the proving ground: reusable systems must earn their place by
-shipping in a coherent, playable Longbarrow match before they are generalized.
+shipping in a coherent, playable Greenmantle match before they are generalized.
 
 ## Vision
 
@@ -19,7 +19,7 @@ Creators should eventually be able to define:
 - tutorials, campaigns, scenarios, and multiplayer-compatible rule sets;
 - a branded public landing page and live development roadmap.
 
-The goal is not merely "make Longbarrow moddable." The goal is to make a good,
+The goal is not merely "make Greenmantle moddable." The goal is to make a good,
 open, web-native RTS foundation that others can understand, repurpose, and extend.
 
 ## Architectural principle: engine, game, and content
@@ -28,7 +28,7 @@ Long-term code should settle into three conceptual layers:
 
 ```text
 engine/     reusable deterministic RTS systems and browser tooling
-games/      game-specific rule composition, including Longbarrow
+games/      game-specific rule composition, including Greenmantle
 content/    declarative faction, unit, building, resource, lore, map, and UI data
 ```
 
@@ -42,7 +42,7 @@ imagined needs. Instead, new work should observe these boundaries now:
 3. Allow game-specific composition to select and configure generic systems.
 4. Keep deterministic commands serializable so replays and networking also work
    for custom rule sets.
-5. Treat Longbarrow-specific art direction as content, not an engine assumption.
+5. Treat Greenmantle-specific art direction as content, not an engine assumption.
 6. Add extension seams only after at least two real use cases demonstrate the need.
 
 ## Creator experience target
@@ -102,7 +102,7 @@ and dependencies on reusable packages.
 
 ## Staged delivery
 
-### Stage A — Engine-friendly Longbarrow development (now)
+### Stage A — Engine-friendly Greenmantle development (now)
 
 - Keep rules data-driven where practical.
 - Avoid unnecessary faction hard-coding.
@@ -112,13 +112,13 @@ and dependencies on reusable packages.
 
 ### Stage B — Internal content packs
 
-- Move Longbarrow faction definitions into explicit content modules.
+- Move Greenmantle faction definitions into explicit content modules.
 - Prove that multiple factions can compose different mechanics without forks.
 - Add validation and hot reload for development.
 
 ### Stage C — First external template
 
-- Ship a minimal example RTS distinct from Longbarrow.
+- Ship a minimal example RTS distinct from Greenmantle.
 - Document how to create units, resources, production, win conditions, and lore.
 - Provide a starter landing page and scenario.
 
@@ -135,9 +135,9 @@ and dependencies on reusable packages.
 
 ## Guardrails
 
-- Longbarrow must remain a coherent game, not become a generic editor before its
+- Greenmantle must remain a coherent game, not become a generic editor before its
   own core loop is compelling.
-- The engine layer may not depend on Longbarrow lore, faction names, or art.
+- The engine layer may not depend on Greenmantle lore, faction names, or art.
 - Custom content must not bypass deterministic command and snapshot rules when it
   claims replay or multiplayer compatibility.
 - User-authored scripts require a security model before arbitrary code is loaded

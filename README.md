@@ -1,6 +1,6 @@
-# Longbarrow
+# Greenmantle
 
-> **Longbarrow** is the project codename. *Cohort* is a race within the game —
+> **Greenmantle** is the project codename. *Cohort* is a race within the game —
 > the two are deliberately separate, so the project has an identity that does
 > not shift when the roster does.
 
@@ -9,7 +9,7 @@ clicking fast. The player acts as an Operations Commander — issuing objectives
 and doctrine to an army that executes them intelligently.
 
 
-![Longbarrow contested battlefield concept art](docs/assets/concept-art/contested-ground.webp)
+![Greenmantle contested battlefield concept art](docs/assets/concept-art/contested-ground.webp)
 
 <p align="center">
   <em>Fossilized memory meets an aggressive tide of iridescent life.</em>
@@ -52,9 +52,9 @@ gallery has been built yet.
 ## Downloading a versioned copy
 
 Use the **Releases** page, or any tag. A download taken from tag `v1.12.0`
-extracts to `Longbarrow-1.12.0/`.
+extracts to `Greenmantle-1.12.0/`.
 
-A download taken from a *branch* extracts to `Longbarrow-main/` instead —
+A download taken from a *branch* extracts to `Greenmantle-main/` instead —
 GitHub names archives after the ref and a repository cannot override that. Those
 downloads still carry their version internally: the `VERSION` file at the root
 is stamped with the exact commit and date when the archive is built.
@@ -151,17 +151,17 @@ Start at [`START_HERE.md`](START_HERE.md). The key documents:
 
 ## Open RTS engine vision
 
-Longbarrow is intended to remain open source and gradually become a reusable,
+Greenmantle is intended to remain open source and gradually become a reusable,
 browser-first RTS foundation. The long-term goal is to let creators define their
 own armies, factions, resources, lore, balance, scenarios, and presentation while
 reusing the deterministic simulation, commands, replay foundation, renderer,
 testing tools, and public development site. Development remains game-first: the
-engine is extracted from systems proven in Longbarrow rather than designed in the
+engine is extracted from systems proven in Greenmantle rather than designed in the
 abstract. See [`docs/ENGINE_VISION.md`](docs/ENGINE_VISION.md).
 
 ## The world beneath the war table
 
-Longbarrow is staged in a black void. At ordinary play distance the battlefield
+Greenmantle is staged in a black void. At ordinary play distance the battlefield
 reads as a physical miniature war table; at maximum zoom the complete board will
 resolve into a monumental **World Turtle** carrying the terrain on its back. The
 current descending terrain edges are a temporary production scaffold for that

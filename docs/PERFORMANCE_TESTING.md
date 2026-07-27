@@ -1,6 +1,6 @@
 # Performance Testing
 
-Longbarrow is intended to run directly in a browser across a wide range of
+Greenmantle is intended to run directly in a browser across a wide range of
 machines. Performance claims must therefore come from repeatable measurements,
 not impressions from one development computer.
 

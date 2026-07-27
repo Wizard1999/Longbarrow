@@ -8,8 +8,9 @@ for any.** Read this file, then the four in "Orientation" below, and begin.
 
 ## 0. Check the git remote before anything else
 
-The home of this project is **`Wizard1999/Longbarrow`**, not the older
-`Wizard1999/RTS`.
+The project is codenamed **Greenmantle**, but the GitHub repository is still
+named **`Wizard1999/Longbarrow`** — the codename changed before the repo did.
+Do not "fix" the remote to match the codename; it would point at nothing.
 
 ```bash
 git remote -v          # origin MUST be .../Wizard1999/Longbarrow
@@ -30,7 +31,7 @@ git remote add origin https://github.com/Wizard1999/Longbarrow
 
 ## 1. What this is, in one paragraph
 
-**Longbarrow** is a browser real-time strategy game about **commanding intent,
+**Greenmantle** is a browser real-time strategy game about **commanding intent,
 not clicking fast**. The player is an Operations Commander who issues
 objectives and doctrine to an army that executes them intelligently. Terrain
 decides fights; nobody wins by clicking faster. Four races are *forces of
@@ -38,7 +39,7 @@ nature* rather than civilizations — Cohort (Death), Mycora (Life), Conclave
 (Water), Titanfolk (Earth). TypeScript + Three.js + Vite, no engine, no
 framework.
 
-*Longbarrow is the **project** codename. Cohort is a **race** inside it. Never
+*Greenmantle is the **project** codename. Cohort is a **race** inside it. Never
 conflate them.*
 
 ---
@@ -127,7 +128,7 @@ npm run verify        (typecheck + lint + tests + build)
 Update CURRENT_STATE.md  (+ DECISIONS.md if a decision was made)
 npm run sync:site        (if ROADMAP or progress changed)
         ↓
-git remote -v   → confirm Longbarrow
+git remote -v   → confirm Wizard1999/Longbarrow (repo not yet renamed)
 git commit && git push
 ```
 
@@ -140,7 +141,7 @@ anything unpushed is lost.
   `npm run sync:site` after editing it and confirm it appears on
   `/development.html`.
 - **Versioned handoffs:** archives and work folders carry the build version
-  (`Longbarrow-v1.14.0-work`), never a generic `Longbarrow-main`.
+  (`Greenmantle-v1.14.0-work`), never a generic `Greenmantle-main`.
 - **Replay format:** bump `REPLAY_VERSION` whenever a command's meaning or a
   sim rule changes, or old replays will silently play wrong.
 

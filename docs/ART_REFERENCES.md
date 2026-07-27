@@ -28,9 +28,9 @@ breaks the "runs on any machine" requirement (`DECISIONS.md` D-006).
 
 Supplied 2026-07-27. These are permanent references, not approval to copy code
 unchanged. Each must be checked for licensing, dependencies, frame cost, and fit
-with Longbarrow's painterly war-table presentation before implementation.
+with Greenmantle's painterly war-table presentation before implementation.
 
-| Reference | Primary use in Longbarrow | Direction status |
+| Reference | Primary use in Greenmantle | Direction status |
 |---|---|---|
 | https://codepen.io/Margarita-the-solid/pen/xbgrWpd | Ocean/water shader, day-cycle lighting, Conclave water research | Technical inspiration |
 | https://codepen.io/Margarita-the-solid/pen/NPRPBjd | Liquid-glass HUD panels, layered translucency, interface depth | UI inspiration |
@@ -63,7 +63,7 @@ should be selectively applied rather than becoming a full-screen aesthetic.
 4. **UI paneling is DOM, not WebGL** — HUD styling belongs in `src/ui/`, where
    many of these ideas can be tested without adding scene-render cost.
 5. **Bloom is subordinate to readability** — the VoXelo village reference is
-   specifically logged for bloom/emissive technique, not for Longbarrow's look.
+   specifically logged for bloom/emissive technique, not for Greenmantle's look.
 
 ### Review checklist
 
@@ -77,7 +77,7 @@ GPU cost, licensing/attribution, and whether the technique survives D-006.
 
 Supplied 2026-07-27 as quality bars and possible technique sources:
 
-| Reference | Primary use in Longbarrow |
+| Reference | Primary use in Greenmantle |
 |---|---|
 | https://codepen.io/russell-henderson/pen/jEVVqBe | Overall rendering quality and transferable scene techniques |
 | https://codepen.io/editor/lukeslp/pen/019f6c96-8616-7375-a33b-6c3f0260b2a0 | Overall rendering quality and transferable scene techniques |
@@ -88,7 +88,7 @@ These are inspiration, not dependencies. Before adopting code or techniques,
 record for each: renderer/library version, shader passes, post-processing,
 lighting model, geometry count, texture requirements, licensing/attribution, and
 measured impact against D-006. Techniques that only look good from a close hero
-camera must be re-evaluated at Longbarrow's actual war-table distance.
+camera must be re-evaluated at Greenmantle's actual war-table distance.
 
 ## Complete supplied CodePen index
 

@@ -6,6 +6,13 @@ import { hash, restore, snapshot } from './snapshot';
 export const SAVE_VERSION = 1;
 
 export interface SaveFile {
+  /**
+   * On-disk format identifier. Deliberately still `longbarrow-save` after the
+   * project was renamed to Greenmantle: this is a file-format magic string,
+   * not a display name, and changing it would make every save written before
+   * the rename fail to load for no benefit. Format identifiers follow the
+   * format's history, not the project's branding.
+   */
   kind: 'longbarrow-save';
   version: number;
   createdAt: string;
@@ -43,7 +50,7 @@ export function createSave(world: World, createdAt: string): SaveFile {
 }
 
 export function checkSave(save: SaveFile): SaveCheck {
-  if (save.kind !== 'longbarrow-save') return { ok: false, reason: 'not a Longbarrow save file' };
+  if (save.kind !== 'longbarrow-save') return { ok: false, reason: 'not a Greenmantle save file' };
   if (save.version !== SAVE_VERSION) {
     return { ok: false, reason: `save version ${save.version}, expected ${SAVE_VERSION}` };
   }

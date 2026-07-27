@@ -1,6 +1,6 @@
 # Save and Replay Development Tools
 
-Longbarrow treats saves, replays, rollback, desync detection, and eventual
+Greenmantle treats saves, replays, rollback, desync detection, and eventual
 lockstep multiplayer as one deterministic systems family.
 
 ## Save files available now

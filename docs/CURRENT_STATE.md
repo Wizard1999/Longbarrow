@@ -4,7 +4,31 @@
 > the newest entry is immediately below, older history is archived further
 > down under "Historical log".
 
-## ⚡ Latest — research lands, engine boundary tightened
+## ⚡ Latest — renamed to Greenmantle; painterly pass on units and buildings
+
+**340 tests · 68 modules documented · full gate green.**
+
+- **Project renamed Longbarrow → Greenmantle (D-030).** The old name described
+  a burial mound — bones — which fit a fossil race on a terrain slab and no
+  longer fits four living elemental forces, overgrowth-as-material, and a
+  world-bearing turtle. Two things deliberately did *not* change: the GitHub
+  repo is still `Wizard1999/Longbarrow` (renaming it is a manual step, and an
+  agent "correcting" the remote would break it), and the save-file magic string
+  is still `longbarrow-save` (a format identifier, not branding — renaming it
+  would orphan every existing save).
+- **Painterly materials on units, buildings, scenery and nodes.** Previously
+  terrain only. Shared and cached by role/team in `render/materials.ts` —
+  per-unit ShaderMaterials would mean 100+ shader compiles mid-battle and break
+  the 100-unit target.
+- **Fog recoloured** from pure black (violating D-005) to deep violet-blue.
+  Still hard-tiled — logged as B-004, not claimed as fixed.
+- **AI now researches**, closing a balance regression from the tech system.
+
+**Phase 1 ≈ 90%.** Remaining for a coherent alpha: **research UI** (the tech
+system exists but no player can reach it — top priority), the dev console, and
+softening the fog.
+
+## ⚡ Previous — research lands, engine boundary tightened
 
 **340 tests · typecheck/lint/build clean.**
 
@@ -45,7 +69,7 @@ Two independent tracks landed this session and were reconciled:
 
 **Known recurring hazard:** this session's `origin` remote reset to the old
 `RTS` repo mid-session (container recreation), *twice*. Always check
-`git remote -v` says `Longbarrow` before trusting a push succeeded.
+`git remote -v` says `Greenmantle` before trusting a push succeeded.
 
 ---
 
@@ -68,7 +92,7 @@ is the top of this file._
 
 ## v1.22.0 guided tutorial foundation
 
-Longbarrow now includes an optional seven-step browser tutorial, launchable from the permanent in-game **Tutorial** button or with `?tutorial=1`. The guide observes existing deterministic world and UI state rather than injecting timer-driven simulation changes. It teaches worker selection, set-and-forget gathering, Standard selection, Legionnaire production, combat-unit selection, movement orders, and whole-board camera framing. Completion/skip state is stored locally, and the guide can be reopened at any time. Pure progression tests cover prerequisite ordering and completion. Dedicated tutorial-map setup, contextual world highlights, accessibility review, and real-player pacing validation remain.
+Greenmantle now includes an optional seven-step browser tutorial, launchable from the permanent in-game **Tutorial** button or with `?tutorial=1`. The guide observes existing deterministic world and UI state rather than injecting timer-driven simulation changes. It teaches worker selection, set-and-forget gathering, Standard selection, Legionnaire production, combat-unit selection, movement orders, and whole-board camera framing. Completion/skip state is stored locally, and the guide can be reopened at any time. Pure progression tests cover prerequisite ordering and completion. Dedicated tutorial-map setup, contextual world highlights, accessibility review, and real-player pacing validation remain.
 
 ## v1.21.0 full-world fog enforcement
 
@@ -237,7 +261,7 @@ would have been expensive to retrofit; the generator itself can be written
 whenever.
 
 ### PHASE 1 COMPLETE — steps 1.9 to 1.12
-29 new tests. Longbarrow is now a game you can win or lose.
+29 new tests. Greenmantle is now a game you can win or lose.
 
 **1.9 Squad cohesion.** Diminishing returns past 20 units, measured by
 *proximity* not squad membership (D-020) — squad-based counting would be

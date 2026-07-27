@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-title Longbarrow LAN Play
+title Greenmantle LAN Play
 
 echo ========================================
 echo       LONGBARROW - LAN TEST SERVER
@@ -26,7 +26,7 @@ if not exist node_modules (
   call npm install || goto :fail
 )
 
-echo Starting Longbarrow on your local network...
+echo Starting Greenmantle on your local network...
 echo Share the Network URL printed below with another device on the same LAN.
 echo Allow Node.js through Windows Firewall on Private networks if prompted.
 echo.
@@ -35,6 +35,6 @@ goto :eof
 
 :fail
 echo.
-echo Longbarrow could not start. Review the error above.
+echo Greenmantle could not start. Review the error above.
 pause
 exit /b 1

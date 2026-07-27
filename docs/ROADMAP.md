@@ -132,15 +132,15 @@ before any mission UI is built.**
 
 ## Long-term platform track — Open RTS Engine and Mod SDK
 
-Longbarrow is intended to mature into a reusable, open, browser-first RTS engine.
+Greenmantle is intended to mature into a reusable, open, browser-first RTS engine.
 This track begins architecturally now but is deliberately staged after the game
 proves each system in production. See `ENGINE_VISION.md` for the full principles,
 creator workflow, package concept, guardrails, and success criteria.
 
 | Stage | Goal | Status |
 |---|---|---|
-| A | Keep Longbarrow systems engine-friendly and increasingly data-driven | ◐ ongoing |
-| B | Extract Longbarrow factions and rules into validated content packs | ⬜ |
+| A | Keep Greenmantle systems engine-friendly and increasingly data-driven | ◐ ongoing |
+| B | Extract Greenmantle factions and rules into validated content packs | ⬜ |
 | C | Ship a second, minimal example RTS and starter template | ⬜ |
 | D | Creator tools, schemas, editors, packaging, and export workflow | ⬜ |
 | E | Community ecosystem, reusable extensions, and compatibility policy | ⬜ |
