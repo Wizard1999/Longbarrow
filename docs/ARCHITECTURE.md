@@ -120,6 +120,7 @@ lerp using the loop's `alpha`. That is why a 30 Hz sim looks smooth at 144 fps.
 |---|---|
 | `hud.ts` | Resources, supply, clock, selection card, victory announcement. |
 | `chainEditor.ts` | Behaviour-chain editor. |
+| `researchPanel.ts` | Tech track panel (D-028); queues and cancels research via `issueCommand` so it lands in the replay stream. |
 | `minimap.ts` | Tactical map with visibility state. |
 | `fogOfWar.ts` | Presentation-side visibility field (unexplored/explored/visible). |
 | `visibility.ts` | Single controller governing what the player may see, click and target. |
