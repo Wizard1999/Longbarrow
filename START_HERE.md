@@ -8,23 +8,22 @@ for any.** Read this file, then the four in "Orientation" below, and begin.
 
 ## 0. Check the git remote before anything else
 
-The project is codenamed **Greenmantle**, but the GitHub repository is still
-named **`Wizard1999/Longbarrow`** — the codename changed before the repo did.
-Do not "fix" the remote to match the codename; it would point at nothing.
+The home of this project is **`Wizard1999/Greenmantle`**. It has been renamed
+twice — `RTS` → `Longbarrow` → `Greenmantle` — and both older names are dead.
 
 ```bash
-git remote -v          # origin MUST be .../Wizard1999/Longbarrow
+git remote -v          # origin MUST be .../Wizard1999/Greenmantle
 ```
 
 Remote-execution containers are recreated between sessions and re-clone from
 whichever repo the session was originally attached to, silently resetting
-`origin` back to `RTS`. This has happened **three times** and has sent commits
+`origin` back to an older name. This has happened **three times** and has sent commits
 to the wrong repository. A push to the wrong remote reports success, so this is
 silent — check it, don't assume it. If wrong:
 
 ```bash
 git remote rename origin rts-old
-git remote add origin https://github.com/Wizard1999/Longbarrow
+git remote add origin https://github.com/Wizard1999/Greenmantle
 ```
 
 ---
@@ -128,7 +127,7 @@ npm run verify        (typecheck + lint + tests + build)
 Update CURRENT_STATE.md  (+ DECISIONS.md if a decision was made)
 npm run sync:site        (if ROADMAP or progress changed)
         ↓
-git remote -v   → confirm Wizard1999/Longbarrow (repo not yet renamed)
+git remote -v   → confirm Wizard1999/Greenmantle
 git commit && git push
 ```
 

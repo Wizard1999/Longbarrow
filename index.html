@@ -32,6 +32,25 @@
   #debug .k { color: #666; }
   #debug .warn { color: #b02e2e; font-weight: 600; }
   #debug h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: #444; }
+  #research { top: 96px; right: 12px; width: 232px; max-height: 44vh; overflow-y: auto; }
+  #research h3 { margin: 0 0 8px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: #444; }
+  .tech-row {
+    display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; width: 100%;
+    text-align: left; padding: 7px 9px; margin-bottom: 5px; cursor: pointer;
+    border: 1px solid rgba(0,0,0,.14); border-radius: 7px; background: rgba(255,255,255,.6);
+    font: inherit; font-size: 12px;
+  }
+  .tech-row:hover:not(:disabled) { background: #fff; border-color: rgba(0,0,0,.3); }
+  .tech-row:disabled { opacity: .42; cursor: not-allowed; }
+  .tech-name { font-weight: 600; }
+  .tech-cost { color: #7a4fb0; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .tech-pair { grid-column: 1 / -1; font-size: 10px; color: #666; }
+  .tech-empty { margin: 0; font-size: 12px; color: #666; }
+  #research-progress { display: grid; gap: 6px; margin-bottom: 8px; font-size: 12px; }
+  .tech-bar { height: 5px; border-radius: 999px; background: rgba(0,0,0,.12); overflow: hidden; }
+  .tech-bar span { display: block; height: 100%; background: linear-gradient(90deg,#7a4fb0,#ffb765); }
+  .tech-cancel { font: inherit; font-size: 11px; padding: 3px 8px; cursor: pointer;
+    border: 1px solid rgba(0,0,0,.18); border-radius: 6px; background: rgba(255,255,255,.7); }
   #selbox { position: absolute; border: 1.5px solid #ffe66d; background: rgba(255,230,109,0.18); pointer-events: none; display: none; }
   #card {
     bottom: 14px; left: 50%; transform: translateX(-50%);
@@ -192,6 +211,11 @@
   <div class="btns" id="card-btns"></div>
   <div class="queue" id="card-queue"></div>
   <div class="hint" id="card-hint"></div>
+</div>
+<div id="research" class="panel">
+  <h3>Research</h3>
+  <div id="research-progress" hidden></div>
+  <div id="research-body"></div>
 </div>
 <div id="chain" class="panel">
   <h3 id="chain-title">Squads</h3>

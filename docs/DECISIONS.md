@@ -767,7 +767,7 @@ never wrong, only outgrown.
 
 **Unchanged deliberately:**
 
-- **The GitHub repository is still `Wizard1999/Longbarrow`.** The codename
+- **The GitHub repository is still `Wizard1999/Greenmantle`.** The codename
   moved first; renaming the repo is a separate manual step. `START_HERE.md`
   says so explicitly, because an agent that "corrects" the remote to match the
   codename would point it at nothing.

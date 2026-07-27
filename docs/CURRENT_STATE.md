@@ -67,7 +67,7 @@ project:
 ### Still pending on the designer
 
 - **Rename the GitHub repository** to match the Greenmantle codename. Until
-  then `origin` must stay `Wizard1999/Longbarrow` (D-030 explains why an agent
+  then `origin` must stay `Wizard1999/Greenmantle` (D-030 explains why an agent
   must not "correct" this).
 - Four design blockers remain unanswered in `GAME_DESIGN.md § 11.1` — resource
   naming, stealth/detection, map geometry, air-vs-supply. Each blocks specific
@@ -83,7 +83,7 @@ project:
   a burial mound — bones — which fit a fossil race on a terrain slab and no
   longer fits four living elemental forces, overgrowth-as-material, and a
   world-bearing turtle. Two things deliberately did *not* change: the GitHub
-  repo is still `Wizard1999/Longbarrow` (renaming it is a manual step, and an
+  repo is still `Wizard1999/Greenmantle` (renaming it is a manual step, and an
   agent "correcting" the remote would break it), and the save-file magic string
   is still `longbarrow-save` (a format identifier, not branding — renaming it
   would orphan every existing save).
@@ -179,7 +179,7 @@ The tactical map now maintains a polygon-clipped presentation-side visibility fi
 
 
 **Date:** 2026-07-27
-**Repository:** `Wizard1999/Longbarrow` (public) — migrated from `Wizard1999/RTS`
+**Repository:** `Wizard1999/Greenmantle` (public) — migrated from `Wizard1999/RTS`
 **Branch:** `main` is the canonical public branch for this handoff
 **Last known upstream verification:** 226 passing · typecheck clean · lint clean · build clean
 **Current working-copy verification:** 302 passing; site consistency, typecheck, lint, and production build clean
