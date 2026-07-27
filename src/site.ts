@@ -77,11 +77,13 @@ const fallback: ProgressData = {
 
 function renderProgress(data: ProgressData): void {
   const overall = Math.max(0, Math.min(100, data.overall));
-  const number = document.querySelector<HTMLElement>('[data-progress-number]');
+  // All of them: the figure appears in the hero stats and again in the progress
+  // panel, and querySelector would silently update only the first.
+  const numbers = document.querySelectorAll<HTMLElement>('[data-progress-number]');
   const fill = document.querySelector<HTMLElement>('[data-progress-fill]');
   const track = document.querySelector<HTMLElement>('[data-progress-track]');
   const date = document.querySelector<HTMLTimeElement>('[data-progress-date]');
-  if (number) number.textContent = String(overall);
+  for (const el of numbers) el.textContent = String(overall);
   if (fill) fill.style.width = `${overall}%`;
   if (track) track.setAttribute('aria-valuenow', String(overall));
   if (date) {

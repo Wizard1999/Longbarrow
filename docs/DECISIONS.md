@@ -590,3 +590,33 @@ laser. Animation, effects, sound, and damage timing should preserve that read.
 **Decision:** Conclave forms should appear almost constructed from water and
 fabric. This is a silhouette/material constraint for later concept development,
 not yet a finalized production specification.
+
+---
+
+## D-025 — The gatherable resource is violet, never teal
+**Date:** 2026-07-27
+
+**Decision:** `PALETTE.legacy` (formerly `essence`) is violet — shade `#3b2a55`,
+mid `#b98ad9`, lit `#f0dcff`. Teal and cyan-blue are retired from the resource
+entirely.
+
+**Reason.** Teal failed on two counts, and the second is the more serious:
+
+1. **It reads as StarCraft minerals.** Glowing blue crystal shards are the most
+   recognisable resource in the genre. §8.8 spends its length ruling out
+   accidental StarCraft parallels for the races; leaving the resource looking
+   like minerals undoes that at the most-looked-at object on the map.
+2. **Teal is Conclave's colour.** Conclave is Water (D-021 framing, §8.8). A
+   universal resource wearing one race's element quietly steals that race's
+   visual identity before it is even implemented — and Conclave arrives in
+   Phase 3, so the collision would have been discovered late and expensively.
+
+Violet is claimed by none of the four elements (Cohort bone-and-gold, Mycora
+green, Conclave blue, Titanfolk stone), sits opposite the warm sun so it stays
+legible against sunlit grass, and reads as "precious and old" rather than "ore" —
+which matches what the resource actually *is* under D-021: **Legacy**,
+understanding inherited from a dead civilization, not a mineral.
+
+**Consequence:** `essenceMat` is aliased to `legacyMat` rather than renamed
+outright, because D-021 explicitly defers the global `essence` rename until the
+four-resource schema is settled. The colour changes now; the vocabulary waits.

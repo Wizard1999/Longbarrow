@@ -1,193 +1,231 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Follow Longbarrow, a mythic real-time strategy game about ancient legacy, living conquest, and a world fought over like sacred ground." />
-    <meta name="theme-color" content="#11130f" />
-    <title>Longbarrow — A Miniature Myth in Development</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Longbarrow — an RTS about commanding intent</title>
+    <meta name="description" content="Longbarrow is a real-time strategy game about commanding intent, not clicking fast. Follow development in the open: live progress, phases and design decisions." />
+    <meta property="og:title" content="Longbarrow — an RTS about commanding intent" />
+    <meta property="og:description" content="Four forces of nature. Terrain that decides fights. An army that executes your intent instead of your keystrokes." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>&#127961;</text></svg>" />
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to content</a>
+    <div class="void" aria-hidden="true"></div>
+
     <header class="site-header" data-header>
-      <a class="wordmark" href="#top" aria-label="Longbarrow home">
-        <span class="wordmark-mark" aria-hidden="true">◌</span>
-        <span>Longbarrow</span>
-      </a>
-      <nav aria-label="Primary navigation">
-        <a href="#world">The world</a>
-        <a href="#factions">Factions</a>
-        <a href="#development">Development</a>
-      </nav>
-      <a class="header-play" href="./index.html">Play current build <span aria-hidden="true">↗</span></a>
+      <div class="shell">
+        <a class="wordmark" href="#top">Long<span>barrow</span></a>
+        <nav class="nav" aria-label="Sections">
+          <a href="#doctrine">Doctrine</a>
+          <a href="#factions">Factions</a>
+          <a href="#progress">Progress</a>
+          <a href="#gallery">Art</a>
+        </nav>
+        <a class="btn" href="#progress">Follow development</a>
+      </div>
     </header>
 
-    <main id="main">
-      <section class="hero" id="top" aria-labelledby="hero-title">
-        <img class="hero-art" data-art="war-table" alt="A vast Longbarrow battlefield presented as a carved miniature world suspended in darkness." />
-        <div class="hero-shade"></div>
-        <div class="hero-content">
-          <p class="eyebrow">A mythic real-time strategy game in active development</p>
-          <h1 id="hero-title">The world remembers.<br />Every inch is contested.</h1>
-          <p class="hero-copy">Command ancient inheritors, a tidal intelligence of aggressive life, or a civilization shaped from water and cloth. Build with Material. Learn from Legacy. Rule through Dominion.</p>
-          <div class="hero-actions">
-            <a class="button button-primary" href="./index.html">▶ Play current build</a>
-            <a class="button button-secondary" href="#development">Follow development</a>
-          </div>
-          <p class="build-note"><span class="pulse-dot" aria-hidden="true"></span>Browser prototype · No installation required</p>
-        </div>
-        <a class="scroll-cue" href="#world">Enter the world <span aria-hidden="true">↓</span></a>
-      </section>
-
-      <section class="manifesto section" id="world">
-        <div class="section-kicker">01 — The miniature myth</div>
-        <div class="manifesto-grid">
-          <h2>A battlefield that feels less like a map and more like a living artifact.</h2>
-          <div class="manifesto-copy">
-            <p>Longbarrow is an RTS about civilizations that inherit a world they do not fully understand. Ancient technology has fossilized into landscape. Knowledge is excavated rather than purchased. Territory changes physically under the forces that control it.</p>
-            <p>The camera looks down on the conflict like a war table brought to life—broad enough to read an empire, close enough to see moss growing through a soldier’s armor.</p>
-          </div>
-        </div>
-        <figure class="feature-art reveal">
-          <img data-art="contested" alt="Cohort ruins and iridescent Mycora growth collide across a living battlefield boundary." loading="lazy" />
-          <figcaption><span>Contested ground</span><span>The frontier is a system, not a texture.</span></figcaption>
-        </figure>
-      </section>
-
-      <section class="factions section" id="factions" aria-labelledby="factions-title">
-        <div class="section-kicker">02 — Three visions of inheritance</div>
-        <div class="section-heading">
-          <h2 id="factions-title">No traditional heroes.<br />No disposable villains.</h2>
-          <p>Each faction expresses a different relationship with the world that came before.</p>
-        </div>
-
-        <article class="faction-card cohort reveal">
-          <div class="faction-copy">
-            <p class="faction-index">I</p>
-            <p class="eyebrow">The Cohort</p>
-            <h3>The last command still being obeyed.</h3>
-            <p>Bone-pale constructs, fossilized war machines, and caretakers preserving duties whose creators vanished ages ago. Their weapons are literal light. Their ruins do not look manufactured—they look excavated.</p>
-            <ul class="trait-list">
-              <li>Disciplined formations</li><li>Ancient light weaponry</li><li>Monumental defensive control</li>
-            </ul>
-          </div>
-          <img data-art="cohort" alt="A moss-covered Cohort legionnaire carrying a sword and monumental stone shield." loading="lazy" />
-        </article>
-
-        <article class="faction-card mycora reveal">
-          <div class="faction-copy">
-            <p class="faction-index">II</p>
-            <p class="eyebrow">The Mycora</p>
-            <h3>Life thriving past the point of mercy.</h3>
-            <p>A hive intelligence that pushes and pulls like the tide. Units are temporary shapes within a larger infection. Death leaves behind moss, fungus, flowers, vision, and more domain for the whole.</p>
-            <ul class="trait-list">
-              <li>Tidal swarm behavior</li><li>Territory born from death</li><li>Iridescent living mutation</li>
-            </ul>
-          </div>
-          <img data-art="mycora" alt="Iridescent fungal Mycora growth spreading through a forest battlefield." loading="lazy" />
-        </article>
-
-        <article class="faction-card conclave reveal">
-          <div class="faction-copy">
-            <p class="faction-index">III</p>
-            <p class="eyebrow">The Conclave</p>
-            <h3>A civilization held together by flow.</h3>
-            <p>Water and fabric shaped into bodies, cities, and ritual. The Conclave should feel graceful but never fragile: a culture whose architecture, movement, and power are inseparable from currents.</p>
-            <ul class="trait-list">
-              <li>Fluid repositioning</li><li>Ritual coordination</li><li>Water-and-cloth material language</li>
-            </ul>
-          </div>
-          <img data-art="conclave" alt="A Conclave figure formed from layered fabric and flowing water before a canal city." loading="lazy" />
-        </article>
-      </section>
-
-      <section class="resources section" aria-labelledby="resources-title">
-        <div class="section-kicker">03 — A resource system that tells a story</div>
-        <h2 id="resources-title">Four nouns. One civilization.</h2>
-        <div class="resource-grid">
-          <article><span>01</span><h3>Material</h3><p>The physical world. What can be shaped, carried, and built.</p></article>
-          <article><span>02</span><h3>Legacy</h3><p>Understanding recovered from the civilizations that came before.</p></article>
-          <article><span>03</span><h3>Dominion</h3><p>What you control now—and how firmly the world accepts that claim.</p></article>
-          <article><span>04</span><h3>Relics</h3><p>Rare opportunities that change what the future can become.</p></article>
-        </div>
-        <p class="resource-line">You build with Material. You learn from Legacy. You rule through Dominion. You adapt with Relics.</p>
-      </section>
-
-      <section class="development section" id="development" aria-labelledby="development-title">
-        <div class="section-kicker">04 — Development in the open</div>
-        <div class="development-intro">
-          <div>
-            <p class="eyebrow">Current production state</p>
-            <h2 id="development-title">Built transparently,<br />milestone by milestone.</h2>
-          </div>
-          <p>Longbarrow’s roadmap, current state, decisions, bugs, and changelog are maintained as part of the project itself. The public page is generated from that same source of truth.</p>
-        </div>
-
-        <div class="progress-panel reveal">
-          <div class="progress-main">
-            <p class="mono-label">Overall active-plan progress</p>
-            <div class="progress-number"><span data-progress-number>23</span><small>%</small></div>
-            <div class="progress-track" role="progressbar" aria-label="Longbarrow development progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="23" data-progress-track>
-              <span data-progress-fill></span>
+    <main>
+      <!-- 1. Arrival ------------------------------------------------------ -->
+      <section class="hero" id="top">
+        <img class="hero-art" data-art="war-table" alt="A Longbarrow battlefield presented as a carved miniature world suspended in darkness." />
+        <div class="shell">
+          <div class="hero-inner">
+            <p class="eyebrow">In development &middot; Playable prototype</p>
+            <h1>You do not control units.<br /><span class="glow-text">You command operations.</span></h1>
+            <p class="lede">
+              A real-time strategy game where the interface asks what you are trying to
+              accomplish, not where you want a soldier to stand. Issue objectives and
+              doctrine to an army that executes them intelligently — terrain decides the
+              fight, and no one wins by clicking faster.
+            </p>
+            <div class="hero-actions">
+              <a class="btn" href="#progress">See live progress</a>
+              <a class="btn ghost" href="#doctrine">What makes it different</a>
             </div>
-            <p class="progress-updated">Last synchronized <time data-progress-date>2026-07-27</time></p>
+            <dl class="hero-stats">
+              <div><dt>Overall progress</dt><dd><span data-progress-number>0</span><small>%</small></dd></div>
+              <div><dt>Automated tests</dt><dd>269<small> passing</small></dd></div>
+              <div><dt>Simulation</dt><dd>30<small> Hz deterministic</small></dd></div>
+              <div><dt>Races planned</dt><dd>4<small> forces of nature</small></dd></div>
+            </dl>
           </div>
-          <div class="progress-current">
-            <p class="mono-label">Current focus</p>
-            <ol data-current-work>
-              <li>Selection reliability at extreme camera angles</li>
-              <li>Expanded developer sandbox diagnostics</li>
-              <li>Attack and invalid-command feedback</li>
+        </div>
+      </section>
+
+      <!-- 2. Doctrine ----------------------------------------------------- -->
+      <section class="section" id="doctrine">
+        <div class="shell">
+          <div class="section-heading reveal">
+            <p class="section-kicker">01 — The idea</p>
+            <h2>Strategy should be the hard part.<br />Not the interface.</h2>
+            <p class="lede">
+              Classic RTS asks you to be a commander and then scores you on typing speed.
+              Longbarrow moves the difficulty back where it belongs: choosing the right plan,
+              and the right ground to fight on.
+            </p>
+          </div>
+          <div class="pillars">
+            <article class="glass pillar reveal">
+              <div class="rune" aria-hidden="true">&#9876;</div>
+              <h3>Intent over execution</h3>
+              <p>Assign a mission and a doctrine once. Squads carry it out, adapt to what they meet, and fall back when you told them to. No re-issuing the same order.</p>
+            </article>
+            <article class="glass pillar reveal">
+              <div class="rune" aria-hidden="true">&#9968;</div>
+              <h3>Terrain decides fights</h3>
+              <p>High ground, flanking and facing all multiply damage directly. A smaller force on better ground beats a bigger one on worse ground — every time.</p>
+            </article>
+            <article class="glass pillar reveal">
+              <div class="rune" aria-hidden="true">&#9881;</div>
+              <h3>No deathballs</h3>
+              <p>Pack more than twenty fighters into one place and they get measurably worse. A 35-strong blob barely edges out a disciplined 22. Spread out or lose.</p>
+            </article>
+            <article class="glass pillar reveal">
+              <div class="rune" aria-hidden="true">&#9962;</div>
+              <h3>Set-and-forget economy</h3>
+              <p>Point a base at a resource once and every worker it builds goes there and starts working. Worker babysitting is a bug, not a skill.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Factions ----------------------------------------------------- -->
+      <section class="section" id="factions">
+        <div class="shell">
+          <div class="section-heading reveal">
+            <p class="section-kicker">02 — The world</p>
+            <h2>Not civilizations.<br /><span class="glow-text">Forces of nature.</span></h2>
+            <p class="lede">
+              Four powers, each an element at war with the others. Same problems — gather,
+              expand, fight — answered in ways that feel genuinely different rather than
+              re-skinned.
+            </p>
+          </div>
+          <div class="faction-grid">
+            <article class="glass faction reveal">
+              <figure><img data-art="cohort" alt="A moss-covered Cohort legionnaire carrying a stone shield." loading="lazy" /></figure>
+              <div class="faction-body">
+                <h3>Cohort <span class="faction-el">Death</span></h3>
+                <p>A war-machine that outlived its builders. Fossil-pale stone, gently overgrown, still running on a schedule nobody remembers setting.</p>
+              </div>
+            </article>
+            <article class="glass faction reveal">
+              <figure><img data-art="mycora" alt="Iridescent fungal Mycora growth spreading through a forest battlefield." loading="lazy" /></figure>
+              <div class="faction-body">
+                <h3>Mycora <span class="faction-el">Life</span></h3>
+                <p>Hostile terrain given intent. Spreads rather than marches, and takes ground by growing over it. Cheap to plant, cheap to burn back.</p>
+              </div>
+            </article>
+            <article class="glass faction reveal">
+              <figure><img data-art="conclave" alt="A Conclave figure formed from layered fabric and flowing water before a canal city." loading="lazy" /></figure>
+              <div class="faction-body">
+                <h3>Conclave <span class="faction-el">Water</span></h3>
+                <p>Coordination that literally flows. Canals, locks and reflecting pools carry its network across the map, following the rivers.</p>
+              </div>
+            </article>
+            <article class="glass faction reveal">
+              <figure><img data-art="titanfolk" alt="A colossal dormant stone creature embedded into a valley." loading="lazy" /></figure>
+              <div class="faction-body">
+                <h3>Titanfolk <span class="faction-el">Earth</span></h3>
+                <p>Landscape that stood up. Slow because it is genuinely that size, and almost impossible to move once it decides where to stand.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Progress ----------------------------------------------------- -->
+      <section class="section" id="progress">
+        <div class="shell">
+          <div class="section-heading reveal">
+            <p class="section-kicker">03 — Built in the open</p>
+            <h2>Every milestone, honestly reported.</h2>
+            <p class="lede">
+              This section is generated from the repository itself, so it cannot flatter the
+              build. When something is blocked, it says blocked.
+            </p>
+          </div>
+
+          <div class="glass progress-panel reveal">
+            <div class="progress-head">
+              <div>
+                <p class="eyebrow">Overall completion</p>
+                <div class="progress-figure"><b data-progress-number>0</b><i>%</i></div>
+              </div>
+              <p class="build-tag">Last updated <time data-progress-date datetime="2026-07-27">2026-07-27</time></p>
+            </div>
+            <div class="progress-track" data-progress-track role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Overall completion">
+              <span class="progress-fill" data-progress-fill></span>
+            </div>
+
+            <p class="eyebrow" style="margin-top:2.2rem">Currently in progress</p>
+            <ol class="work-list" data-current-work>
+              <li>Loading current work from the repository…</li>
             </ol>
-          </div>
-        </div>
 
-        <div class="phase-list" data-phase-list aria-label="Development phases"></div>
+            <p class="eyebrow" style="margin-top:2.4rem">Development phases</p>
+            <div class="phase-list" data-phase-list></div>
 
-        <div class="milestones">
-          <div class="milestones-heading">
-            <p class="eyebrow">Recently completed</p>
-            <h3>The bones already in place.</h3>
+            <p class="eyebrow" style="margin-top:2.4rem">Recent milestones</p>
+            <div class="milestone-list" data-milestone-list></div>
           </div>
-          <div class="milestone-list" data-milestone-list></div>
         </div>
       </section>
 
-      <section class="gallery section" aria-labelledby="gallery-title">
-        <div class="section-kicker">05 — From design language to playable world</div>
-        <div class="section-heading">
-          <h2 id="gallery-title">The target is not realism.<br />It is believable myth.</h2>
-          <p><strong>Every image on this page is concept art, not in-game footage.</strong> These are AI-generated explorations that establish silhouette, material, atmosphere, and faction identity. The game currently renders stylized placeholder geometry; the final build translates these ideas into a readable stylized battlefield.</p>
-        </div>
-        <div class="gallery-grid">
-          <figure class="gallery-wide reveal"><img data-art="standard" alt="The Cohort Standard, an ancient circular stone base surrounding a suspended golden crystal." loading="lazy" /><figcaption>Cohort Standard — main base language</figcaption></figure>
-          <figure class="reveal"><img data-art="marksman" alt="A tall Cohort marksman holding an upright staff while projecting a beam of light." loading="lazy" /><figcaption>Cohort marksman — light as weapon</figcaption></figure>
-          <figure class="reveal"><img data-art="worker" alt="A small Cohort caretaker recovering Legacy from an ancient glowing structure." loading="lazy" /><figcaption>Recovering Legacy</figcaption></figure>
-          <figure class="gallery-wide reveal"><img data-art="mycora-structures" alt="A study of Mycora structures, creatures, and colorful fungal territory." loading="lazy" /><figcaption>Mycora — infection as ecosystem</figcaption></figure>
-          <figure class="reveal"><img data-art="titanfolk" alt="A colossal dormant stone creature embedded into a valley." loading="lazy" /><figcaption>Titanfolk — landscape or creature?</figcaption></figure>
+      <!-- 5. Art ---------------------------------------------------------- -->
+      <section class="section" id="gallery">
+        <div class="shell">
+          <div class="section-heading reveal">
+            <p class="section-kicker">04 — Design language</p>
+            <h2>The target is not realism.<br />It is believable myth.</h2>
+            <p class="lede">
+              Warm painterly light, natural asymmetry, and weathering treated as a real
+              material rather than a decal. Ancient machinery, gently overgrown.
+            </p>
+            <div class="notice">
+              <strong>Everything below is concept art, not in-game footage.</strong>
+              These are explorations that establish silhouette, material and faction identity.
+              The game currently renders stylized placeholder geometry — none of this has
+              been modelled yet.
+            </div>
+          </div>
+          <div class="gallery-grid">
+            <figure class="gallery-wide reveal"><img data-art="contested" alt="Cohort ruins and Mycora growth colliding across a living battlefield boundary." loading="lazy" /><figcaption>Contested ground — two forces taking the same hillside</figcaption></figure>
+            <figure class="reveal"><img data-art="standard" alt="The Cohort Standard, an ancient circular stone base around a suspended golden crystal." loading="lazy" /><figcaption>Cohort Standard — main base language</figcaption></figure>
+            <figure class="reveal"><img data-art="marksman" alt="A tall Cohort marksman holding an upright staff while projecting a beam of light." loading="lazy" /><figcaption>Marksman — light as weapon</figcaption></figure>
+            <figure class="reveal"><img data-art="worker" alt="A small Cohort caretaker recovering Legacy from an ancient glowing structure." loading="lazy" /><figcaption>Recovering Legacy</figcaption></figure>
+            <figure class="gallery-wide reveal"><img data-art="mycora-structures" alt="A study of Mycora structures, creatures and fungal territory." loading="lazy" /><figcaption>Mycora — infection as ecosystem</figcaption></figure>
+          </div>
         </div>
       </section>
 
-      <section class="final-cta">
-        <img data-art="standard" alt="" aria-hidden="true" />
-        <div class="final-cta-shade"></div>
-        <div class="final-cta-content">
-          <p class="eyebrow">The prototype is already playable</p>
-          <h2>Take command of the world<br />while it is still becoming.</h2>
-          <p>Open the latest browser build, test the foundations, and return as each milestone transforms the battlefield.</p>
-          <a class="button button-primary" href="./index.html">▶ Play Longbarrow now</a>
-          <p class="build-note">Opens the gameplay page in this browser</p>
+      <!-- 6. Close --------------------------------------------------------- -->
+      <section class="section">
+        <div class="shell">
+          <div class="glass cta reveal">
+            <p class="eyebrow">The prototype is already playable</p>
+            <h2>Command an army that<br /><span class="glow-text">thinks for itself.</span></h2>
+            <p class="lede" style="margin-inline:auto">
+              Longbarrow is being built in public, one verified milestone at a time. Follow
+              along, read the reasoning behind every decision, or watch the progress climb.
+            </p>
+            <div class="hero-actions">
+              <a class="btn" href="https://github.com/Wizard1999/Longbarrow" rel="noreferrer">Read the source</a>
+              <a class="btn ghost" href="#progress">Check progress</a>
+            </div>
+          </div>
         </div>
       </section>
     </main>
 
-    <footer>
-      <a class="wordmark" href="#top"><span class="wordmark-mark" aria-hidden="true">◌</span><span>Longbarrow</span></a>
-      <p>A miniature myth, built in the open.</p>
-      <div><a href="./index.html">Play</a><a href="https://github.com/Wizard1999/Longbarrow">GitHub</a><a href="#development">Progress</a></div>
+    <footer class="site-footer">
+      <div class="shell">
+        <p>Longbarrow — a real-time strategy game about commanding intent.</p>
+        <p class="build-tag">Concept art is not in-game footage &middot; Built in the open</p>
+      </div>
     </footer>
 
     <script type="module" src="/src/site.ts"></script>

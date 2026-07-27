@@ -30,7 +30,18 @@ export const PALETTE = {
   boneRival: { shade: c(0x6b5148), mid: c(0xb69184), lit: c(0xe8cfc0) },
   moss: { shade: c(0x33502f), mid: c(0x5f8a45), lit: c(0x9ec464) },
 
-  essence: { shade: c(0x2f6b70), mid: c(0x8fd4d8), lit: c(0xe6ffff) },
+  /**
+   * The gatherable resource — "Legacy" in the vocabulary of D-021: understanding
+   * inherited from a dead civilization, not a mineral.
+   *
+   * Violet, deliberately, and specifically NOT teal. Teal failed twice over: it
+   * reads as StarCraft minerals, which §8.8 spends its length ruling out, and it
+   * is Conclave's colour — Water — so the universal resource was quietly wearing
+   * one race's identity. Violet is claimed by none of the four elements (bone/
+   * gold, green, blue, stone), sits opposite the warm sun so it reads clearly
+   * against sunlit grass, and says "precious and old" rather than "ore".
+   */
+  legacy: { shade: c(0x3b2a55), mid: c(0xb98ad9), lit: c(0xf0dcff) },
 
   teamPlayer: { shade: c(0x1e2f6b), mid: c(0x3b5bdb), lit: c(0x8fb2ff) },
   teamRival: { shade: c(0x5c1a1a), mid: c(0xb02e2e), lit: c(0xff8a7a) },

@@ -5,12 +5,16 @@ import { terrainHeightAt } from '../sim/terrain';
 
 /** Also used for the shard a worker carries on the return trip, so the thing
  *  being hauled is visibly the thing that came out of the node. */
-export const essenceMat = new THREE.MeshStandardMaterial({
-  color: 0xbfe9ea, emissive: 0x2e6b70, emissiveIntensity: 0.45,
+export const legacyMat = new THREE.MeshStandardMaterial({
+  color: 0xd9bff0, emissive: 0x4a2f6b, emissiveIntensity: 0.5,
   flatShading: true, roughness: 0.5,
 });
 
-/** Essence nodes: pale crystalline shards. They visibly shrink as they deplete,
+/** @deprecated Old name from when the resource was called "essence" and was
+ *  teal. Kept as an alias only until the D-021 rename lands properly. */
+export const essenceMat = legacyMat;
+
+/** Legacy nodes: pale violet crystalline shards. They visibly shrink as they deplete,
  *  so map state is readable at a glance without a UI overlay. */
 export function buildNodeViews(scene: THREE.Scene, world: World): Map<EntityId, THREE.Group> {
   const nodeViews = new Map<EntityId, THREE.Group>();
