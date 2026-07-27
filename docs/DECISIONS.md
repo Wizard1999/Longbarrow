@@ -347,3 +347,27 @@ build in the right order. It should land **before** the remaining art work on
 units, buildings and scenery, so that work is done once against the real camera
 rather than twice. The sim is entirely unaffected either way, which is why
 deferring it is safe.
+
+---
+
+## D-015 — Project codename is Longbarrow, distinct from the race names
+**Date:** 2026-07-27
+
+**Decision:** The project is codenamed **Longbarrow**. Repository, package name
+and page title use it. The four races keep their own names.
+
+**Reason:** The project was previously titled "Cohort RTS", which conflates the
+project with *Cohort*, one of four playable races and the Phase 1 proving
+ground. That naming ages badly — by Phase 3 the game contains four races and
+being named after one of them is misleading, and it quietly implies Cohort is
+the protagonist faction when the design explicitly treats all four as forces of
+nature with no privileged viewpoint.
+
+A longbarrow is a prehistoric burial mound, grassed over. It carries the same
+imagery Cohort's visual identity is built from — ancient machinery of death,
+gently overgrown, as inherent to the landscape as a hill — without being the
+race's name. Evocative of the world rather than of one faction in it.
+
+**Consequence:** `Cohort` continues to mean the race, everywhere in the design
+documents. Only project-level titles changed: `README.md`, `CLAUDE.md`,
+`package.json`, and the page `<title>`.

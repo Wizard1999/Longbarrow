@@ -1,6 +1,11 @@
-# Project: Cohort RTS
+# Project: Longbarrow
 
 > Read `START_HERE.md` at the beginning of every session.
+
+**Codename:** Longbarrow — a prehistoric burial mound, grassed over: ancient
+machinery of death gently overgrown. It names the *project*. *Cohort* names a
+race inside the game. Keep the two distinct: the codename should not change
+when the roster does.
 
 ## Overview
 

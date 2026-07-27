@@ -1,4 +1,8 @@
-# Cohort RTS
+# Longbarrow
+
+> **Longbarrow** is the project codename. *Cohort* is a race within the game —
+> the two are deliberately separate, so the project has an identity that does
+> not shift when the roster does.
 
 A real-time strategy game built around **commanding intent** rather than
 clicking fast. The player acts as an Operations Commander — issuing objectives
