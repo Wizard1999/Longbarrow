@@ -52,6 +52,20 @@ The player owns every decision.
 Expressing strategy should be effortless. Difficulty comes from choosing the
 correct strategy — never from fighting the interface.
 
+## ⚠️ Camera change pending (D-014)
+
+This blueprint was written against a traditional RTS viewport. The camera is
+being replaced by a **war table**: the map as a hologram in empty space, viewed
+from any angle, with the player scaling from miniature to enormous.
+
+Most of this document is unaffected — missions, doctrine, squad cards and the
+operations log are all camera-independent. Two things need revisiting:
+
+- **The minimap** may be redundant when the whole table is already visible at a
+  glance, or may become a *fast travel* control rather than an overview.
+- **World-space mission indicators** become considerably more valuable, since
+  the player can fly down to read them directly.
+
 ## Screen Layout
 
 ```

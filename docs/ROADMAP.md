@@ -41,6 +41,9 @@ core systems before asymmetry is layered on.
 | | What | Status |
 |---|---|---|
 | — | Painterly art pass (D-005) | ◐ in flight |
+| — | War table camera (D-014) | ⬜ deferred, precedes remaining art |
+| — | Day/night cycle (D-013) | ✅ |
+| — | Snapshot/restore/hash (D-010) | ✅ |
 | — | Tick rate 20 → 30 Hz (D-004) | ✅ |
 | — | Dev console | ⬜ |
 | — | Replay system (D-008) | ⬜ |

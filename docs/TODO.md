@@ -5,6 +5,10 @@ Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
 
 ## In flight
 
+> ⚠️ **Sequencing note:** the war table camera (D-014) should land before the
+> remaining art work on units, buildings and scenery. Styling them against the
+> current top-down camera means doing it twice.
+
 - [ ] **Art pass — painterly shading model.** `palette.ts`, `quality.ts`,
       `painterly.ts` and `renderer.ts` are written. Remaining: apply the
       painterly material to terrain, units, buildings, scenery and nodes; add a
@@ -35,6 +39,44 @@ Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
       command. This matters more for perceived responsiveness than tick rate
       does — see `DECISIONS.md` D-004.
 
+## Networked product requirements (D-011, D-012)
+
+Foundation is in place: `sim/snapshot.ts` (snapshot/restore/hash) and
+`tests/determinism.test.ts`. What remains:
+
+- [ ] **Perf-gate the rollback decision.** Measure snapshot+restore at 50/100/200
+      units. If a snapshot costs more than ~1/3 of a frame at target unit count,
+      switch `World` to structure-of-arrays over typed arrays (only `snapshot.ts`
+      changes), or take lockstep-with-input-delay instead. Decide with numbers.
+- [ ] **Replay format** — `{ seed, tickRate, startHour, version, commands[] }`.
+      Omitting any of these makes replays silently wrong rather than broken.
+- [ ] **Replay keyframes** — periodic snapshots so seeking does not re-simulate
+      from tick 0.
+- [ ] **Per-tick hash comparison** for desync detection, reporting the exact
+      divergent tick.
+- [ ] **Matchmaking + MMR** — backend. Server-side result validation is
+      re-simulating the command stream and confirming the final hash; this also
+      gets anti-cheat almost for free.
+
+## War table camera (D-014)
+
+Direction locked, deferred by the designer. Should land **before** the remaining
+art work, so units/buildings/scenery are styled once against the real camera.
+
+- [ ] Free-flight orbital camera: any angle, any distance
+- [ ] Player scaling — miniature (inside the map) through to full-table view
+- [ ] Table edge: rim, underside, silhouette against the void
+- [ ] LOD system — impostors at table scale, real detail at miniature scale.
+      No longer optional; arbitrary angle + arbitrary scale make it load-bearing
+      for the 100-unit target
+- [ ] Frustum culling for arbitrary orientations
+- [ ] Rework `render/skyCycle.ts` for a void surround — light the table, not a
+      landscape; fog becomes edge falloff, not distance haze
+- [ ] Decide whether the minimap survives, and if so whether it becomes fast
+      travel rather than overview
+- [ ] Re-examine the D-005 art omissions: close-range detail was dropped on the
+      assumption of a far top-down camera, which no longer holds
+
 ## Design blockers
 
 These need a designer decision before the dependent work can start.
@@ -49,6 +91,18 @@ These need a designer decision before the dependent work can start.
       redundant with existing terrain rules? (`GAME_DESIGN.md § 11.1`)
 - [ ] **Air units vs. supply/automation pool** — shared or separate?
       (`GAME_DESIGN.md § 11.1`)
+
+## Day/night follow-ups (D-013)
+
+Cycle, clock and sky are built. Open:
+
+- [ ] Lobby/skirmish option to choose the starting hour (`createWorld(seed, hour)`
+      already supports it; nothing exposes it yet)
+- [ ] Decide whether night affects **gameplay** or stays purely visual — vision
+      range is the obvious candidate. Needs a designer call before it is built;
+      it changes balance substantially.
+- [ ] Building glow and unit rim light should read stronger at night
+- [ ] Moon/star treatment for the night sky
 
 ## Toward the UI blueprint
 

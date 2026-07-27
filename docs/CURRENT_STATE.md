@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-27
 **Branch:** `claude/project-plan-review-34kyva`
-**Tests:** 146 passing · typecheck clean · lint clean
+**Tests:** 174 passing · typecheck clean · lint clean · build clean
 
 ---
 
@@ -63,6 +63,33 @@ All 146 tests passed unchanged, because they reference constants symbolically
 
 ---
 
+### Determinism foundation — snapshot / restore / hash
+New `src/sim/snapshot.ts` + `tests/determinism.test.ts` (10 tests).
+
+Found and fixed a real latent blocker: **`World.rng` was a closure**, so the
+generator's position was unreachable state. Nothing failed visibly — a fresh sim
+from tick 0 works fine — but rollback could not have restored the RNG position
+and every rewind would have desynced. Now `rngState: number`, verified by a test
+that JSON round-trips the world (which a closure cannot survive).
+
+This is the shared foundation under all three networked requirements: rollback
+is `restore()` + N × `simStep()`, replay seeking is `restore()` to a keyframe,
+desync detection is comparing `hash()`, and MMR validation is a server
+re-simulating and confirming the final hash.
+
+### Day/night cycle
+`src/sim/daynight.ts` + `src/render/skyCycle.ts` + HUD clock, 18 tests.
+
+10 real minutes per in-game day, derived from `world.tick` — **not** wall clock.
+A match can start at any hour via `createWorld(seed, startHour)`, and
+`dayStartTick` is part of the hashed state so a replay cannot restore a match to
+the wrong time of day and still report agreement. Day length is declared in real
+seconds in `data/tuning.ts` and converted to ticks once, so changing `TICK_HZ`
+cannot silently change day length.
+
+The HUD shows a conic-gradient dial plus `HH:MM` and the period name, always
+visible. The sun tracks a real arc and the sky/fog/exposure follow it.
+
 ## Currently working on
 
 **The painterly art pass** (`DECISIONS.md` D-005) — partially landed.
@@ -88,9 +115,27 @@ works with any shader. Use that, not the flag.
 
 ---
 
+## ⚠️ Sequencing change — read before doing more art
+
+The **war table camera** (D-014) is now the direction: the map as a hologram in
+empty space, free flight from any angle, player scaling from miniature to
+enormous. Deferred by the designer, but it **should land before** the remaining
+art work on units, buildings and scenery — otherwise that work gets done twice.
+
+It also invalidates an assumption baked into the art pass: D-005 justified
+omitting close-range detail because the camera was far and top-down. If the
+player can shrink into the map, close-up detail is exactly what they will be
+looking at. Treat those omissions as scoped to a camera that is being replaced,
+not as settled. LOD stops being optional.
+
 ## Blockers
 
-### 🔴 GitHub push access is read-only
+### ✅ GitHub push access — RESOLVED 2026-07-27
+Write access was granted; all commits are pushed and the branch tracks
+`origin/claude/project-plan-review-34kyva`. Historical note below kept in case
+it recurs.
+
+### ~~🔴 GitHub push access is read-only~~ (resolved)
 Commits land locally but **cannot be pushed**. Both credential paths fail:
 
 - `git push` → `403` from the session git proxy
@@ -115,10 +160,10 @@ up either** — this container is ephemeral.
 
 In priority order — full detail in `TODO.md`:
 
-1. **Resolve push access** (above). Highest priority: everything else is at risk
-   while the only copy of this work is in an ephemeral container.
-2. **Finish the art pass** — units, buildings, scenery, nodes, sites; HUD quality
-   selector.
+1. **War table camera** (D-014) — free flight, player scaling, table edge, LOD.
+   Do this *before* the remaining art work, not after.
+2. **Then finish the art pass** — units, buildings, scenery, nodes, sites; HUD
+   quality selector. Against the new camera, with LOD in mind.
 3. **Dev console** — backtick to open; `/add`, `/pause`, `/speed`, `/spawn`,
    `/kill`, `/reveal`, `/tick`, `/help`. Must route through `sim/commands.ts`
    and be recorded into the replay stream, or replays will desync.
@@ -126,6 +171,18 @@ In priority order — full detail in `TODO.md`:
    commands[]}`, play back by re-simulating. Ship the determinism test with it.
 5. **Basic CPU opponent** (`DECISIONS.md` D-009) — grown alongside features, not
    written late; issues the same commands a human does.
+
+## Perf work now gated on a measurement
+
+Two decisions are deliberately waiting on numbers rather than opinion:
+
+- **Rollback vs. lockstep** (D-011). Measure snapshot+restore at 50/100/200
+  units. If a snapshot costs more than ~1/3 of a frame at target unit count,
+  either move `World` to structure-of-arrays over typed arrays — only
+  `snapshot.ts` changes, which is why everything routes through it — or take
+  lockstep-with-input-delay instead. Rollback in a 100+ unit RTS is a real
+  commitment; most RTS ship lockstep for exactly this reason.
+- **The 100-unit target itself** (D-006) is still unverified.
 
 ## Design decisions awaiting the designer
 

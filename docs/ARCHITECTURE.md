@@ -43,6 +43,8 @@ sim/    ──────────────► imports core/ + data/ ONLY
   supply.ts       supply + command bandwidth
   squads.ts       squad membership, behaviour chains
   commands.ts     the ONLY way outside code mutates the world
+  daynight.ts     day/night cycle derived from world.tick
+  snapshot.ts     snapshot / restore / hash — rollback + replay foundation
 
 render/ ──────────────► reads sim, never writes it
   renderer.ts      WebGLRenderer, lights, tone mapping
@@ -53,6 +55,7 @@ render/ ──────────────► reads sim, never writes it
   terrainMesh.ts   ground mesh
   *Views.ts        one module per entity kind; syncs Three objects to sim state
   chainVisuals.ts  behaviour-chain overlay
+  skyCycle.ts      sun/sky/fog derived from the sim clock (read-only)
   placementGhost.ts
 
 input/  ──────────────► translates events into commands/*
@@ -98,6 +101,24 @@ When touching `sim/`:
 - [ ] No wall-clock durations — ticks only
 - [ ] No iteration over a structure whose order can vary between runs
 - [ ] No floating-point accumulation that depends on frame timing
+- [ ] No closures, functions, `Map`/`Set` or object references stored on `World`
+      — snapshot/restore/hash all break on unreachable state (D-010)
+
+## Snapshot, restore, hash
+
+`sim/snapshot.ts` provides the three operations every networked feature needs:
+
+| Feature | Implementation |
+|---|---|
+| Rollback | `restore()` then N × `simStep()` |
+| Replay seek | `restore()` to nearest keyframe, then re-simulate |
+| Desync detection | compare `hash()` per tick |
+| Match validation | server re-simulates, confirms final `hash()` |
+
+`restore()` mutates the world **in place** — swapping the object would leave
+every view holding an orphan. `hash()` excludes `prevX`/`prevZ`/`prevFacing`
+(render interpolation state, not simulation inputs) and quantises floats to 1e-6
+so peers agreeing within tolerance are not reported as desynced.
 
 ## Rendering model
 
