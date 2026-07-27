@@ -1,11 +1,22 @@
 /** Fixed-tick constants. Every duration in the simulation is expressed in
- *  ticks, never seconds (06 §3). */
-export const TICK_HZ = 20;
+ *  ticks, never seconds (06 §3).
+ *
+ *  30 Hz, not 20 and not 128 — see docs/DECISIONS.md D-004. Short version:
+ *  an RTS's perceived responsiveness is dominated by input-to-feedback latency,
+ *  not simulation granularity, and sim cost scales with unit count. 30 divides
+ *  evenly into 60 Hz displays, which keeps render interpolation judder-free.
+ *
+ *  Changing this rescales the meaning of EVERY tick-denominated constant in
+ *  data/, and invalidates recorded replays. Do not change it casually. */
+export const TICK_HZ = 30;
 export const TICK_MS = 1000 / TICK_HZ;
 export const DT = 1 / TICK_HZ;
 
-/** Cap catch-up so a slow frame can't spiral into an ever-growing backlog. */
-export const MAX_CATCHUP = 5;
+/** Cap catch-up so a slow frame can't spiral into an ever-growing backlog.
+ *  Sized so a single maximally-clamped frame (250ms, below) can be absorbed in
+ *  one go and no further: 8 x 33.3ms = 267ms. Raising TICK_HZ without raising
+ *  this would silently start dropping simulated time on slow frames. */
+export const MAX_CATCHUP = 8;
 
 /** Deterministic spread without touching the RNG — used anywhere entities need
  *  to fan out around a point reproducibly. */

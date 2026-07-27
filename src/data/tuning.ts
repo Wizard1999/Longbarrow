@@ -23,7 +23,7 @@ export const PLACE_CLEARANCE = 1.0; // gap required between a new building and a
 export const AUTOMATION = {
   commandPerSlot: 8,  // 15 command -> 1 squad; an outpost (+8) buys another
   arriveRadius: 2.2,  // how close counts as "the squad got there"
-  stepTimeout: 900,   // 45s — a step that cannot finish must not deadlock the chain
+  stepTimeout: 1350,  // 45s at 30Hz — a step that cannot finish must not deadlock the chain
   maxChainSteps: 6,
   maxSquads: 5,       // squads are bound to number keys 1–5
 };
@@ -42,13 +42,13 @@ export const COMBAT = {
   /** Defense can never exceed this, however tight the formation. */
   maxDefense: 0.75,
   /** Ticks of standing still before a unit is fully "set up". */
-  settleTicks: 20,
+  settleTicks: 30,   // 1s
 };
 
 export const ECON = {
-  gatherTicks: 30,      // 1.5s to fill up — Cohort is "flat and reliable" (§8.1)
+  gatherTicks: 45,      // 1.5s to fill up — Cohort is "flat and reliable" (§8.1)
   carryAmount: 8,       // essence per trip
-  depositTicks: 4,      // 0.2s to unload
+  depositTicks: 6,      // 0.2s to unload
   gatherRange: 1.4,     // how close a worker must be to a node
   gatherStandoff: 1.05, // where a worker parks — each gets its own slot
   slotEpsilon: 0.12,    // how close to its slot counts as arrived

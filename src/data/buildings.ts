@@ -24,6 +24,6 @@ export const BUILDING_TYPES: Record<BuildingTypeKey, BuildingDef> = {
   },
   outpost: {
     radius: 1.4, dropoff: true, command: 8, controlRadius: 11,
-    cost: 100, buildTicks: 100, produces: ['worker'], label: 'Outpost',
+    cost: 100, buildTicks: 150, produces: ['worker'], label: 'Outpost',
   },
 };
