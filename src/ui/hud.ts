@@ -10,6 +10,7 @@ import { supplyCap, supplyUsed } from '../sim/supply';
 import { automationSlots, runningSquads } from '../sim/squads';
 import type { UiState } from '../input/selection';
 import { dayNumber, dayPeriod, daylight, formatClock } from '../sim/daynight';
+import { issueCommand } from '../replay/live';
 
 const el = (id: string): HTMLElement => {
   const found = document.getElementById(id);
@@ -51,7 +52,11 @@ export function createHud(world: World, ui: UiState): Hud {
 
   function tryTrain(unitType: UnitTypeKey): void {
     if (ui.selectedBuildingId === null) { flash('select a structure first'); return; }
-    const res = cmdTrain(world, ui.selectedBuildingId, unitType);
+    const building = ui.selectedBuildingId;
+    const res = issueCommand(
+      { t: 'train', building, unit: unitType },
+      () => cmdTrain(world, building, unitType),
+    );
     if (!res.ok) flash(res.reason ?? 'cannot train that');
   }
 
@@ -77,7 +82,10 @@ export function createHud(world: World, ui: UiState): Hud {
         const btn = document.createElement('button');
         btn.innerHTML = '<b>Cancel (Esc)</b><span class="c">full refund</span>';
         btn.onclick = () => {
-          cmdCancelSite(world, site.id);
+          issueCommand(
+            { t: 'cancelSite', site: site.id },
+            () => cmdCancelSite(world, site.id),
+          );
           ui.selectedSiteId = null;
           flash('site cancelled, essence refunded');
         };

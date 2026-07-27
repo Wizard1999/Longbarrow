@@ -1,5 +1,67 @@
+
+
+- Added a repeatable performance harness with a fixed 200-unit scenario, temporary `?quality=` tier overrides, p50/p95/worst frame timing, and downloadable JSON reports.
+- Added `docs/PERFORMANCE_TESTING.md` and unit tests for percentile math and URL quality selection.
+## 2026-07-27 — Test-build identification and production LAN flow (38%)
+
+## 2026-07-27 — Live replay capture and verification (49%)
+
+- Routed all human gameplay commands through one browser-side recording gateway while preserving normal command return values.
+- Bumped replay format to v3 and recorded opponent setup, export endpoint tick, and final state hash.
+- Added exact replay verification by deterministic re-simulation and explicit desync reporting.
+- Added sandbox controls to export, verify, and import replay files; imported replays load only after their endpoint hash agrees.
+- Invalidated active recording after save/replay state replacement so a misleading mixed-history replay cannot be exported.
+- Added tests for AI-enabled replay reproduction, endpoint verification, tamper rejection, and invalidated recordings.
+
+
+- Added generated `public/data/build.json` metadata for every dev/build run.
+- Added an unobtrusive in-game build badge for exact tester reports.
+- Added `PLAY_ON_LAN_PRODUCTION.bat` to build and serve the optimized browser game over LAN.
+- Updated package pre-scripts so site progress and build metadata remain synchronized.
+
+## 2026-07-27 — Camera/interaction diagnostics checkpoint (36%)
+
+- Added tested overlap-aware click-picking priority for units, sites, and buildings.
+- Added distinct attack-order and invalid-order world feedback.
+- Made camera focus sample the canonical terrain-height function.
+- Made cursor-anchored zoom raycast the rendered terrain mesh, preventing hill drift.
+- Added developer toggles for selected-unit order lines and footprint/radius overlays.
+- Synchronized progress, current-state, roadmap, and task records.
+
+## 2026-07-27 — Camera-safe selection benchmark
+
+- Extracted normalized screen-rectangle and point-containment math into a pure module.
+- Prevented drag selection from accepting units behind the camera or outside clip depth.
+- Added tests for reverse-direction drags, rectangle edges, out-of-bounds points, and invisible projections.
+- Advanced the live production plan to 30%.
+
+## 2026-07-27 — Sandbox diagnostics benchmark
+
+- Added purpose-built presets for battle, units, economy, and performance sandbox modes.
+- Added live FPS, WebGL draw-call, triangle, entity-count, camera-state, and selected-order diagnostics.
+- Added a one-click 200-unit stress formation for repeatable performance checks.
+- Advanced the live production plan to 28%.
+## 2026-07-27 — Agent reasoning and quality protocol
+
+- Added `docs/AGENT_REASONING.md` as a permanent pre-work checklist for coding agents.
+- Adopted UNDERSTAND → ANALYZE → REASON → SYNTHESIZE → CONCLUDE and domain-specific variants as quality disciplines.
+- Added Longbarrow-specific architecture, determinism, visual-readability, performance, evidence, and documentation checks.
+- Explicitly separated useful structured prompting from unverified claims about hidden model modes or internal architecture.
+- Updated `CLAUDE.md` and `START_HERE.md` so future agents read and apply the protocol every session.
+
+
+## 2026-07-27 — Public development landing page
+
+- Added a premium one-page public-facing development site at `development.html`.
+- Added prominent Play buttons that open the browser game at `index.html`.
+- Added faction, resource, concept-art, roadmap, milestone, and current-focus sections.
+- Added `scripts/sync-site-progress.mjs`, which converts `docs/PROGRESS.md` into site data before development and production builds.
+- Configured Vite as a multi-page build so both the game and development page ship together.
+- Added responsive layouts, reduced-motion support, accessible progress semantics, and restrained reveal motion.
+
 # Changelog
 
+- Added the VoXelo CodePen (`yygKOVy`) to the high-fidelity WebGL inspiration list for later technical review.
 Tracks every buildable version and every locked design decision, regardless of
 which environment produced it (this chat, or Claude Code). Newest entry on top.
 
@@ -7,6 +69,14 @@ Versioning follows the blueprint's phase.step numbering (`02_development_bluepri
 e.g. `v1.2` = Phase 1, step 1.2. Design-only entries (no code) are marked `[design]`.
 
 ---
+
+## 2026-07-27 — Cinematic replay-director groundwork (45%)
+
+- Added a simulation-independent replay-event taxonomy and event-ranking policy.
+- Added minimum shot duration, switch cooldown, importance threshold, distance-aware scoring, and manual camera override protection.
+- Added dedicated policy tests.
+- Documented free, follow, event, and director replay-camera modes and kept the feature outside deterministic simulation.
+
 
 ## [design] Ghibli art reference received — analysis, no code yet
 **Date:** 2026-07-27 · **File:** designer-supplied CodePen (`claude-opus-5-ghibli`)
@@ -395,3 +465,115 @@ TEMPLATE FOR NEW ENTRIES — copy this block
 
 **How to test:**
 -->
+
+---
+
+## [in progress] Development infrastructure and sandbox foundation
+**Date:** 2026-07-27 · **Environment:** ChatGPT working copy
+
+**Completed:**
+- Added `PLAY_LONGBARROW.bat`: checks for Node/npm, installs dependencies when
+  absent, starts Vite, and opens the local game URL.
+- Added `RUN_TESTS.bat` and `BUILD_GAME.bat` with the same dependency guard.
+- Added `npm run verify` for typecheck → lint → tests → production build.
+- Added `docs/PROGRESS.md`, the live percentage/benchmark scoreboard.
+- Added an opt-in developer sandbox (`?dev=camera`, `battle`, `units`,
+  `economy`, or `performance`). Its first controls pause/resume the deterministic
+  loop, advance one tick, set 0.25×–4× simulation speed, and spawn basic units.
+- Extended the core loop with pause, single-step, and simulation-speed controls;
+  render still runs while the simulation is paused.
+
+**Validation status:**
+- Source-level review complete.
+- Full automated verification is temporarily blocked because dependencies are
+  absent from the ZIP and package installation did not complete in this
+  execution environment. Do not describe this as a test failure.
+
+**Next:** finish sandbox validation, then split camera state/math/input and land
+war-table camera iteration one.
+
+
+### War-table camera iteration one
+- Split pure, browser-independent camera calculations into
+  `src/render/cameraMath.ts`.
+- Added explicit focus, yaw, pitch, and distance state with safe clamps.
+- Panning is now camera-relative and uses acceleration/damping rather than
+  frame-by-frame position jumps.
+- Mouse-wheel zoom is smoothed; middle-mouse drag orbits around the focus point.
+- Added `tests/camera.test.ts` for clamps, geometry, yaw-relative panning, and
+  angle normalization. Test execution remains pending dependency installation.
+
+
+## [in progress] LAN sharing and anchored camera zoom
+**Date:** 2026-07-27 · **Environment:** ChatGPT working copy
+
+**Completed:**
+- Added `PLAY_ON_LAN.bat`, which performs the same Node/npm/dependency guards as
+  the local launcher and starts Vite on the private LAN.
+- Added `npm run dev:lan` and `npm run preview:lan`.
+- Added staged LAN multiplayer to `ROADMAP.md` and `TODO.md`, explicitly
+  separating current build sharing from future synchronized play.
+- Mouse-wheel zoom now retains the ground point beneath the cursor while the
+  smoothed zoom settles, using a horizontal battlefield plane as iteration one.
+- Wheel handling is now non-passive so the browser page does not scroll while
+  zooming the game.
+- Added short-lived world-space markers for move, gather, and rally commands,
+  giving immediate confirmation without mutating deterministic simulation state.
+
+**Validation status:**
+- Source inspection complete. Automated verification remains blocked by absent
+  dependencies in the uploaded ZIP/current execution environment.
+- Cursor anchoring still needs browser validation at map edges and refinement
+  against actual terrain height rather than the iteration-one flat plane.
+
+
+## [in progress] Complete CodePen reference capture
+**Date:** 2026-07-27 · **Environment:** ChatGPT working copy
+
+**Completed:**
+- Corrected the permanent art-reference log to include every CodePen supplied
+  through this date, not only the first three high-fidelity examples.
+- Added explicit intended uses for water, liquid-glass UI, dimensional panels,
+  cinematic motion, bioelectric organic systems, and bloom.
+- Marked VoXelo `GgNawEE` as a bloom/emissive technique reference only, not a
+  target for the game's overall visual style.
+- Added an authoritative complete-link checklist to prevent future omissions.
+
+## [in progress] First-party concept-art archive and GitHub presentation
+**Date:** 2026-07-27 · **Environment:** ChatGPT working copy
+
+**Completed:**
+- Added eleven optimized first-party concept images under
+  `docs/assets/concept-art/`.
+- Added `docs/CONCEPT_ART.md`, with faction/system-specific interpretation,
+  implementation constraints, and explicit notes distinguishing hero-detail
+  references from the actual stylized RTS target.
+- Added a restrained battlefield hero and three-faction visual strip to the
+  GitHub README, plus a link to the complete gallery.
+- Declared the original concept set the primary art-direction source; external
+  CodePens remain secondary technique references.
+
+**Validation status:**
+- All repository image paths and filenames were checked locally.
+- Images were converted to GitHub-friendly WebP derivatives (maximum 2048 px,
+  approximately 3.8 MB total) to avoid inflating every clone and handoff with
+  the roughly 37 MB source PNG set.
+
+## Unreleased — open RTS engine vision
+
+- Added `docs/ENGINE_VISION.md`, defining Longbarrow's long-term role as an open,
+  browser-first RTS engine and creator platform.
+- Added a staged mod/creator SDK track to the roadmap without prematurely
+  extracting unfinished gameplay systems.
+- Added architecture rules that distinguish reusable mechanics, Longbarrow game
+  composition, and authored content.
+- Added backlog and open questions for schemas, content packs, templates,
+  licensing, version compatibility, editors, and safe custom scripting.
+
+
+## 2026-07-27 — deterministic save/load development tools
+
+- Added `src/sim/save.ts` with versioned save envelopes, map-version checks, tick metadata, and deterministic state-hash validation.
+- Added browser quick-save/load and portable JSON save import/export to every developer sandbox mode.
+- Added save round-trip, incompatibility, metadata, and tamper-detection tests.
+- Added `docs/SAVE_AND_REPLAY.md` and synchronized roadmap/current-state/progress documentation.

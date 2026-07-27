@@ -1,54 +1,128 @@
 import * as THREE from 'three';
+import {
+  cameraOffset, clampCameraState, panDelta, type CameraState,
+} from './cameraMath';
+import { terrainHeightAt } from '../sim/terrain';
 
 export interface RtsCamera {
   camera: THREE.PerspectiveCamera;
   target: THREE.Vector3;
+  state: Readonly<CameraState>;
   pan: (realDt: number, keys: Record<string, boolean>, mouseX: number, mouseY: number) => void;
-  zoom: (deltaY: number) => void;
+  zoom: (deltaY: number, clientX?: number, clientY?: number) => void;
+  orbit: (deltaX: number, deltaY: number) => void;
   update: () => void;
   onResize: () => void;
 }
 
-export function createCamera(): RtsCamera {
-  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 500);
-  const target = new THREE.Vector3(-12, 0, 7);
-  const angle = THREE.MathUtils.degToRad(52);
-  let distance = 40;
+export function createCamera(terrain?: THREE.Object3D): RtsCamera {
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 600);
+  const target = new THREE.Vector3();
+  let state: CameraState = {
+    focusX: -12,
+    focusZ: 7,
+    yaw: 0,
+    pitch: THREE.MathUtils.degToRad(52),
+    distance: 40,
+  };
+  let panVelocityX = 0;
+  let panVelocityZ = 0;
+  let zoomVelocity = 0;
+  let zoomAnchor: { ndc: THREE.Vector2; world: THREE.Vector3 } | null = null;
+  const raycaster = new THREE.Raycaster();
+  const fallbackGroundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+
+  function syncCamera(): void {
+    target.set(state.focusX, terrainHeightAt(state.focusX, state.focusZ), state.focusZ);
+    const offset = cameraOffset(state);
+    camera.position.set(target.x + offset.x, offset.y, target.z + offset.z);
+    camera.lookAt(target);
+    camera.updateMatrixWorld();
+  }
+
+  function groundAt(ndc: THREE.Vector2): THREE.Vector3 | null {
+    raycaster.setFromCamera(ndc, camera);
+    if (terrain) {
+      const hit = raycaster.intersectObject(terrain, false)[0];
+      if (hit) return hit.point.clone();
+    }
+    return raycaster.ray.intersectPlane(fallbackGroundPlane, new THREE.Vector3());
+  }
 
   function update(): void {
-    camera.position.set(
-      target.x,
-      distance * Math.sin(angle),
-      target.z + distance * Math.cos(angle),
-    );
-    camera.lookAt(target);
+    if (Math.abs(zoomVelocity) > 0.001) {
+      state.distance += zoomVelocity;
+      zoomVelocity *= 0.72;
+    } else {
+      zoomVelocity = 0;
+      zoomAnchor = null;
+    }
+    state = clampCameraState(state);
+    syncCamera();
+
+    // Preserve the ground point beneath the cursor while the smooth zoom settles.
+    if (zoomAnchor) {
+      const current = groundAt(zoomAnchor.ndc);
+      if (current) {
+        state.focusX += zoomAnchor.world.x - current.x;
+        state.focusZ += zoomAnchor.world.z - current.z;
+        state = clampCameraState(state);
+        syncCamera();
+      }
+    }
   }
 
   function pan(realDt: number, keys: Record<string, boolean>, mouseX: number, mouseY: number): void {
-    const panSpeed = 16 * realDt * (distance / 30);
-    let dx = 0;
-    let dz = 0;
-    if (keys['w']) dz -= 1;
-    if (keys['s']) dz += 1;
-    if (keys['a']) dx -= 1;
-    if (keys['d']) dx += 1;
+    let right = 0;
+    let forward = 0;
+    if (keys['w']) forward += 1;
+    if (keys['s']) forward -= 1;
+    if (keys['a']) right -= 1;
+    if (keys['d']) right += 1;
+
     const edge = 18;
-    if (mouseX < edge) dx -= 1;
-    if (mouseX > window.innerWidth - edge) dx += 1;
-    if (mouseY < edge) dz -= 1;
-    if (mouseY > window.innerHeight - edge) dz += 1;
-    if (dx || dz) {
-      const len = Math.hypot(dx, dz);
-      target.x = THREE.MathUtils.clamp(target.x + (dx / len) * panSpeed, -38, 38);
-      target.z = THREE.MathUtils.clamp(target.z + (dz / len) * panSpeed, -38, 38);
+    if (mouseX < edge) right -= 1;
+    if (mouseX > window.innerWidth - edge) right += 1;
+    if (mouseY < edge) forward += 1;
+    if (mouseY > window.innerHeight - edge) forward -= 1;
+
+    const desired = panDelta(state.yaw, right, forward, state.distance);
+    const acceleration = Math.min(1, realDt * 14);
+    panVelocityX += (desired.x * 15 - panVelocityX) * acceleration;
+    panVelocityZ += (desired.z * 15 - panVelocityZ) * acceleration;
+    if (!right && !forward) {
+      const damping = Math.max(0, 1 - realDt * 10);
+      panVelocityX *= damping;
+      panVelocityZ *= damping;
     }
+    state.focusX += panVelocityX * realDt;
+    state.focusZ += panVelocityZ * realDt;
+    state = clampCameraState(state);
   }
 
   return {
     camera,
     target,
+    get state() { return state; },
     pan,
-    zoom: (deltaY: number) => { distance = THREE.MathUtils.clamp(distance + deltaY * 0.03, 14, 64); },
+    zoom: (deltaY: number, clientX?: number, clientY?: number) => {
+      if (clientX !== undefined && clientY !== undefined) {
+        syncCamera();
+        const ndc = new THREE.Vector2(
+          (clientX / window.innerWidth) * 2 - 1,
+          -(clientY / window.innerHeight) * 2 + 1,
+        );
+        const world = groundAt(ndc);
+        if (world) zoomAnchor = { ndc, world };
+      }
+      zoomVelocity += deltaY * 0.018;
+      zoomVelocity = THREE.MathUtils.clamp(zoomVelocity, -5, 5);
+    },
+    orbit: (deltaX: number, deltaY: number) => {
+      state.yaw -= deltaX * 0.006;
+      state.pitch += deltaY * 0.004;
+      state = clampCameraState(state);
+    },
     update,
     onResize: () => {
       camera.aspect = window.innerWidth / window.innerHeight;

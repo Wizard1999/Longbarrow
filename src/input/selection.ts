@@ -54,6 +54,10 @@ export function createPicker(
     ground: (): THREE.Intersection | undefined => raycaster.intersectObject(terrainMesh)[0],
     unit: (): THREE.Intersection | undefined => raycaster.intersectObjects(pickTargets(views.units))[0],
     building: (): THREE.Intersection | undefined => raycaster.intersectObjects(pickTargets(views.buildings))[0],
+    unitDeep: (): THREE.Intersection | undefined =>
+      raycaster.intersectObjects([...views.units.values()], true)[0],
+    buildingDeep: (): THREE.Intersection | undefined =>
+      raycaster.intersectObjects([...views.buildings.values()], true)[0],
     site: (): THREE.Intersection | undefined => raycaster.intersectObjects(pickTargets(views.sites))[0],
     /** Nodes and sites are picked through the whole group for right-click
      *  orders, so clipping a shard still counts as clicking the node. */
@@ -74,11 +78,12 @@ export function ownerIdOf(hit: THREE.Intersection, key: string): EntityId | null
 
 export function screenPosOf(
   camera: THREE.PerspectiveCamera, x: number, z: number,
-): { x: number; y: number } {
+): { x: number; y: number; visible: boolean } {
   const v = new THREE.Vector3(x, terrainHeightAt(x, z) + 1.0, z).project(camera);
   return {
     x: (v.x * 0.5 + 0.5) * window.innerWidth,
     y: (-v.y * 0.5 + 0.5) * window.innerHeight,
+    visible: v.z >= -1 && v.z <= 1,
   };
 }
 

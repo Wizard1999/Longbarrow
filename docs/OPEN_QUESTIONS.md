@@ -210,3 +210,14 @@ These need a human at the controls; they can't be reasoned out.
 ---
 
 *Updated through v1.8.*
+
+## Open RTS engine and community platform
+
+- Which open-source license best fits the desired balance of reuse, attribution,
+  commercial forks, and community contribution?
+- Should authored content use TypeScript, JSON, YAML, or a generated combination?
+- Which systems must remain compile-time plugins versus data-driven configuration?
+- How will engine, game, and mod semantic versions declare compatibility?
+- Can custom scripting be sandboxed safely in the browser while preserving determinism?
+- What is the smallest second example RTS that proves the engine is genuinely reusable?
+- Should community packages be loaded locally, from static URLs, or through a future registry?

@@ -57,6 +57,9 @@ const STORAGE_KEY = 'rts.quality';
  * coarse, reliable hints only.
  */
 export function detectTier(): QualityTier {
+  const requested = readRequestedTier();
+  if (requested) return requested;
+
   const stored = readStoredTier();
   if (stored) return stored;
 
@@ -67,6 +70,21 @@ export function detectTier(): QualityTier {
   if (mobile || cores <= 4 || mem <= 4) return 'low';
   if (cores >= 8 && mem >= 8) return 'high';
   return 'medium';
+}
+
+
+/**
+ * Temporary URL override for repeatable benchmarking, e.g.
+ * `?dev=performance&quality=low`. It deliberately does not write storage, so a
+ * tester can compare tiers without changing their normal preference.
+ */
+export function readRequestedTier(): QualityTier | null {
+  try {
+    const value = new URLSearchParams(window.location.search).get('quality');
+    return value === 'low' || value === 'medium' || value === 'high' ? value : null;
+  } catch {
+    return null;
+  }
 }
 
 export function readStoredTier(): QualityTier | null {

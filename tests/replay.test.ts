@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createWorld, simStep } from '../src/sim/world';
+import { enableAi } from '../src/sim/ai';
 import { buildTestMap } from '../src/sim/map';
 import { hash } from '../src/sim/snapshot';
 import { TICK_HZ } from '../src/core/loop';
 import { dayHour } from '../src/sim/daynight';
 import {
-  REPLAY_VERSION, Recorder, checkReplay, parseReplay, playback, serializeReplay,
+  REPLAY_VERSION, Recorder, checkReplay, parseReplay, playback, serializeReplay, verifyReplay,
 } from '../src/sim/replay';
 import type { Replay } from '../src/sim/replay';
 import type { World } from '../src/core/types';
@@ -150,5 +151,36 @@ describe('commands stay serializable', () => {
     // a class instance or an entity reference would fail here.
     const { replay } = playMatch();
     expect(JSON.parse(JSON.stringify(replay.commands))).toEqual(replay.commands);
+  });
+});
+
+describe('live replay integrity', () => {
+  it('records AI match setup and verifies an endpoint hash', () => {
+    const world = enableAi(buildTestMap(createWorld(SEED, HOUR)));
+    const rec = new Recorder(SEED, HOUR, SEED, 'standardAi');
+    for (let t = 0; t < 180; t++) {
+      if (t === 20) {
+        const fighters = world.units.filter(u => u.team === 'player' && !u.gather);
+        if (fighters.length) rec.apply(world, { t: 'move', units: fighters.map(u => u.id), x: 9, z: 0 });
+      }
+      simStep(world);
+    }
+    const replay = rec.finish(world);
+    expect(replay.opponent).toBe('standardAi');
+    expect(replay.endTick).toBe(world.tick);
+    expect(replay.finalHash).toBe(hash(world));
+    expect(verifyReplay(replay)).toEqual({ ok: true });
+  });
+
+  it('rejects a tampered endpoint hash', () => {
+    const { replay } = playMatch(60);
+    const invalid = { ...replay, endTick: 60, finalHash: '00000000' };
+    expect(verifyReplay(invalid).ok).toBe(false);
+  });
+
+  it('prevents exporting a recording after external state replacement', () => {
+    const rec = new Recorder(SEED, HOUR);
+    rec.invalidate('save loaded');
+    expect(() => rec.finish()).toThrow('save loaded');
   });
 });

@@ -132,3 +132,21 @@ Performance is tiered, not the look. The shading model is fragment maths and
 costs nothing; what scales by tier is shadow resolution, antialiasing, pixel
 ratio, and mesh subdivision. Target: **1080p / 30 fps / 100+ units on a 2017
 integrated GPU.**
+
+## Engine-readiness rule
+
+Longbarrow is also the proving ground for a future open RTS engine. Do not extract
+an abstract engine prematurely, but write new systems so game-specific content is
+not needlessly embedded in reusable mechanics.
+
+When adding a feature, ask:
+
+- Is this a generic mechanic, a Longbarrow rule composition, or authored content?
+- Could faction/resource/unit differences be represented through typed data or
+  capabilities rather than faction-name conditionals?
+- Does the feature preserve serializable commands, snapshots, hashing, headless
+  execution, and deterministic custom rule sets?
+- Is the rendering assumption truly engine-wide, or only Longbarrow art direction?
+
+The target layering and staged extraction plan are documented in
+`docs/ENGINE_VISION.md`.

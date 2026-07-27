@@ -3,9 +3,25 @@
 **Date:** 2026-07-27
 **Repository:** `Wizard1999/Longbarrow` (private) — migrated from `Wizard1999/RTS`
 **Branch:** `claude/project-plan-review-34kyva` · `main` is current
-**Tests:** 226 passing · typecheck clean · lint clean · build clean
+**Last known upstream verification:** 226 passing · typecheck clean · lint clean · build clean
+**Current working-copy verification:** blocked pending dependency installation; no source failure established
 
 ---
+
+
+## 2026-07-27 active production checkpoint — 44%
+
+The developer sandbox foundation is now complete: scenario presets, simulation controls, render metrics, selected-order diagnostics, and toggleable world overlays are available through `?dev=<mode>`. The war-table camera pans and orbits smoothly, zooms around the cursor, focuses at the actual terrain height, and uses the rendered terrain for anchoring. Selection now rejects hidden projections and resolves overlapping unit/site/building hits through a tested RTS priority policy. Move, gather, rally, attack, and invalid commands all provide immediate world-space acknowledgement.
+
+Browser verification is still pending because dependencies could not be installed in the execution environment used for this handoff. Source changes and tests are present, but must not be described as executed until `npm run verify` succeeds locally.
+
+
+### Deterministic save files
+`src/sim/save.ts` + `tests/save.test.ts` add a versioned, hash-validated save envelope on top of the existing snapshot/restore system. Developer sandbox modes now support browser quick-save/load and portable JSON import/export. Save loading rejects wrong formats, save versions, map-generator versions, tick metadata, and tampered state instead of attempting an unsafe best-effort restore. See `SAVE_AND_REPLAY.md`.
+
+## Developer sandbox diagnostics
+
+Opening the game with `?dev=camera`, `?dev=battle`, `?dev=units`, `?dev=economy`, or `?dev=performance` enables the developer panel. It supports pause, one-tick stepping, simulation speeds, spawning, scenario presets, and live diagnostics for FPS, draw calls, triangle count, entity totals, camera state, and the current selected-unit order. The performance preset creates a repeatable 200-unit formation.
 
 ## Last completed
 
@@ -105,9 +121,7 @@ the final one; a replay agreeing only at the end could be right by luck. Also
 tested: JSON round trip, correct time-of-day restoration, and rejection of
 mismatched tick rate or version rather than playing them wrong.
 
-**Not yet wired into live play** — input and UI still call `cmd*` directly.
-Routing them through `Recorder.apply()` is the last step before real matches
-record, and it is mechanical.
+**Live recording is now wired.** Browser input and UI commands pass through a single `issueCommand()` gateway that records the serializable command before invoking the normal `cmd*` function, preserving command results needed by the interface. Replay v3 also records whether the standard AI was enabled plus an optional endpoint tick/hash. The sandbox can export, independently verify, and load the exact verified endpoint. The remaining work is an interactive timeline/keyframe viewer and observed-event integration for the cinematic director.
 
 ### Map seeds separated from match seeds
 `mapSeed` + `MAP_VERSION`, 12 tests.
@@ -162,9 +176,23 @@ Two real bugs found and fixed while building this:
 
 ## Currently working on
 
-**Nothing — Phase 1 is complete and the designer is pausing to playtest.**
+**Development infrastructure and war-table camera prerequisites.**
 
-Resuming work: the war table camera (D-014), which unblocks the remaining art.
+Completed in the current working copy:
+- Windows one-button Play, LAN Play, Tests, and Build launchers.
+- Unified `npm run verify` command.
+- `docs/PROGRESS.md` live benchmark/percentage scoreboard.
+- First developer sandbox entry point and deterministic pause/step/speed controls.
+- War-table camera iteration one: camera-relative smooth pan, cursor-anchored smooth zoom, middle-mouse orbit, pure camera math, and safe bounds.
+
+Active next work:
+1. Re-test picking, drag selection, and commands at all camera angles.
+2. Validate the new move/gather/rally markers and add expanded diagnostics.
+3. Refine cursor anchoring against actual terrain height after browser validation.
+4. Validate the full suite once dependencies are available.
+
+The war-table camera (D-014) remains the next major feature and unblocks the
+remaining art pass.
 
 ### Paused: the painterly art pass (`DECISIONS.md` D-005) — partially landed.
 
@@ -201,6 +229,15 @@ omitting close-range detail because the camera was far and top-down. If the
 player can shrink into the map, close-up detail is exactly what they will be
 looking at. Treat those omissions as scoped to a camera that is being replaced,
 not as settled. LOD stops being optional.
+
+### LAN testing and future multiplayer
+
+`PLAY_ON_LAN.bat` now starts Vite on all local interfaces, allowing another
+device on the same private network to load the exact development build. This is
+currently **shared build access only**; browsers do not yet participate in the
+same simulation. True LAN multiplayer is recorded in the roadmap as the first
+networking target, ahead of internet lobbies, and depends on replay recording,
+periodic state hashes, and deterministic command lockstep.
 
 ## Blockers
 
@@ -294,3 +331,27 @@ Hero Sighted", never "Retreat Recommended". The player owns every decision.
 The engineering counterpart: `src/sim/` is pure and deterministic and never
 imports outward. Replays, lockstep multiplayer and a testable AI are all free if
 that holds and near-impossible to retrofit if it doesn't.
+
+
+## Public development site
+
+A production-facing one-page site now lives at `/development.html`. It presents the game fantasy, factions, resource language, concept art, active roadmap, completed milestones, and current development focus. Its primary and closing calls to action open `/index.html`, so visitors can play the current browser build without installing anything.
+
+The page does not maintain a second hand-edited progress number. `npm run sync:site` parses `docs/PROGRESS.md` and writes `public/data/progress.json`; `predev` and `prebuild` run that synchronization automatically. Any milestone that changes the live percentage must therefore update `PROGRESS.md` first.
+
+## Performance harness
+
+The performance sandbox now supports repeatable quality-tier comparisons at
+`?dev=performance&quality=low|medium|high`. Its fixed 200-unit preset records
+average FPS, p50/p95/worst frame time, renderer workload, viewport/device pixel
+ratio, and world counts. **Export report** downloads a JSON artifact suitable for
+tester bug reports. See `PERFORMANCE_TESTING.md`. Real hardware budgets are not
+yet claimed; reports still need to be collected outside this container.
+
+## Replay camera groundwork
+
+A pure optional cinematic replay-director policy now exists in
+`src/replay/director.ts`. It ranks plain replay events while enforcing minimum
+shot duration, switch cooldowns, score thresholds, distance penalties, and a
+manual-camera override window. It is not yet connected to live replay playback
+or camera interpolation.

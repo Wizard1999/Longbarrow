@@ -29,7 +29,7 @@ Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
       gather, expand at a threshold, train army, attack when supply crosses a
       line. It must go through `sim/commands.ts` like a human.
 
-- [ ] **Immediate input acknowledgement.** Click feedback (marker, cursor state,
+- [x] **Immediate input acknowledgement.** Click feedback (marker, cursor state,
       sound) fires on the frame of the click, before the tick applies the
       command. This matters more for perceived responsiveness than tick rate
       does — see `DECISIONS.md` D-004.
@@ -50,7 +50,7 @@ Foundation is in place: `sim/snapshot.ts` (snapshot/restore/hash) and
       recording + playback + validation in `sim/replay.ts`, 11 tests.
 - [ ] **Wire recording into live play** — input/UI still call `cmd*` directly.
       Route them through `Recorder.apply()` so real matches are recorded. This
-      is the last step before replays work outside tests.
+      is complete through the browser-side `issueCommand()` gateway; player orders now record while preserving command return values.
 - [ ] **Replay keyframes** — periodic snapshots so seeking does not re-simulate
       from tick 0.
 - [ ] **Per-tick hash comparison** for desync detection, reporting the exact
@@ -151,3 +151,102 @@ Ordered by dependency. See `UI_BLUEPRINT.md` for the full target.
 - [ ] No `README.md` content beyond a stub
 - [ ] `legacy/*.html` prototypes are kept for reference only — delete once the
       TS port is confirmed to have full parity
+
+---
+
+## Newly captured future scope — 2026-07-27
+
+These are placed by dependency, not urgency. They should not interrupt the
+current sandbox → camera → interaction sequence.
+
+### Design/schema resolution
+- [ ] Resolve D-021: decide whether `Legacy` replaces the current gathered
+  `essence`, and define the exact roles of Material, Legacy, Dominion, Relics.
+- [ ] After resolution, migrate code/UI/test vocabulary atomically.
+- [ ] Define Mycora death-stain rules: lifetime, vision radius, domain gain,
+  overlap behavior, removal/counterplay, and whether flowers/fungus vary by unit.
+- [ ] Produce a fuller Conclave water-and-fabric visual bible.
+
+### Gameplay
+- [ ] Add tutorial mode after command/camera UX stabilizes; tutorial events must
+  observe deterministic sim state rather than mutate it from ad-hoc UI timers.
+- [ ] Add Mycora infection/domain prototype in a dedicated sandbox before faction
+  production rules are implemented.
+
+### Art and presentation
+- [ ] Add theoretical concept-art packets for unfinished units, buildings,
+  resources, terrain states, UI, and faction interaction scenes.
+- [ ] Cohort Marksman: vertical one-handed staff and true-light beam attack.
+- [ ] Mycora: tidal group motion, distributed individuality, iridescent sickness,
+  and persistent living death stains.
+- [ ] Conclave: water/fabric construction language.
+- [ ] Review the two new CodePen references logged in `ART_REFERENCES.md` for
+  transferable rendering techniques and measured performance cost.
+
+### LAN and online play
+- [x] Add `PLAY_ON_LAN.bat` and `npm run dev:lan` so nearby testers can load the
+  same live build from the host computer. This is build sharing, not multiplayer.
+- [x] Add a production-style LAN launcher using `npm run build` plus
+  `npm run preview:lan`, with the local network URL made easy to copy.
+- [x] Add an in-game build/version identifier so LAN and web testers can report
+  the exact build they played.
+- [ ] Design staged LAN multiplayer after replay determinism is continuously
+  verified: host/join, player assignment, deterministic command lockstep,
+  tick synchronization, disconnect handling, and state-hash desync reports.
+- [ ] Later extend the same transport abstraction to internet multiplayer/lobbies.
+
+### Developer experience
+- [ ] Later replace batch launchers with a small Windows launcher application:
+  Play, Tests, Build, Documentation, Claude Code, and Profiler buttons.
+  Begin only after scripts and commands have stabilized; the app should call the
+  same package scripts rather than duplicate logic.
+
+## Public site maintenance
+
+- [x] Create the one-page public development landing page.
+- [x] Link all major Play calls to the browser gameplay page.
+- [x] Synchronize public progress data from `docs/PROGRESS.md` during dev/build.
+- [ ] Add stable public deployment URL after hosting is configured.
+- [ ] Add newsletter/community signup after a destination is selected.
+- [ ] Add public patch notes and playable-build version identifier.
+- [ ] Add analytics only after privacy and hosting choices are settled.
+
+### Completed camera/diagnostic infrastructure
+- [x] Terrain-aware cursor anchoring against the actual terrain mesh.
+- [x] Camera focus follows canonical terrain height.
+- [x] Click-overlap priority for units/sites/buildings.
+- [x] Toggleable selected-order and footprint/radius debug overlays.
+
+- [ ] Collect performance reports from low-, mid-, and high-spec machines and define initial p95 frame-time budgets per quality tier.
+
+## Open RTS engine / creator platform
+
+- [ ] Audit new gameplay code for avoidable Longbarrow-specific hard-coding.
+- [ ] Define a typed `GameDefinition`/manifest boundary for game identity and enabled systems.
+- [ ] Define schemas for units, buildings, factions, resources, and victory conditions.
+- [ ] Separate presentation metadata (names, lore, icons, palettes) from simulation stats.
+- [ ] Add authored-content validation with useful file/field error messages.
+- [ ] Add hot reload for safe content-only changes.
+- [ ] Create a minimal non-Longbarrow example game to test real reuse.
+- [ ] Design mod/package versioning and deterministic compatibility declarations.
+- [ ] Decide the project code license and contributor policy.
+- [ ] Define a security policy before supporting untrusted custom scripts.
+- [ ] Design creator-facing editors only after the file-based workflow is proven.
+
+
+## Replay, save, and deterministic validation
+
+- [x] Versioned save envelope with map compatibility and state-hash validation.
+- [x] Developer quick-save/load and portable save import/export.
+- [ ] Route every human command through one live recorder gateway.
+- [x] Export, verify, and import live replay files from the sandbox; imported files are re-simulated to their hash-checked endpoint.
+- [ ] Add playback controls, keyframe seeking, and periodic desync hashes.
+
+### Replay cinematic director
+
+- [x] Define a simulation-independent replay-event and ranking policy.
+- [x] Add minimum-shot, switch-cooldown, importance-threshold, distance, and manual-override safeguards.
+- [ ] Emit replay-observed events from deterministic playback without altering simulation state.
+- [ ] Add free/follow/event/director camera modes to the replay viewer.
+- [ ] Smoothly frame event subjects and preserve manual camera control.
+- [ ] Consider event queue and picture-in-picture only after the primary director is readable.

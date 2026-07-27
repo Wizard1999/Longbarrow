@@ -1,25 +1,11 @@
 /** Fixed-tick constants. Every duration in the simulation is expressed in
  *  ticks, never seconds (06 §3).
  *
- *  30 Hz, not 20 and not 128 — see docs/DECISIONS.md D-004. Short version:
- *  an RTS's perceived responsiveness is dominated by input-to-feedback latency,
- *  not simulation granularity, and sim cost scales with unit count. 30 divides
- *  evenly into 60 Hz displays, which keeps render interpolation judder-free.
- *
- *  Changing this rescales the meaning of EVERY tick-denominated constant in
- *  data/, and invalidates recorded replays. Do not change it casually. */
+ *  30 Hz, not 20 and not 128 — see docs/DECISIONS.md D-004. */
 export const TICK_HZ = 30;
 export const TICK_MS = 1000 / TICK_HZ;
 export const DT = 1 / TICK_HZ;
-
-/** Cap catch-up so a slow frame can't spiral into an ever-growing backlog.
- *  Sized so a single maximally-clamped frame (250ms, below) can be absorbed in
- *  one go and no further: 8 x 33.3ms = 267ms. Raising TICK_HZ without raising
- *  this would silently start dropping simulated time on slow frames. */
 export const MAX_CATCHUP = 8;
-
-/** Deterministic spread without touching the RNG — used anywhere entities need
- *  to fan out around a point reproducibly. */
 export const GOLDEN_ANGLE = 2.399963229728653;
 
 export interface LoopHooks {
@@ -32,6 +18,11 @@ export interface Loop {
   stop: () => void;
   setThrottle: (on: boolean) => void;
   isThrottled: () => boolean;
+  setPaused: (on: boolean) => void;
+  isPaused: () => boolean;
+  stepOnce: () => void;
+  setSpeed: (speed: number) => void;
+  getSpeed: () => number;
 }
 
 /**
@@ -43,17 +34,17 @@ export function createLoop(hooks: LoopHooks): Loop {
   let accumulator = 0;
   let lastFrameTime = performance.now();
   let throttle = false;
+  let paused = false;
+  let speed = 1;
+  let queuedSteps = 0;
   let raf = 0;
 
   function frame(now: number): void {
     raf = requestAnimationFrame(frame);
 
-    // Deliberate busy-wait, not a bug: the throttle test needs a genuinely slow
-    // frame to prove tick-rate independence, and there is no other way to force
-    // one from inside requestAnimationFrame.
     if (throttle) {
       const until = performance.now() + 60;
-      while (performance.now() < until) { /* burn the frame */ }
+      while (performance.now() < until) { /* deliberate throttle test */ }
     }
 
     let frameMs = now - lastFrameTime;
@@ -61,16 +52,22 @@ export function createLoop(hooks: LoopHooks): Loop {
     if (frameMs > 250) frameMs = 250;
     const realDt = frameMs / 1000;
 
-    accumulator += frameMs;
+    if (!paused) accumulator += frameMs * speed;
+
     let steps = 0;
-    while (accumulator >= TICK_MS && steps < MAX_CATCHUP) {
+    while (queuedSteps > 0) {
+      hooks.step();
+      queuedSteps--;
+      steps++;
+    }
+    while (!paused && accumulator >= TICK_MS && steps < MAX_CATCHUP) {
       hooks.step();
       accumulator -= TICK_MS;
       steps++;
     }
     if (steps === MAX_CATCHUP) accumulator = 0;
 
-    hooks.render(accumulator / TICK_MS, realDt, now);
+    hooks.render(paused ? 0 : accumulator / TICK_MS, realDt, now);
   }
 
   return {
@@ -78,5 +75,10 @@ export function createLoop(hooks: LoopHooks): Loop {
     stop: () => cancelAnimationFrame(raf),
     setThrottle: (on: boolean) => { throttle = on; },
     isThrottled: () => throttle,
+    setPaused: (on: boolean) => { paused = on; accumulator = 0; },
+    isPaused: () => paused,
+    stepOnce: () => { queuedSteps++; },
+    setSpeed: (next: number) => { speed = Math.min(8, Math.max(0.25, next)); },
+    getSpeed: () => speed,
   };
 }

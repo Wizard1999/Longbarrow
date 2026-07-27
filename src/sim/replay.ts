@@ -3,6 +3,8 @@ import type {
 } from '../core/types';
 import { TICK_HZ } from '../core/loop';
 import { createWorld, simStep } from './world';
+import { enableAi } from './ai';
+import { hash } from './snapshot';
 import { MAP_VERSION, buildTestMap } from './map';
 import {
   cmdAddChainStep, cmdAssignBuilders, cmdCancelSite, cmdCancelTrain, cmdClearChain,
@@ -23,7 +25,7 @@ import {
  */
 
 /** Bump when the meaning of a command or of a sim rule changes. */
-export const REPLAY_VERSION = 2;
+export const REPLAY_VERSION = 3;
 
 /**
  * Every player action, as plain serializable data.
@@ -74,6 +76,12 @@ export interface Replay {
    *  the generator changed underneath it — without this, altering map
    *  generation would silently replay old matches on different terrain. */
   mapVersion: number;
+  /** Match setup is part of deterministic reproduction. */
+  opponent: 'none' | 'standardAi';
+  /** Tick reached when this recording was exported, when known. */
+  endTick?: number;
+  /** Optional integrity checkpoint for the exported end state. */
+  finalHash?: string;
   commands: TimedCommand[];
 }
 
@@ -117,16 +125,30 @@ export function dispatch(world: World, c: Command): void {
  */
 export class Recorder {
   private readonly log: TimedCommand[] = [];
+  private invalidReasonValue: string | null = null;
 
   constructor(
     private readonly seed: number,
     private readonly startHour: number,
     private readonly mapSeed: number = seed,
+    private readonly opponent: Replay['opponent'] = 'none',
   ) {}
+
+  invalidate(reason: string): void {
+    this.invalidReasonValue = reason;
+  }
+
+  get isValid(): boolean { return this.invalidReasonValue === null; }
+  get invalidReason(): string | null { return this.invalidReasonValue; }
+
+  /** Record without applying. Used by browser UI that needs command results. */
+  record(world: World, cmd: Command): void {
+    this.log.push({ tick: world.tick, cmd });
+  }
 
   /** Record and apply in one step, so the two can never drift apart. */
   apply(world: World, cmd: Command): void {
-    this.log.push({ tick: world.tick, cmd });
+    this.record(world, cmd);
     dispatch(world, cmd);
   }
 
@@ -134,7 +156,8 @@ export class Recorder {
     return this.log.length;
   }
 
-  finish(): Replay {
+  finish(world?: World): Replay {
+    if (!this.isValid) throw new Error(`recording unavailable: ${this.invalidReasonValue}`);
     return {
       version: REPLAY_VERSION,
       seed: this.seed,
@@ -142,6 +165,9 @@ export class Recorder {
       tickRate: TICK_HZ,
       mapSeed: this.mapSeed,
       mapVersion: MAP_VERSION,
+      opponent: this.opponent,
+      endTick: world?.tick,
+      finalHash: world ? hash(world) : undefined,
       commands: [...this.log],
     };
   }
@@ -166,6 +192,9 @@ export function checkReplay(r: Replay): ReplayCheck {
   if (r.tickRate !== TICK_HZ) {
     return { ok: false, reason: `replay recorded at ${r.tickRate}Hz, this build runs at ${TICK_HZ}Hz` };
   }
+  if (r.opponent !== 'none' && r.opponent !== 'standardAi') {
+    return { ok: false, reason: `unknown replay opponent mode ${String(r.opponent)}` };
+  }
   if (r.mapVersion !== MAP_VERSION) {
     return {
       ok: false,
@@ -186,7 +215,8 @@ export function playback(r: Replay, untilTick: number): World {
   const check = checkReplay(r);
   if (!check.ok) throw new Error(`cannot play replay: ${check.reason}`);
 
-  const world = buildTestMap(createWorld(r.seed, r.startHour, r.mapSeed));
+  const base = buildTestMap(createWorld(r.seed, r.startHour, r.mapSeed));
+  const world = r.opponent === 'standardAi' ? enableAi(base) : base;
 
   // Bucket by tick so playback is O(commands) rather than O(ticks x commands).
   const byTick = new Map<number, Command[]>();
@@ -209,5 +239,22 @@ export function serializeReplay(r: Replay): string {
 }
 
 export function parseReplay(text: string): Replay {
-  return JSON.parse(text) as Replay;
+  const parsed = JSON.parse(text) as Replay;
+  const check = checkReplay(parsed);
+  if (!check.ok) throw new Error(`cannot load replay: ${check.reason}`);
+  return parsed;
 }
+
+/** Re-simulate the recorded endpoint and validate its optional hash checkpoint. */
+export function verifyReplay(r: Replay): ReplayCheck {
+  const check = checkReplay(r);
+  if (!check.ok) return check;
+  if (r.endTick === undefined || r.finalHash === undefined) {
+    return { ok: false, reason: 'replay has no endpoint hash checkpoint' };
+  }
+  const actual = hash(playback(r, r.endTick));
+  return actual === r.finalHash
+    ? { ok: true }
+    : { ok: false, reason: `desync at tick ${r.endTick}: expected ${r.finalHash}, got ${actual}` };
+}
+

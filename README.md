@@ -8,7 +8,31 @@ A real-time strategy game built around **commanding intent** rather than
 clicking fast. The player acts as an Operations Commander — issuing objectives
 and doctrine to an army that executes them intelligently.
 
+
+![Longbarrow contested battlefield concept art](docs/assets/concept-art/contested-ground.webp)
+
+<p align="center">
+  <em>Fossilized memory meets an aggressive tide of iridescent life.</em>
+</p>
+
 Runs in the browser. No engine, no framework — TypeScript, Three.js and Vite.
+
+## Visual direction
+
+<table>
+<tr>
+<td width="33%"><img src="docs/assets/concept-art/cohort-legionnaire.webp" alt="Cohort legionnaire"></td>
+<td width="33%"><img src="docs/assets/concept-art/mycora-spread-structures.webp" alt="Mycora spread"></td>
+<td width="33%"><img src="docs/assets/concept-art/conclave-ritual.webp" alt="Conclave ritual"></td>
+</tr>
+<tr>
+<td align="center"><b>Cohort</b><br>Fossilized legacy still carrying out its purpose.</td>
+<td align="center"><b>Mycora</b><br>Beautiful life spreading with the violence of disease.</td>
+<td align="center"><b>Conclave</b><br>Coordination embodied as water, fabric, and flow.</td>
+</tr>
+</table>
+
+See the full [original concept-art gallery](docs/CONCEPT_ART.md).
 
 ## Quick start
 
@@ -74,3 +98,15 @@ Start at [`START_HERE.md`](START_HERE.md). The key documents:
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Module map |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Decision log |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Phase plan |
+| [`docs/CONCEPT_ART.md`](docs/CONCEPT_ART.md) | First-party visual targets and implementation notes |
+
+
+## Open RTS engine vision
+
+Longbarrow is intended to remain open source and gradually become a reusable,
+browser-first RTS foundation. The long-term goal is to let creators define their
+own armies, factions, resources, lore, balance, scenarios, and presentation while
+reusing the deterministic simulation, commands, replay foundation, renderer,
+testing tools, and public development site. Development remains game-first: the
+engine is extracted from systems proven in Longbarrow rather than designed in the
+abstract. See [`docs/ENGINE_VISION.md`](docs/ENGINE_VISION.md).

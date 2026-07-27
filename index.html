@@ -84,6 +84,28 @@
   #chain .note.warn { color: #b02e2e; font-weight: 600; }
   #chain .empty-state { font-size: 11px; color: #888; line-height: 1.5; }
 
+  #dev-sandbox {
+    position: absolute; right: 12px; bottom: 12px; width: 280px; z-index: 20;
+    color: #2b2b2b; background: rgba(248,245,234,.94); border: 1px solid rgba(80,68,48,.24);
+    border-radius: 10px; padding: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.16);
+    font-size: 12px; pointer-events: auto;
+  }
+  #dev-sandbox h3 { margin: 0 0 6px; text-transform: uppercase; letter-spacing: .06em; font-size: 12px; }
+  #dev-sandbox .dev-mode { margin-bottom: 8px; color: #665f53; }
+  #dev-sandbox .dev-row { display: flex; gap: 6px; margin: 6px 0; flex-wrap: wrap; }
+  #dev-sandbox button { font: inherit; border: 1px solid #c9c2b4; background: #fffdf7; border-radius: 6px; padding: 5px 8px; cursor: pointer; }
+  #dev-sandbox button:hover { background: #fff4d6; }
+  #dev-sandbox .dev-readout { margin: 8px 0 4px; padding: 8px; min-width: 300px; white-space: pre-wrap; line-height: 1.45; border-radius: 6px; background: rgba(35, 31, 25, .07); font-family: ui-monospace, Menlo, Consolas, monospace; }
+  #dev-sandbox small { color: #777; line-height: 1.35; display: block; }
+
+
+  #build-id {
+    position: fixed; right: 10px; top: 10px; z-index: 40; pointer-events: none;
+    padding: 4px 7px; border-radius: 5px; color: rgba(255,255,255,.82);
+    background: rgba(12,15,13,.58); font: 10px/1.2 ui-monospace, Menlo, Consolas, monospace;
+    letter-spacing: .03em; backdrop-filter: blur(4px);
+  }
+
 </style>
 </head>
 <body>
@@ -97,7 +119,7 @@
   Worker walks there and builds &middot; pull it off and it <b>pauses</b><br>
   <b>Ctrl+1…5</b> forms a squad &middot; <b>1…5</b> selects it<br>
   Pick a behaviour, click the map to place that step, hit Run<br>
-  WASD / edge-scroll: pan &middot; Scroll: zoom<br>
+  WASD / edge-scroll: pan &middot; Scroll: zoom &middot; Middle-drag: orbit<br>
   <b>T</b>: throttle test &middot; <b>G</b>: select all workers
 </div>
 <div id="res" class="panel">

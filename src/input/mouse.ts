@@ -7,8 +7,12 @@ import {
 } from '../sim/commands';
 import type { RtsCamera } from '../render/camera';
 import type { PlacementGhost } from '../render/placementGhost';
+import type { CommandFeedbackKind } from '../render/commandFeedback';
 import type { UiState } from './selection';
 import { ownerIdOf, screenPosOf, selectedIds } from './selection';
+import { normalizedScreenRect, screenPointInRect } from './selectionMath';
+import { resolvePick } from './pickPriority';
+import { issueCommand } from '../replay/live';
 
 type Picker = ReturnType<typeof import('./selection').createPicker>;
 
@@ -20,12 +24,14 @@ export interface MouseDeps {
   ghost: PlacementGhost;
   ui: UiState;
   flash: (msg: string) => void;
+  commandFeedback: (x: number, y: number, z: number, kind: CommandFeedbackKind) => void;
 }
 
 export function createMouse(deps: MouseDeps): void {
-  const { world, domElement, cam, picker, ghost, ui, flash } = deps;
+  const { world, domElement, cam, picker, ghost, ui, flash, commandFeedback } = deps;
   const selboxEl = document.getElementById('selbox');
   let dragStart: { x: number; y: number } | null = null;
+  let orbitLast: { x: number; y: number } | null = null;
   let dragging = false;
 
   /** Keep the chain editor pointed at whatever the player is looking at: if
@@ -39,16 +45,29 @@ export function createMouse(deps: MouseDeps): void {
     ui.armedBehaviour = null;
   }
 
-  domElement.addEventListener('wheel', e => cam.zoom(e.deltaY), { passive: true });
+  domElement.addEventListener('wheel', e => {
+    e.preventDefault();
+    cam.zoom(e.deltaY, e.clientX, e.clientY);
+  }, { passive: false });
   domElement.addEventListener('contextmenu', e => e.preventDefault());
 
   domElement.addEventListener('mousedown', e => {
+    if (e.button === 1) {
+      orbitLast = { x: e.clientX, y: e.clientY };
+      e.preventDefault();
+      return;
+    }
     if (e.button !== 0) return;
     dragStart = { x: e.clientX, y: e.clientY };
     dragging = false;
   });
 
   domElement.addEventListener('mousemove', e => {
+    if (orbitLast) {
+      cam.orbit(e.clientX - orbitLast.x, e.clientY - orbitLast.y);
+      orbitLast = { x: e.clientX, y: e.clientY };
+      return;
+    }
     if (ui.placingType) {
       picker.setFromEvent(e);
       ghost.update(world, ui.placingType, picker.ground());
@@ -68,6 +87,8 @@ export function createMouse(deps: MouseDeps): void {
 
   // One consolidated mouseup. Phase 0 had two competing listeners here (06 §6).
   domElement.addEventListener('mouseup', e => {
+    if (e.button === 1) { orbitLast = null; return; }
+
     // ---- left while placing: commit the building ----
     if (e.button === 0 && ui.placingType) {
       picker.setFromEvent(e);
@@ -75,7 +96,10 @@ export function createMouse(deps: MouseDeps): void {
       if (hit) {
         const type = ui.placingType;
         const builders = world.units.filter(u => u.selected && u.build).map(u => u.id);
-        const res = cmdPlaceBuilding(world, 'player', type, hit.point.x, hit.point.z, builders);
+        const res = issueCommand(
+          { t: 'place', team: 'player', type, x: hit.point.x, z: hit.point.z, builders },
+          () => cmdPlaceBuilding(world, 'player', type, hit.point.x, hit.point.z, builders),
+        );
         flash(res.ok
           ? (builders.length
             ? `${BUILDING_TYPES[type].label} sited — worker heading over`
@@ -94,7 +118,11 @@ export function createMouse(deps: MouseDeps): void {
       const hit = picker.ground();
       if (hit) {
         const kind = ui.armedBehaviour;
-        const res = cmdAddChainStep(world, ui.selectedSquadId, kind, hit.point.x, hit.point.z);
+        const squad = ui.selectedSquadId;
+        const res = issueCommand(
+          { t: 'addChainStep', squad, kind, x: hit.point.x, z: hit.point.z },
+          () => cmdAddChainStep(world, squad, kind, hit.point.x, hit.point.z),
+        );
         flash(res.ok ? `${kind} step added` : res.reason ?? 'cannot add that step');
         ui.armedBehaviour = null;
       }
@@ -107,31 +135,31 @@ export function createMouse(deps: MouseDeps): void {
     // ---- left: selection ----
     if (e.button === 0 && dragStart) {
       if (dragging) {
-        const x1 = Math.min(dragStart.x, e.clientX);
-        const x2 = Math.max(dragStart.x, e.clientX);
-        const y1 = Math.min(dragStart.y, e.clientY);
-        const y2 = Math.max(dragStart.y, e.clientY);
+        const rect = normalizedScreenRect(dragStart.x, dragStart.y, e.clientX, e.clientY);
         ui.selectedBuildingId = null;
         ui.selectedSiteId = null;
-        cmdSetSelection(world, world.units.filter(u => {
+        const units = world.units.filter(u => {
           // Rival units are not selectable or commandable (06 §6).
           if (u.team !== 'player') return false;
           const p = screenPosOf(cam.camera, u.x, u.z);
-          return p.x >= x1 && p.x <= x2 && p.y >= y1 && p.y <= y2;
-        }).map(u => u.id));
+          return screenPointInRect(p, rect);
+        }).map(u => u.id);
+        issueCommand({ t: 'select', units }, () => cmdSetSelection(world, units));
         followSelection();
       } else {
         picker.setFromEvent(e);
         const unitHit = picker.unit();
         const bldHit = picker.building();
         const siteHit = picker.site();
-        const near = [unitHit, bldHit, siteHit]
-          .filter((h): h is THREE.Intersection => Boolean(h))
-          .sort((a, b) => a.distance - b.distance)[0];
+        const near = resolvePick([
+          ...(unitHit ? [{ kind: 'unit' as const, distance: unitHit.distance, value: unitHit }] : []),
+          ...(siteHit ? [{ kind: 'site' as const, distance: siteHit.distance, value: siteHit }] : []),
+          ...(bldHit ? [{ kind: 'building' as const, distance: bldHit.distance, value: bldHit }] : []),
+        ])?.value;
 
         if (siteHit && near === siteHit) {
           ui.selectedBuildingId = null;
-          cmdSetSelection(world, []);
+          issueCommand({ t: 'select', units: [] }, () => cmdSetSelection(world, []));
           ui.selectedSiteId = ownerIdOf(siteHit, 'siteId');
         } else if (unitHit && near === unitHit) {
           const unitId = ownerIdOf(unitHit, 'unitId');
@@ -139,14 +167,17 @@ export function createMouse(deps: MouseDeps): void {
           if (unit && unit.team === 'player' && unitId !== null) {
             ui.selectedBuildingId = null;
             ui.selectedSiteId = null;
-            cmdSetSelection(world, e.shiftKey ? [...selectedIds(world), unitId] : [unitId]);
+            {
+              const units = e.shiftKey ? [...selectedIds(world), unitId] : [unitId];
+              issueCommand({ t: 'select', units }, () => cmdSetSelection(world, units));
+            }
             followSelection();
           }
         } else if (bldHit && near === bldHit) {
           const bid = ownerIdOf(bldHit, 'buildingId');
           const b = world.buildings.find(x => x.id === bid);
           if (b && b.team === 'player') {
-            cmdSetSelection(world, []);
+            issueCommand({ t: 'select', units: [] }, () => cmdSetSelection(world, []));
             followSelection();
             ui.selectedSiteId = null;
             ui.selectedBuildingId = bid;
@@ -154,7 +185,7 @@ export function createMouse(deps: MouseDeps): void {
         } else {
           ui.selectedBuildingId = null;
           ui.selectedSiteId = null;
-          cmdSetSelection(world, []);
+          issueCommand({ t: 'select', units: [] }, () => cmdSetSelection(world, []));
           followSelection();
         }
       }
@@ -171,22 +202,63 @@ export function createMouse(deps: MouseDeps): void {
       if (ui.selectedBuildingId !== null) {
         const groundHit = picker.ground();
         if (groundHit) {
-          cmdSetRally(world, ui.selectedBuildingId, groundHit.point.x, groundHit.point.z);
+          issueCommand(
+            { t: 'rally', building: ui.selectedBuildingId, x: groundHit.point.x, z: groundHit.point.z },
+            () => cmdSetRally(world, ui.selectedBuildingId as number, groundHit.point.x, groundHit.point.z),
+          );
+          commandFeedback(groundHit.point.x, groundHit.point.y, groundHit.point.z, 'rally');
           flash('rally point set');
         }
         return;
       }
 
       const sel = selectedIds(world);
-      if (!sel.length) return;
+      if (!sel.length) {
+        const groundHit = picker.ground();
+        if (groundHit) commandFeedback(groundHit.point.x, groundHit.point.y, groundHit.point.z, 'invalid');
+        flash('select units before issuing an order');
+        return;
+      }
+
+      // Hostile targets issue an explicit attack-approach order. Combat remains
+      // autonomous and deterministic; the units move toward the clicked threat
+      // and engage enemies they acquire along the route.
+      const hostileUnitHit = picker.unitDeep();
+      const hostileBuildingHit = picker.buildingDeep();
+      const hostile = [hostileUnitHit, hostileBuildingHit]
+        .filter((hit): hit is THREE.Intersection => Boolean(hit))
+        .sort((a, b) => a.distance - b.distance)[0];
+      if (hostile) {
+        const unitId = ownerIdOf(hostile, 'unitId');
+        const buildingId = ownerIdOf(hostile, 'buildingId');
+        const targetUnit = world.units.find(u => u.id === unitId && u.team !== 'player');
+        const targetBuilding = world.buildings.find(b => b.id === buildingId && b.team !== 'player');
+        const target = targetUnit ?? targetBuilding;
+        if (target) {
+          issueCommand(
+            { t: 'move', units: sel, x: target.x, z: target.z },
+            () => cmdMove(world, sel, target.x, target.z),
+          );
+          commandFeedback(hostile.point.x, hostile.point.y, hostile.point.z, 'attack');
+          flash(`attack order — ${targetUnit ? targetUnit.type : 'enemy structure'}`);
+          return;
+        }
+      }
 
       // resuming a paused build is the same gesture as starting one
       const siteHit = picker.siteDeep();
       if (siteHit) {
         const siteId = ownerIdOf(siteHit, 'siteId');
         if (siteId !== null) {
-          const accepted = cmdAssignBuilders(world, sel, siteId);
-          flash(accepted.length ? `${accepted.length} worker(s) building` : 'workers only');
+          const accepted = issueCommand(
+            { t: 'assignBuilders', units: sel, site: siteId },
+            () => cmdAssignBuilders(world, sel, siteId),
+          );
+          if (accepted.length) flash(`${accepted.length} worker(s) building`);
+          else {
+            commandFeedback(siteHit.point.x, siteHit.point.y, siteHit.point.z, 'invalid');
+            flash('only workers can build');
+          }
         }
         return;
       }
@@ -197,15 +269,30 @@ export function createMouse(deps: MouseDeps): void {
         const node = world.nodes.find(n => n.id === nodeId);
         if (nodeId !== null) {
           // Workers gather; anything else just walks there.
-          const accepted = new Set(cmdGather(world, sel, nodeId));
+          const accepted = new Set(issueCommand(
+            { t: 'gather', units: sel, node: nodeId },
+            () => cmdGather(world, sel, nodeId),
+          ));
           const rest = sel.filter(id => !accepted.has(id));
-          if (rest.length && node) cmdMove(world, rest, node.x, node.z);
+          if (rest.length && node) issueCommand(
+            { t: 'move', units: rest, x: node.x, z: node.z },
+            () => cmdMove(world, rest, node.x, node.z),
+          );
+          commandFeedback(nodeHit.point.x, nodeHit.point.y, nodeHit.point.z, 'gather');
         }
         return;
       }
 
       const groundHit = picker.ground();
-      if (groundHit) cmdMove(world, sel, groundHit.point.x, groundHit.point.z);
+      if (groundHit) {
+        issueCommand(
+          { t: 'move', units: sel, x: groundHit.point.x, z: groundHit.point.z },
+          () => cmdMove(world, sel, groundHit.point.x, groundHit.point.z),
+        );
+        commandFeedback(groundHit.point.x, groundHit.point.y, groundHit.point.z, 'move');
+      }
     }
   });
+
+  window.addEventListener('blur', () => { orbitLast = null; });
 }

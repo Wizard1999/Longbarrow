@@ -59,6 +59,15 @@ src/
 └── ui/        HUD, chain editor (DOM)
 ```
 
+## Required Reasoning Protocol
+
+Before substantial planning, coding, debugging, or visual work, apply
+`docs/AGENT_REASONING.md
+- `docs/ENGINE_VISION.md` — open RTS engine and creator-platform direction`. Use its structured checklist privately; communicate
+concise rationale, decisions, evidence, and verification rather than private
+chain-of-thought. Treat claims about model internals as unverified unless reliable
+evidence is present.
+
 ## Important Rules
 
 **Never:**

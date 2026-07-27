@@ -3,10 +3,12 @@
 Every new session begins here. Read these, in order:
 
 1. **`CLAUDE.md`** — what the project is, the architecture rule, the coding rules
-2. **`docs/CURRENT_STATE.md`** — what was just done, what is in flight, what is next
-3. **`docs/TODO.md`** — the prioritized work queue
-4. **`docs/DECISIONS.md`** — decisions already made; do not relitigate these
-5. **`docs/BUGS.md`** — known defects
+2. **`docs/AGENT_REASONING.md
+- `docs/ENGINE_VISION.md` — open RTS engine and creator-platform direction`** — the required structured quality and reasoning protocol
+3. **`docs/CURRENT_STATE.md`** — what was just done, what is in flight, what is next
+4. **`docs/TODO.md`** — the prioritized work queue
+5. **`docs/DECISIONS.md`** — decisions already made; do not relitigate these
+6. **`docs/BUGS.md`** — known defects
 
 Read on demand, not every session:
 
@@ -21,6 +23,7 @@ Read on demand, not every session:
 
 ```
 Read START_HERE.md + referenced files
+Apply AGENT_REASONING.md privately
         ↓
 Do the work
         ↓

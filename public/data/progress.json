@@ -1,0 +1,111 @@
+{
+  "overall": 49,
+  "updated": "2026-07-27",
+  "currentWork": [
+    "Build the interactive replay viewer with timeline controls and periodic keyframes.",
+    "Connect replay-observed events to the cinematic director and add smooth framing after playback mode exists.",
+    "Validate camera, selection, saves, diagnostics, and production LAN flow in a real browser once dependencies are available.",
+    "Begin the visual asset foundation with shared faction material conventions.",
+    "Collect real-machine benchmark reports and start contested-ground experiments."
+  ],
+  "phases": [
+    {
+      "name": "Verified baseline",
+      "status": "Blocked",
+      "completion": 40,
+      "benchmark": "Source inspected; dependency install unavailable in current container"
+    },
+    {
+      "name": "Launch and verification workflow",
+      "status": "Complete",
+      "completion": 100,
+      "benchmark": "Local, live-LAN, production-LAN launchers plus `npm run verify` and build IDs"
+    },
+    {
+      "name": "Developer sandbox framework",
+      "status": "Complete",
+      "completion": 100,
+      "benchmark": "Scenario presets, controls, metrics, selected-order readout, and world overlays implemented"
+    },
+    {
+      "name": "War-table camera",
+      "status": "In progress",
+      "completion": 62,
+      "benchmark": "Real-terrain cursor anchoring and terrain-height focus added to pan/orbit/zoom foundation"
+    },
+    {
+      "name": "Selection and command reliability",
+      "status": "In progress",
+      "completion": 58,
+      "benchmark": "Tested overlap priority plus move, gather, rally, attack, and invalid feedback"
+    },
+    {
+      "name": "Debug overlay and observability",
+      "status": "In progress",
+      "completion": 68,
+      "benchmark": "Metrics plus toggleable selected-unit order lines and footprint/radius overlays"
+    },
+    {
+      "name": "Visual asset foundation",
+      "status": "In progress",
+      "completion": 22,
+      "benchmark": "First-party concept archive plus a polished public development landing page are now in-repo"
+    },
+    {
+      "name": "LOD and performance architecture",
+      "status": "In progress",
+      "completion": 35,
+      "benchmark": "Repeatable 200-unit harness, per-tier URL overrides, frame percentiles, and JSON report export implemented"
+    },
+    {
+      "name": "World presentation",
+      "status": "Planned",
+      "completion": 0,
+      "benchmark": "Contested ground and resource presentation queued"
+    },
+    {
+      "name": "Core gameplay expansion",
+      "status": "Planned",
+      "completion": 3,
+      "benchmark": "Tutorial and staged LAN/network play added to future scope"
+    },
+    {
+      "name": "Replay/save validation",
+      "status": "In progress",
+      "completion": 96,
+      "benchmark": "Live player-command capture, AI-aware playback, endpoint hashes, export/verify/import, and director policy foundation"
+    }
+  ],
+  "milestones": [
+    "Repository unpacked and architecture audited.",
+    "One-button Windows play launcher.",
+    "One-button LAN build-sharing launcher and LAN package scripts.",
+    "One-button Windows test and production-build launchers.",
+    "Unified `npm run verify` workflow.",
+    "Developer sandbox entry point using `?dev=<mode>`.",
+    "Sandbox pause/resume, one-tick step, simulation speed, and basic spawning.",
+    "War-table camera iteration one: pure math module, camera-relative pan, middle-mouse orbit, smooth zoom, and bounds.",
+    "Cursor-anchored zoom over the battlefield ground plane.",
+    "World-space move, gather, and rally command confirmation markers.",
+    "Camera math test suite authored (execution pending dependencies).",
+    "New design notes captured as decisions/backlog rather than left in chat.",
+    "Complete supplied CodePen set captured in the permanent art-reference log, with intended use and the bloom-only caveat recorded.",
+    "Eleven first-party concept images archived, interpreted, and integrated into the GitHub README/gallery.",
+    "One-page public development site added at `/development.html`, including a browser-play CTA and automatic progress synchronization from this file.",
+    "Permanent agent reasoning and work-quality protocol added, with structured analysis, honesty, verification, and documentation requirements.",
+    "Expanded sandbox diagnostics: scenario presets, FPS, draw calls, triangles, entity totals, camera state, and selected-unit order readout.",
+    "Camera-safe box selection with reusable rectangle math, depth visibility rejection, and dedicated tests.",
+    "Overlap-aware click-picking priority with dedicated policy tests.",
+    "Attack and invalid-order acknowledgement added to the existing command marker system.",
+    "Camera focus and cursor zoom now follow the real terrain mesh rather than a flat plane.",
+    "Toggleable developer order-line and selected-radius world overlays.",
+    "Visible generated build identifier for LAN/web tester bug reports.",
+    "Optimized production LAN build-and-preview launcher.",
+    "Repeatable performance harness with quality-tier URL overrides, p50/p95 frame timing, and portable JSON report export.",
+    "Versioned deterministic save files with browser quick-save/load, JSON import/export, map compatibility checks, and state-hash validation.",
+    "Pure cinematic replay-director policy with event ranking, shot/cut safeguards, manual override protection, and dedicated tests.",
+    "Live human commands routed through a single recording gateway without losing UI command results.",
+    "Replay format v3 records AI match setup, endpoint tick, and optional final state hash.",
+    "Sandbox replay export, exact re-simulation verification, and verified endpoint import/playback."
+  ]
+}

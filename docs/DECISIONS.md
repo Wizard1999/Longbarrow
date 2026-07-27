@@ -532,3 +532,61 @@ break the design intent.
 needs a second officer-type unit (the Chronicler) to keep full accuracy. That
 unit is Phase 1 roster but unimplemented, so the penalty currently always
 applies; the Chronicler becomes a mitigation hook when it lands.
+
+---
+
+## D-021 — Resource vocabulary direction: Material / Legacy / Dominion / Relics
+**Date:** 2026-07-27 · **Status:** direction accepted; implementation naming deferred
+
+**Direction:** The resource set should tell the game's history rather than read
+as minerals plus energy:
+
+- **Material** — the physical world; used to build.
+- **Legacy** — understanding inherited from previous civilizations; used to learn.
+- **Dominion** — control exercised in the present.
+- **Relics** — rare opportunities that change future options.
+
+**Reason:** `Essence` no longer accurately describes the gatherable resource if
+its role is understanding rather than energy. The proposed quartet communicates
+build / learn / rule / adapt and fits the "Miniature Myth" identity.
+
+**Consequence:** Do not globally rename `essence` yet. First resolve which of the
+four concepts are currencies, territory statistics, map objectives, or upgrade
+choices. A premature search-and-replace would collapse distinct systems into one.
+Track the final schema in `OPEN_QUESTIONS.md` before migration.
+
+---
+
+## D-022 — Mycora fantasy: aggressive life as a tidal infection
+**Date:** 2026-07-27
+
+**Decision:** Mycora is a distributed hivemind that advances and recedes like
+water. Units are temporary shapes inside the larger organism, not fully
+individual creatures. Death leaves living stains—moss, fungus, flowers, and
+iridescent growth—that can grant vision, expand domain, and later support other
+mechanics.
+
+**Art constraint:** It is a burst of thriving rainbow life with inspiration from
+*Annihilation*, but it must never read as benevolent nature or as a visual copy
+of the Zerg. The inversion is deliberate: abundant life behaves like cancer.
+
+**Gameplay consequence:** Corpse stains/domain residue must eventually be sim
+state, deterministic, replayable, and readable by AI. It is not merely a decal.
+
+---
+
+## D-023 — Cohort Marksman weapon language
+**Date:** 2026-07-27
+
+**Decision:** The Marksman carries its staff vertically and upright in one hand.
+Its attack is genuinely emitted light, not a projectile merely styled like a
+laser. Animation, effects, sound, and damage timing should preserve that read.
+
+---
+
+## D-024 — Conclave material language
+**Date:** 2026-07-27 · **Status:** art direction seed
+
+**Decision:** Conclave forms should appear almost constructed from water and
+fabric. This is a silhouette/material constraint for later concept development,
+not yet a finalized production specification.

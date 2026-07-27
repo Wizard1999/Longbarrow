@@ -20,14 +20,25 @@ import { syncSiteViews } from './render/siteViews';
 import { createCamera } from './render/camera';
 import { createPlacementGhost } from './render/placementGhost';
 import { createChainVisuals } from './render/chainVisuals';
+import { createCommandFeedback } from './render/commandFeedback';
 import { createPicker, createUiState } from './input/selection';
 import { createKeyboard } from './input/keyboard';
 import { createMouse } from './input/mouse';
 import { createHud } from './ui/hud';
 import { createChainEditor } from './ui/chainEditor';
+import { createSandbox } from './dev/sandbox';
+import { mountBuildBadge } from './ui/buildBadge';
+import { Recorder } from './sim/replay';
+import { configureLiveRecording, issueCommand } from './replay/live';
+
+void mountBuildBadge();
 
 // Opt in to the opponent explicitly — a bare world is inert (see sim/world.ts).
-const world = enableAi(buildTestMap(createWorld(1337)));
+const MATCH_SEED = 1337;
+const MATCH_START_HOUR = 8;
+const world = enableAi(buildTestMap(createWorld(MATCH_SEED, MATCH_START_HOUR)));
+const recorder = new Recorder(MATCH_SEED, MATCH_START_HOUR, MATCH_SEED, 'standardAi');
+configureLiveRecording(world, recorder);
 
 const quality = QUALITY[detectTier()];
 const { scene, renderer, sun } = createRenderer(quality);
@@ -41,15 +52,19 @@ const views = {
   nodes: buildNodeViews(scene, world),
 };
 
-const cam = createCamera();
+const cam = createCamera(terrainMesh);
 const ghost = createPlacementGhost(scene);
 const ui = createUiState();
 const picker = createPicker(cam.camera, terrainMesh, views);
 const hud = createHud(world, ui);
 const chainEditor = createChainEditor(world, ui, hud.flash);
 const chainVisuals = createChainVisuals(scene);
+const commandFeedback = createCommandFeedback(scene);
 
-createMouse({ world, domElement: renderer.domElement, cam, picker, ghost, ui, flash: hud.flash });
+createMouse({
+  world, domElement: renderer.domElement, cam, picker, ghost, ui, flash: hud.flash,
+  commandFeedback: commandFeedback.show,
+});
 
 const keyboard = createKeyboard({
   onKey(k, e) {
@@ -60,7 +75,10 @@ const keyboard = createKeyboard({
       e.preventDefault();
       if (e.ctrlKey || e.metaKey) {
         const sel = world.units.filter(u => u.selected && u.team === 'player').map(u => u.id);
-        const res = cmdFormSquad(world, 'player', sel, n);
+        const res = issueCommand(
+          { t: 'formSquad', team: 'player', units: sel, number: n },
+          () => cmdFormSquad(world, 'player', sel, n),
+        );
         if (res.ok) {
           ui.selectedSquadId = res.siteId ?? null;
           ui.armedBehaviour = null;
@@ -75,7 +93,10 @@ const keyboard = createKeyboard({
           ui.armedBehaviour = null;
           ui.selectedBuildingId = null;
           ui.selectedSiteId = null;
-          cmdSetSelection(world, squad.memberIds);
+          issueCommand(
+            { t: 'select', units: squad.memberIds },
+            () => cmdSetSelection(world, squad.memberIds),
+          );
         } else {
           hud.flash(`no squad ${n} — select units and press Ctrl+${n}`);
         }
@@ -87,13 +108,19 @@ const keyboard = createKeyboard({
     if (k === 'g') {
       ui.selectedBuildingId = null;
       ui.selectedSiteId = null;
-      cmdSetSelection(world, world.units.filter(u => u.team === 'player' && u.gather).map(u => u.id));
+      {
+        const units = world.units.filter(u => u.team === 'player' && u.gather).map(u => u.id);
+        issueCommand({ t: 'select', units }, () => cmdSetSelection(world, units));
+      }
     }
     if (k === 'escape') {
       if (ui.armedBehaviour) { ui.armedBehaviour = null; }
       else if (ui.placingType) { ui.placingType = null; ghost.hide(); }
       else if (ui.selectedSiteId !== null) {
-        cmdCancelSite(world, ui.selectedSiteId);
+        issueCommand(
+          { t: 'cancelSite', site: ui.selectedSiteId },
+          () => cmdCancelSite(world, ui.selectedSiteId as number),
+        );
         ui.selectedSiteId = null;
         hud.flash('site cancelled, essence refunded');
       }
@@ -131,11 +158,14 @@ const loop = createLoop({
     syncSiteViews(scene, world, views.sites);
     syncBuildingViews(scene, world, views.buildings, ui.selectedBuildingId);
     chainVisuals.sync(world.squads.find(s => s.id === ui.selectedSquadId) ?? null);
+    commandFeedback.update(realDt);
     hud.update(now, loop.isThrottled());
     chainEditor.update();
+    sandbox.update(now);
     renderer.render(scene, cam.camera);
   },
 });
 
+const sandbox = createSandbox({ world, loop, camera: cam, renderer, ui, scene, quality, recorder });
 cam.update();
 loop.start();

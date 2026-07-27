@@ -5,6 +5,7 @@ import {
 } from '../sim/commands';
 import { automationSlots, runningSquads, squadByNumber } from '../sim/squads';
 import type { UiState } from '../input/selection';
+import { issueCommand } from '../replay/live';
 
 const el = (id: string): HTMLElement => {
   const found = document.getElementById(id);
@@ -101,20 +102,33 @@ export function createChainEditor(
     const runBtn = document.createElement('button');
     runBtn.dataset['role'] = 'run';
     runBtn.onclick = () => {
-      if (squad.running) { cmdStopChain(world, squad.id); flash('chain stopped'); return; }
-      const res = cmdRunChain(world, squad.id);
+      if (squad.running) {
+        issueCommand({ t: 'stopChain', squad: squad.id }, () => cmdStopChain(world, squad.id));
+        flash('chain stopped');
+        return;
+      }
+      const res = issueCommand(
+        { t: 'runChain', squad: squad.id },
+        () => cmdRunChain(world, squad.id),
+      );
       flash(res.ok ? `squad ${squad.number} running` : res.reason ?? 'cannot run');
     };
     runRow.appendChild(runBtn);
 
     const loopBtn = document.createElement('button');
     loopBtn.dataset['role'] = 'loop';
-    loopBtn.onclick = () => cmdSetChainLoop(world, squad.id, !squad.loop);
+    loopBtn.onclick = () => issueCommand(
+      { t: 'setChainLoop', squad: squad.id, loop: !squad.loop },
+      () => cmdSetChainLoop(world, squad.id, !squad.loop),
+    );
     runRow.appendChild(loopBtn);
 
     const clearBtn = document.createElement('button');
     clearBtn.textContent = 'Clear';
-    clearBtn.onclick = () => { cmdClearChain(world, squad.id); ui.armedBehaviour = null; };
+    clearBtn.onclick = () => {
+      issueCommand({ t: 'clearChain', squad: squad.id }, () => cmdClearChain(world, squad.id));
+      ui.armedBehaviour = null;
+    };
     runRow.appendChild(clearBtn);
     body.appendChild(runRow);
 
@@ -152,7 +166,10 @@ export function createChainEditor(
         const rm = document.createElement('button');
         rm.textContent = '×';
         rm.title = 'remove this step';
-        rm.onclick = () => cmdRemoveChainStep(world, squad.id, i);
+        rm.onclick = () => issueCommand(
+          { t: 'removeChainStep', squad: squad.id, index: i },
+          () => cmdRemoveChainStep(world, squad.id, i),
+        );
         li.appendChild(rm);
         list.appendChild(li);
       });

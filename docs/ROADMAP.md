@@ -46,7 +46,8 @@ core systems before asymmetry is layered on.
 | — | Snapshot/restore/hash (D-010) | ✅ |
 | — | Tick rate 20 → 30 Hz (D-004) | ✅ |
 | — | Dev console | ⬜ |
-| — | Replay system (D-008) | ⬜ |
+| — | Replay system (D-008) | ◐ live capture/export/verification complete; timeline viewer and keyframes next |
+| — | Save/load files | ◐ versioned developer quick-save/import/export complete |
 
 **Out of scope for Phase 1:** heroes, tech tree, PvE bosses, air units, the
 other three races, multiplayer, audio.
@@ -81,11 +82,26 @@ Stealth/detection must be designed before Conclave's Phantom (`GAME_DESIGN.md §
 |---|---|
 | 4.1 | PvE boss system |
 | 4.2 | Air units — needs the supply-pool decision (`§ 11.1`) resolved first |
-| 4.3 | Networked multiplayer — lockstep; depends on determinism proven by replays |
+| 4.3 | LAN multiplayer first, then internet multiplayer — deterministic lockstep; depends on replay/hash verification |
 | 4.4 | Audio/visual polish, balance tuning |
 
 Balance numbers stay placeholders until 4.4 by design — systems are implemented
 faithfully first, tuned last.
+
+### Multiplayer staging
+
+1. **LAN build sharing (available now):** one host serves the current client build
+   to other browsers on the same network. Each browser still runs an independent
+   match.
+2. **LAN synchronized prototype:** direct host/join, two player slots, command
+   exchange, fixed input delay, tick synchronization, and desync hashes.
+3. **Resilience pass:** reconnect/disconnect policy, lobby UX, replay capture of
+   network commands, and deterministic failure reproduction.
+4. **Internet transport:** reuse the command protocol behind a relay/lobby service
+   rather than redesigning simulation networking.
+
+The LAN prototype should not begin until live replay recording and periodic hash
+checks are routine development tools.
 
 ---
 
@@ -97,3 +113,39 @@ should grow through Phases 1–3 rather than being bolted on in Phase 4.
 
 The one hard ordering constraint: **`Mission` must become a sim entity (D-007)
 before any mission UI is built.**
+
+## Recently completed infrastructure
+
+- Live replay recording with AI-aware match setup, endpoint hash verification, JSON export, and verified endpoint import.
+- Versioned deterministic save files with browser quick-save/load and portable JSON import/export.
+
+- Production LAN build launcher and visible build identifiers for tester reports.
+- Terrain-aware camera anchoring and developer world overlays.
+- Repeatable performance sandbox with quality overrides and JSON benchmark reports.
+
+---
+
+## Long-term platform track — Open RTS Engine and Mod SDK
+
+Longbarrow is intended to mature into a reusable, open, browser-first RTS engine.
+This track begins architecturally now but is deliberately staged after the game
+proves each system in production. See `ENGINE_VISION.md` for the full principles,
+creator workflow, package concept, guardrails, and success criteria.
+
+| Stage | Goal | Status |
+|---|---|---|
+| A | Keep Longbarrow systems engine-friendly and increasingly data-driven | ◐ ongoing |
+| B | Extract Longbarrow factions and rules into validated content packs | ⬜ |
+| C | Ship a second, minimal example RTS and starter template | ⬜ |
+| D | Creator tools, schemas, editors, packaging, and export workflow | ⬜ |
+| E | Community ecosystem, reusable extensions, and compatibility policy | ⬜ |
+
+This platform track is not currently included in the 41% game-production score.
+It is an ongoing post-foundation product track rather than a finite content phase.
+Its architectural constraints apply immediately so the game does not become
+needlessly difficult to generalize later.
+
+## Replay presentation extension
+
+- Cinematic replay director (optional): event observation, importance ranking, smooth camera framing, free/follow/event/director modes, and manual-override protection.
+- This remains presentation-only; recorded commands and deterministic playback are the source of truth.
