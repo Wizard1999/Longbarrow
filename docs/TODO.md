@@ -131,6 +131,11 @@ hashed and recorded in replays. What remains is the generator and the UI.
 
 These need a designer decision before the dependent work can start.
 
+> **All four have a proposed answer with reasoning in `DECISIONS.md` D-031…D-034,
+> marked ⏳ proposed.** The designer answered them once and the response was lost
+> in transit; the proposals are the recommendation, not the ruling. Confirm or
+> overturn each, then flip its status to locked and tick the box here.
+
 - [ ] **Resource names and count.** One universal gatherable or several?
       "Essence" and "Dominion" appear in the UI blueprint but were never
       formally adopted. Blocks the resources HUD panel.

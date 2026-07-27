@@ -784,3 +784,129 @@ scripts (`PLAY_GREENMANTLE.bat`, `OPEN_GREENMANTLE_WEBSITE.bat`) and versioned
 handoff naming (`Greenmantle-v1.23.0-work`) now use Greenmantle. D-015 is
 superseded but retained — the reasoning that produced Longbarrow is still the
 reasoning that produced its successor.
+
+---
+
+> **D-031 … D-034 are proposals, not yet decisions.** They answer the four
+> `§ 11.1` design blockers with a recommendation and the reasoning for it, so the
+> reasoning exists in writing before it is chosen. The designer's actual answers
+> were given in a session where the response was lost in transit and have not yet
+> been recovered. **Do not treat these four as settled, and do not build on them,
+> until the status lines say locked.** If a designer answer differs, rewrite that
+> decision *including its reasoning* — do not keep the argument below and staple a
+> different conclusion to it.
+
+## D-031 — One gathered currency (Legacy); Dominion and Relics are not currencies
+**Date:** 2026-07-27 · **Status:** ⏳ proposed — awaiting designer confirmation · **Resolves (when confirmed):** D-021 deferral, `GAME_DESIGN.md § 11.1`, `OPEN_QUESTIONS.md` A1/A6
+
+D-021 accepted **Material / Legacy / Dominion / Relics** as a vocabulary
+direction but deliberately deferred *which of the four are spendable*. That
+question is now answered, because leaving it open was blocking the resources HUD
+panel and quietly permitting a second gather loop to be assumed into existence.
+
+**The schema:**
+
+| Concept | What it is mechanically |
+|---|---|
+| **Legacy** | The one gathered, spendable currency. Violet nodes (D-025). Pays for units, buildings and research. |
+| **Dominion** | A *derived statistic*, never gathered or spent — how much of the map you hold. Computed from controlled territory. |
+| **Relics** | Rare map objectives that change future options. Claimed, not accumulated. |
+| **Material** | Dropped for Cohort. Revisited only if a later race's fantasy genuinely needs a build-vs-learn split. |
+
+**Reason — why not a second currency:** a Material/Legacy split is the obvious
+RTS answer and was rejected on a project pillar, not on taste. Two gathered
+resources means dividing workers between them, and worker allocation is exactly
+the babysitting that "set-and-forget economy" exists to delete. StarCraft's
+two-resource economy is load-bearing *because* mineral/gas allocation is a skill
+expression — this game is explicitly trying not to reward that. One currency
+also keeps the AI's economic reasoning honest rather than needing a ratio
+heuristic nobody can balance.
+
+**Reason — why Dominion is a statistic:** it was floated as a currency and never
+defined. Making it derived rather than gathered gives **control range a job**
+(`OPEN_QUESTIONS.md` A7, open since v1.5: the rings currently do nothing
+mechanically). Territory held becomes a readable number that doctrine and later
+victory conditions can key off, without inventing a second economy or stealing
+Conclave's "Project from Network" identity.
+
+**Consequence:** the `essence` → `legacy` vocabulary migration is now unblocked
+and must be done **atomically** (sim field, data costs, HUD, tests, save
+envelope) with a `SAVE_VERSION` bump — a partial rename is worse than none. The
+migration is *not* a Phase 1 gate and is queued separately in `TODO.md`.
+`PALETTE.legacy` and `legacyMat` already anticipate this name.
+
+---
+
+## D-032 — Stealth is terrain concealment, not cloaking
+**Date:** 2026-07-27 · **Status:** ⏳ proposed — awaiting designer confirmation · **Resolves (when confirmed):** `GAME_DESIGN.md § 11.1`
+
+Two units already assume a stealth system that was defined nowhere: Cohort's
+Chronicler ("reveals stealth") and Conclave's Phantom ("illusions/stealth").
+
+**The rule:** there are **no permanently invisible units**. Concealment is a
+property of *ground*, not of units. A unit standing in cover (forest, deep
+shadow, and whatever later terrain declares itself concealing) is hidden from
+enemies outside a short detection radius. **Moving fast or attacking reveals
+you.** Detection is a radius every unit has and some units have more of — the
+Chronicler *widens* detection rather than granting a binary reveal.
+
+**Reason:** classic cloak-plus-detector was rejected because it is a hard
+counter. Without the detector unit you do not play badly, you simply lose, and
+the correct response is a build-order lookup rather than a decision on the
+board — the precise failure mode this design exists to avoid. Terrain
+concealment instead feeds the **"terrain decides fights"** pillar: cover becomes
+another reason position beats stats, it is legible from the map itself, and it
+needs no counter-unit to exist for the mechanic to be fair.
+
+**Consequence:** concealment is a **terrain trait** read generically by the
+engine (D-029), never a unit-name check. The Chronicler is buildable without
+waiting on a cloak system. Conclave's Phantom becomes illusion-and-cover rather
+than invisibility — a Phase 3 problem with its rules already fixed.
+
+---
+
+## D-033 — Tunnels and ramps are generator constraints, not a new system
+**Date:** 2026-07-27 · **Status:** ⏳ proposed — awaiting designer confirmation (tunnels deferred, not rejected) · **Resolves (when confirmed):** `GAME_DESIGN.md § 11.1`
+
+An early rejected *theme* ("living playset warfare") carried a mechanical idea
+worth keeping: tunnels, ramps and hidden routes as first-class map elements.
+Assessed against what already exists, **ramps and chokepoints are not a missing
+system — they are missing map content.** A ramp is a heightfield gradient; a
+chokepoint is the polygon boundary narrowing. Both are already expressible.
+
+**Therefore:** this converts into a **requirement on the procedural generator** —
+it must produce legible ramps, chokepoints and flankable routes rather than
+smooth noise. A map whose high ground has no distinct approach makes the whole
+positional combat model unreadable, so this is a correctness condition on
+generation, and belongs with the map-generator work already queued.
+
+**Tunnels specifically are deferred, not dropped.** An off-surface paired link
+is genuinely new play — a flank that cannot be seen coming — but it needs
+pathing, fog and render support plus its own determinism tests. Revisit in Phase
+2 against Mycora, where an underground route may mean considerably more than it
+does for Cohort.
+
+**Reason for not building it now:** it is real scope competing directly with
+finishing Phase 1, and its value is highest when there is a second race whose
+identity might depend on it.
+
+---
+
+## D-034 — Air draws from the same supply pool as ground
+**Date:** 2026-07-27 · **Status:** ⏳ proposed — awaiting designer confirmation · **Resolves (when confirmed):** `GAME_DESIGN.md § 11.1`
+
+§7 names "command bandwidth" as a mechanism discouraging the air deathball but
+never tied it to the §8.3 supply table (Command / Population / Coordination /
+Territory). **Air squads draw from the same per-race pool as ground squads.**
+
+**Reason:** this is the whole anti-deathball mechanism, and a separate air pool
+would delete it. If air has its own cap, air is *additive* — massing it costs
+you nothing you were otherwise using, which is how deathballs form and would
+then require a bespoke second anti-mass mechanic to undo. Shared supply makes
+every air unit a ground unit you did not field, so going all-in on air costs you
+the map. §8.3 stays the single lever, with nothing new to tune.
+
+**Consequence:** unblocks Phase 4.2 in advance. The supply system needs no
+structural change to accept air later — air costs are ordinary supply costs in
+`src/data/`. Recorded now because supply design decisions made before this was
+settled could have quietly assumed a separate pool.
