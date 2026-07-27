@@ -11,7 +11,6 @@ export interface FogOverlay {
 /**
  * A lightweight battlefield fog layer built with two instanced meshes rather
  * than thousands of individual objects. The coarse grid intentionally matches
- * the presentation-side FogOfWarField; later art passes can replace this with
  * softer masks without changing the information policy.
  */
 export function createFogOverlay(
@@ -25,10 +24,15 @@ export function createFogOverlay(
 
   const unexplored = new THREE.InstancedMesh(
     geometry,
+    // Deep violet-blue, not black. The art direction is explicit that shadow
+    // shifts hue rather than going to zero (D-005) -- pure black fog reads as a
+    // missing texture and turns the board into hard tiles against the painterly
+    // terrain. Slightly under full opacity so the terrain's form still whispers
+    // through, which is what stops the fog edge looking like a cut.
     new THREE.MeshBasicMaterial({
-      color: 0x000000,
+      color: 0x141a2e,
       transparent: true,
-      opacity: 0.96,
+      opacity: 0.93,
       depthWrite: false,
       side: THREE.DoubleSide,
     }),
@@ -36,10 +40,12 @@ export function createFogOverlay(
   );
   const explored = new THREE.InstancedMesh(
     geometry,
+    // Explored-but-unseen: a cool violet veil over remembered ground, lighter
+    // than unexplored so the two states are legible at a glance.
     new THREE.MeshBasicMaterial({
-      color: 0x07100c,
+      color: 0x2a2b46,
       transparent: true,
-      opacity: 0.58,
+      opacity: 0.46,
       depthWrite: false,
       side: THREE.DoubleSide,
     }),

@@ -146,4 +146,7 @@ export const AI = {
   expandRingStep: 3.5,
   expandRings: 5,
   expandAngles: 12,
+  /** Keep this much banked before researching, so teching never starves
+   *  production entirely. */
+  techReserve: 150,
 };

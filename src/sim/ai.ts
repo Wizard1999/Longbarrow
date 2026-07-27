@@ -4,6 +4,8 @@ import { UNIT_TYPES } from '../data/units';
 import { cmdGather, cmdMove, cmdPlaceBuilding, cmdTrain } from './commands';
 import { findTarget } from './combat';
 import { supplyCap, supplyFree } from './supply';
+import { availableTech, cmdResearch } from './tech';
+import { TECH } from '../data/tech';
 import { SUPPLY_MAX } from '../data/tuning';
 import { circleInMapBoundary, mapBoundaryForSeed } from './mapBoundary';
 
@@ -112,7 +114,22 @@ export function stepAi(world: World, ai: AiState): void {
     cmdTrain(world, base.id, unit);
   }
 
-  // 4. Commit the army once it is big enough, and keep it committed. Pulling
+  // 4. Research whatever is affordable and reachable.
+  //
+  //    Without this the AI falls permanently behind any human who techs, since
+  //    upgrades are category-wide multipliers that compound. It picks the
+  //    cheapest available option rather than planning a build: Cohort's track
+  //    is deliberately forgiving (§8.5, D-028), so researching in cost order is
+  //    a genuinely reasonable strategy rather than a placeholder.
+  if (!world.tech[ai.team].researching) {
+    const options = availableTech(world, ai.team)
+      .filter(id => TECH[id].cost <= world.resources[ai.team] - AI.techReserve)
+      .sort((a, b) => TECH[a].cost - TECH[b].cost || (a < b ? -1 : 1));
+    const pick = options[0];
+    if (pick) cmdResearch(world, ai.team, pick);
+  }
+
+  // 5. Commit the army once it is big enough, and keep it committed. Pulling
   //    back and re-attacking would be a real decision; this AI does not make
   //    it yet, and pretending otherwise would just produce dithering.
   if (!ai.attacking && fighters.length >= AI.attackAtArmySize) ai.attacking = true;

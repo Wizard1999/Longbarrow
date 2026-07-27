@@ -3,13 +3,11 @@ import type { EntityId, World } from '../core/types';
 import { GOLDEN_ANGLE } from '../core/loop';
 import { terrainHeightAt } from '../sim/terrain';
 import type { VisibilityController } from '../ui/visibility';
+import { legacyMaterial } from './materials';
 
 /** Also used for the shard a worker carries on the return trip, so the thing
  *  being hauled is visibly the thing that came out of the node. */
-export const legacyMat = new THREE.MeshStandardMaterial({
-  color: 0xd9bff0, emissive: 0x4a2f6b, emissiveIntensity: 0.5,
-  flatShading: true, roughness: 0.5,
-});
+export const legacyMat = legacyMaterial();
 
 /** @deprecated Old name from when the resource was called "essence" and was
  *  teal. Kept as an alias only until the D-021 rename lands properly. */

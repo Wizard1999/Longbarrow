@@ -20,9 +20,12 @@ roster breadth: 3 of 7 ground units exist.
 - [ ] **Sentinel** (anti-air) — blocked on air units existing (Phase 4.2).
 - [ ] **Warbringer** (heavy) — doctrine-gated late game.
 - [ ] **Research UI** — the tech system has no interface yet; research can
-      only be issued programmatically.
-- [ ] **Teach the AI to research** — it currently never spends on tech, so it
-      falls behind a human who does.
+      only be issued programmatically. **This is the top gap for an alpha:** a
+      whole system exists that a player cannot reach.
+- [ ] **Soften the fog overlay** (B-004) — colour fixed, still hard-tiled.
+- [x] **Teach the AI to research** — picks the cheapest reachable upgrade above
+      a reserve. Cohort's track is forgiving, so cost order is a genuinely
+      reasonable strategy rather than a placeholder.
 
 ## Engine-first cleanup (D-029)
 

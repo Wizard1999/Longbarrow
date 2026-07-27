@@ -8,6 +8,7 @@ import { essenceMat } from './nodeViews';
 import type { QualityTier } from './quality';
 import { lodDistance3D, lodForDistance, strategicMarkerScale } from './lod';
 import type { VisibilityController } from '../ui/visibility';
+import { boneMaterial, trimMaterial } from './materials';
 
 export const TEAM_COLORS: Record<Team, number> = { player: 0x3b5bdb, rival: 0xb02e2e };
 
@@ -31,8 +32,10 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
   g.add(detailRoot);
   const isWorker = UNIT_TYPES[unit.type].isWorker;
   const isMarksman = unit.type === 'marksman';
-  const bodyMat = new THREE.MeshStandardMaterial({ color: TEAM_COLORS[unit.team], flatShading: true });
-  const trimMat = new THREE.MeshStandardMaterial({ color: 0xf2e9d8, flatShading: true });
+  // Shared, not per-unit: a ShaderMaterial per unit means a shader compile per
+  // unit, which stalls exactly when a battle is busiest (see render/materials.ts).
+  const bodyMat = boneMaterial(unit.team);
+  const trimMat = trimMaterial(unit.team);
 
   // Silhouette carries the role, since the design brief wants the battlefield
   // readable at a glance: the Legionnaire is broad and low, the Marksman is

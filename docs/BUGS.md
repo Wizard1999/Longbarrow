@@ -8,6 +8,18 @@ Format: severity · area · description · repro · status
 
 ## Open
 
+### B-004 · medium · render · Fog of war renders as hard tiles
+The fog overlay is a coarse grid of instanced quads, so its edges are visibly
+square against painterly terrain — it reads as a checkerboard rather than
+concealment. The colour was fixed (was pure black, violating D-005's "shadows
+shift hue, never go black"; now deep violet-blue), but the tiling is
+structural.
+**Fix direction:** render fog to a texture and sample it smoothly, or blur the
+mask, rather than raising the grid resolution — more, smaller squares is still
+squares.
+**Repro:** load the game at any quality with default vision.
+**Status:** open. Colour corrected 2026-07-27; softness outstanding.
+
 ### B-001 · low · render · Scenery and resource nodes use stock materials
 `sceneryViews.ts` and `nodeViews.ts` still build `MeshStandardMaterial`, so they
 do not match the painterly shading applied elsewhere. Cosmetic inconsistency,

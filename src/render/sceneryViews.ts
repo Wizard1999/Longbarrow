@@ -3,6 +3,7 @@ import type { World } from '../core/types';
 import { terrainHeightAt } from '../sim/terrain';
 import type { QualityTier } from './quality';
 import { lodForDistance } from './lod';
+import { barkMaterial, leafMaterial, rockMaterial } from './materials';
 
 export interface SceneryViews {
   root: THREE.Group;
@@ -14,9 +15,9 @@ export function buildSceneryViews(scene: THREE.Scene, world: World): SceneryView
   root.name = 'scenery-root';
   scene.add(root);
 
-  const rockMat = new THREE.MeshStandardMaterial({ color: 0x8d897f, flatShading: true });
-  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2f, flatShading: true });
-  const leafMat = new THREE.MeshStandardMaterial({ color: 0x4f8f3d, flatShading: true });
+  const rockMat = rockMaterial();
+  const trunkMat = barkMaterial();
+  const leafMat = leafMaterial();
 
   for (const s of world.scenery) {
     const y = terrainHeightAt(s.x, s.z);

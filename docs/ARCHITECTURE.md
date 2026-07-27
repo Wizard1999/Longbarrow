@@ -86,6 +86,7 @@ Imports `core/` and `data/` **only**.
 | `cameraMath.ts` | Pure camera maths, unit-testable without a browser. |
 | `palette.ts` | Hue paths (shade/mid/lit) per material. Resource is **violet**, never teal (D-025). |
 | `painterly.ts` | The stylised shading model + `facet()`. Shadows shift hue, never go black (D-005). |
+| `materials.ts` | **Shared** painterly materials cached by role/team. One `ShaderMaterial` per unit would mean a shader compile per unit and would break the 100-unit target (D-006). |
 | `skyCycle.ts` | Sun/sky/fog derived from the sim clock. Read-only on the sim. |
 | `quality.ts` | Low/medium/high tiers. The *look* is not tiered; the *cost* is. |
 | `lod.ts` | Camera-distance level of detail — real silhouettes close, strategic markers at table scale. |

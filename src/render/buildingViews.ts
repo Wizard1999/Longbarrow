@@ -5,6 +5,7 @@ import { terrainHeightAt } from '../sim/terrain';
 import type { QualityTier } from './quality';
 import { lodDistance3D, lodForDistance, strategicMarkerScale } from './lod';
 import type { VisibilityController } from '../ui/visibility';
+import { boneMaterial, glowMaterial, mossMaterial } from './materials';
 
 interface BuildingViewData {
   core: THREE.Mesh;
@@ -27,14 +28,9 @@ function makeBuildingView(scene: THREE.Scene, b: Building): THREE.Group {
   const t = BUILDING_TYPES[b.type];
   const isPlayer = b.team === 'player';
   const s = t.radius / 2.2;                        // scale off the Standard
-  const stoneMat = new THREE.MeshStandardMaterial({
-    color: isPlayer ? 0xe8e2d0 : 0xd8c4b8, flatShading: true, roughness: 0.95,
-  });
-  const glowMat = new THREE.MeshStandardMaterial({
-    color: 0xffe9a8, emissive: isPlayer ? 0xffcc55 : 0xff7755,
-    emissiveIntensity: 1.4, flatShading: true,
-  });
-  const mossMat = new THREE.MeshStandardMaterial({ color: 0x5f8a45, flatShading: true, roughness: 1 });
+  const stoneMat = boneMaterial(b.team);
+  const glowMat = glowMaterial(b.team);
+  const mossMat = mossMaterial();
 
   const g = new THREE.Group();
   const detailRoot = new THREE.Group();
