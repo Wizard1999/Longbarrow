@@ -135,8 +135,13 @@ export interface Squad {
 
 export interface World {
   seed: number;
-  rng: () => number;
+  /** Plain-number PRNG state, not a closure — snapshot/restore and hashing
+   *  depend on every byte of sim state being reachable data (D-010). */
+  rngState: number;
   tick: number;
+  /** Tick offset into the day/night cycle at match start, so a game can
+   *  begin at any hour and still replay identically. */
+  dayStartTick: number;
   nextId: EntityId;
   units: Unit[];
   buildings: Building[];

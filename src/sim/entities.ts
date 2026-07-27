@@ -4,6 +4,7 @@ import type {
 import { UNIT_TYPES } from '../data/units';
 import { BUILDING_TYPES } from '../data/buildings';
 import { ECON } from '../data/tuning';
+import { rngNext } from '../core/rng';
 
 export function spawnUnit(
   world: World, typeKey: UnitTypeKey, team: Team, x: number, z: number,
@@ -67,11 +68,11 @@ export function spawnSquad(
 
 export function generateScenery(world: World, count: number): void {
   for (let i = 0; i < count; i++) {
-    const x = (world.rng() - 0.5) * 64;
-    const z = (world.rng() - 0.5) * 64;
-    const kind = world.rng() < 0.5 ? 'rock' : 'tree';
-    const scale = 0.6 + world.rng() * 0.6;
-    const spin = world.rng() * Math.PI * 2;
+    const x = (rngNext(world) - 0.5) * 64;
+    const z = (rngNext(world) - 0.5) * 64;
+    const kind = rngNext(world) < 0.5 ? 'rock' : 'tree';
+    const scale = 0.6 + rngNext(world) * 0.6;
+    const spin = rngNext(world) * Math.PI * 2;
     // keep clear of both bases and both resource clusters
     const nearBuilding = world.buildings.some(b => Math.hypot(x - b.x, z - b.z) < 7);
     const nearNode = world.nodes.some(n => Math.hypot(x - n.x, z - n.z) < 5);

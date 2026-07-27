@@ -1,5 +1,6 @@
 import type { World } from '../core/types';
-import { makeRng } from '../core/rng';
+import { rngSeed } from '../core/rng';
+import { startTickForHour } from './daynight';
 import { stepProduction } from './production';
 import { stepBuild, stepConstruction } from './construction';
 import { stepGather } from './economy';
@@ -7,11 +8,12 @@ import { stepMovement } from './movement';
 import { stepSquads } from './squads';
 import { stepSettle } from './combat';
 
-export function createWorld(seed: number): World {
+export function createWorld(seed: number, startHour = 8): World {
   return {
     seed,
-    rng: makeRng(seed),
+    rngState: rngSeed(seed),
     tick: 0,
+    dayStartTick: startTickForHour(startHour),
     nextId: 1,
     units: [],
     buildings: [],
