@@ -1,167 +1,185 @@
 # Architecture
 
-## The one rule
+**Complete module map.** Every file in `src/` appears here. If you add a file,
+add a row — a map missing half the territory is worse than no map, because it
+is trusted.
 
-`src/sim/` is a **pure, deterministic, headless** simulation. It never imports
-from `render/`, `input/`, or `ui/`. `tests/architecture.test.ts` enforces this
-mechanically — it scans imports and fails the build if the boundary is crossed.
+---
 
-Everything downstream of that rule follows from three things we want:
+## The three rules
+
+**1. `src/sim/` is pure, deterministic, headless.** It never imports from
+`render/`, `input/` or `ui/`. Enforced by `tests/architecture.test.ts`.
+
+**2. No sim state may live anywhere unreachable.** No closures, functions,
+`Map`/`Set` on `World`, or object references between entities — ids only. If
+`structuredClone` cannot carry it, replays, save/load and future multiplayer
+all break *simultaneously*, and a fresh sim from tick 0 still passes every
+test. (D-010)
+
+**3. Engine-first.** `sim/` must not name a specific unit, building or
+technology. Race content lives in `data/` and declares **traits** the engine
+reads generically, so scrapping the races and rebuilding stays cheap. (D-029)
+
+Everything downstream follows from three things we want:
 
 | Want | Requires |
 |---|---|
 | Replays | Same inputs + same seed ⇒ same state, every time |
 | Lockstep multiplayer | Every client computes an identical tick |
-| Testable AI opponent | Run the sim thousands of ticks with no renderer |
+| Testable AI opponent | Run the sim headless for thousands of ticks |
 
-All three are free if determinism is preserved from day one, and all three are
-near-impossible to retrofit. That is why the rule is non-negotiable.
+---
 
-## Layers
+## `src/core/` — no dependencies at all
 
-```
-core/   ──────────────► no dependencies at all
-  types.ts    shared ids, vectors, entity shapes
-  rng.ts      seeded mulberry32 — the ONLY randomness in the sim
-  loop.ts     fixed-tick accumulator loop + tick constants
+| File | Purpose |
+|---|---|
+| `types.ts` | Every shared type: `World`, `Unit`, `Building`, `Squad`, `Mission`, `RallyPoint`, ids, vectors. The shape of the whole game. |
+| `rng.ts` | Seeded mulberry32. The **only** randomness in the sim. State is a plain number on `World`, never a closure (D-010). |
+| `loop.ts` | `TICK_HZ` (30), fixed-timestep accumulator, pause/step/speed. Durations are ticks, never seconds (D-004). |
 
-data/   ──────────────► no logic, only numbers
-  tuning.ts     build, combat, economy, automation constants
-  units.ts      unit stat table
-  buildings.ts  building stat table
+## `src/data/` — numbers and content, no logic
 
-sim/    ──────────────► imports core/ + data/ ONLY
-  world.ts        World state + simStep() — the tick entry point
-  entities.ts     spawn/despawn
-  map.ts          test map construction
-  terrain.ts      heightfield + high-ground queries
-  movement.ts     steering
-  combat.ts       target acquisition, damage, shield wall, settle ramp
-  economy.ts      worker gather state machine
-  construction.ts build sites and progress
-  production.ts   training queues
-  supply.ts       supply + command bandwidth
-  squads.ts       squad membership, behaviour chains
-  commands.ts     the ONLY way outside code mutates the world
-  daynight.ts     day/night cycle derived from world.tick
-  snapshot.ts     snapshot / restore / hash — rollback + replay foundation
+Race content lives here so the engine stays generic.
 
-render/ ──────────────► reads sim, never writes it
-  renderer.ts      WebGLRenderer, lights, tone mapping
-  palette.ts       hue-path colour definitions
-  painterly.ts     the stylised shading material
-  quality.ts       perf tiers (low/medium/high)
-  camera.ts        RTS pan/zoom camera
-  terrainMesh.ts   ground mesh
-  *Views.ts        one module per entity kind; syncs Three objects to sim state
-  chainVisuals.ts  behaviour-chain overlay
-  skyCycle.ts      sun/sky/fog derived from the sim clock (read-only)
-  placementGhost.ts
+| File | Purpose |
+|---|---|
+| `tuning.ts` | Every balance constant: build, combat, cohesion, economy, automation, AI, victory, day length. |
+| `units.ts` | Unit stat table + **traits** (`isWorker`, `formsShieldWall`). |
+| `buildings.ts` | Building stats: HP, command supply, control radius, what it produces. |
+| `tech.ts` | Cohort's research track (D-028). Declarative effects, category-wide. |
 
-input/  ──────────────► translates events into commands/*
-  mouse.ts, keyboard.ts, selection.ts
+## `src/sim/` — the deterministic simulation
 
-ui/     ──────────────► DOM overlays
-  hud.ts, chainEditor.ts
-```
+Imports `core/` and `data/` **only**.
+
+| File | Purpose |
+|---|---|
+| `world.ts` | `World` construction and `simStep()` — the tick entry point and system ordering. |
+| `entities.ts` | Spawn/despawn units, buildings, sites, scenery. |
+| `commands.ts` | The **only** way outside code mutates the world. Validates, returns `{ok, reason}`, never throws. |
+| `movement.ts` | Steering toward targets, boundary-constrained. |
+| `combat.ts` | Target acquisition, damage, cohesion, high ground, flanking, the reaper, victory. |
+| `economy.ts` | Worker gather state machine (set-and-forget, §8.2). |
+| `construction.ts` | Build sites and progress. |
+| `production.ts` | Training queues; applies rally points on spawn. |
+| `supply.ts` | Command supply — population cap, control range, automation bandwidth in one stat (§8.1). |
+| `squads.ts` | Persistent squads and behaviour chains. |
+| `missions.ts` | Missions above squads (D-007/D-027). **Currently inert** — records intent, does not yet drive squad behaviour. |
+| `tech.ts` | Research engine. Modifiers **derived** from the researched list, never baked into units (D-028). |
+| `terrain.ts` | Single source of truth for terrain height; the render mesh samples this rather than duplicating the formula. |
+| `mapBoundary.ts` | Generated polygon play area; orders and movement are clamped to it. |
+| `map.ts` | Map assembly + `MAP_VERSION`. Map seed is separate from match seed (D-017). |
+| `daynight.ts` | Day/night cycle derived from `world.tick` — never wall clock (D-013). |
+| `snapshot.ts` | `snapshot()` / `restore()` / `hash()`. The foundation under replays, save/load and desync detection. |
+| `replay.ts` | `Command` union, `dispatch()`, `Recorder`, `playback()`, `REPLAY_VERSION`. |
+| `save.ts` | Versioned, hash-validated save envelope. Rejects mismatches rather than best-effort loading. |
+| `ai.ts` | The CPU opponent. Issues the **same commands a human does**; lives in the sim so AI matches replay (D-009). |
+
+## `src/render/` — reads sim, never writes it
+
+| File | Purpose |
+|---|---|
+| `renderer.ts` | WebGLRenderer, lights, tone mapping, quality-tiered setup. |
+| `camera.ts` | War-table camera: free orbit, zoom, miniature-to-cosmological range (D-014). |
+| `cameraMath.ts` | Pure camera maths, unit-testable without a browser. |
+| `palette.ts` | Hue paths (shade/mid/lit) per material. Resource is **violet**, never teal (D-025). |
+| `painterly.ts` | The stylised shading model + `facet()`. Shadows shift hue, never go black (D-005). |
+| `skyCycle.ts` | Sun/sky/fog derived from the sim clock. Read-only on the sim. |
+| `quality.ts` | Low/medium/high tiers. The *look* is not tiered; the *cost* is. |
+| `lod.ts` | Camera-distance level of detail — real silhouettes close, strategic markers at table scale. |
+| `terrainMesh.ts` | Ground mesh, polygon skirt, World Turtle far-zoom silhouette (D-026). |
+| `unitViews.ts` | Unit meshes; interpolates with the loop's `alpha`. |
+| `buildingViews.ts` | Building meshes — fossil-and-glow, not machinery (§8.8). |
+| `siteViews.ts` | Construction sites in progress. |
+| `nodeViews.ts` | Resource nodes; shrink visibly as they deplete. |
+| `sceneryViews.ts` | Decorative rocks and trees; culled beyond tactical range. |
+| `fogOverlay.ts` | Instanced polygon-clipped fog, unexplored vs explored. |
+| `chainVisuals.ts` | Selected squad's behaviour chain drawn on the ground. |
+| `commandFeedback.ts` | Immediate click acknowledgement — fires on the frame of the click, before the tick applies it (D-004). |
+| `placementGhost.ts` | Building placement preview. |
+
+**Never move a unit in `render/`.** Units carry `prevX/prevZ/prevFacing`; views
+lerp using the loop's `alpha`. That is why a 30 Hz sim looks smooth at 144 fps.
+
+## `src/input/` — events become commands
+
+| File | Purpose |
+|---|---|
+| `mouse.ts` | Selection, orders, placement. Routes through `replay/live.ts`, not `commands.ts` directly. |
+| `keyboard.ts` | Hotkeys — squads, orders (A/P/S/H), training. |
+| `selection.ts` | What is currently selected; UI state that is not sim state. |
+| `selectionMath.ts` | Pure box/frustum selection maths. |
+| `pickPriority.ts` | Resolves overlapping click targets so a large base mesh cannot steal a unit click. |
+
+## `src/ui/` — DOM overlays
+
+| File | Purpose |
+|---|---|
+| `hud.ts` | Resources, supply, clock, selection card, victory announcement. |
+| `chainEditor.ts` | Behaviour-chain editor. |
+| `minimap.ts` | Tactical map with visibility state. |
+| `fogOfWar.ts` | Presentation-side visibility field (unexplored/explored/visible). |
+| `visibility.ts` | Single controller governing what the player may see, click and target. |
+| `tutorial.ts` | Optional seven-step guided tutorial; observes state, never injects sim changes. |
+| `qualityControl.ts` | Runtime quality switching (rebuilds renderer/terrain). |
+| `mapSeedControl.ts` | Load or generate a `mapSeed` without consuming match RNG. |
+| `buildBadge.ts` | Visible build identifier so testers can report an exact version. |
+
+## `src/replay/` — recording and playback
+
+| File | Purpose |
+|---|---|
+| `live.ts` | Browser command gateway. **Every human order goes through `issueCommand()`** so real matches record. |
+| `timeline.ts` | Deterministic seeking with lazily-created keyframes. |
+| `director.ts` | Cinematic director — ranks observed events for camera framing. |
+
+## `src/dev/` — developer tooling (`?dev=<mode>`)
+
+| File | Purpose |
+|---|---|
+| `sandbox.ts` | Scenario presets, sim controls, save/load, visibility toggles. |
+| `performanceMonitor.ts` | Frame and render metrics. |
+| `diagnosticVisuals.ts` | World overlays for debugging. |
+
+## Site
+
+| File | Purpose |
+|---|---|
+| `site.ts` / `site.css` | The public development page (`development.html`). Badges all art as concept art automatically. |
+| `main.ts` | Game entry point: wires world, renderer, input, UI, recorder, loop. |
+
+---
 
 ## The tick
 
-`core/loop.ts` runs a fixed-timestep accumulator:
+`simStep()` order matters and is deliberate:
 
-- `TICK_HZ = 30` — the sim advances in fixed 33.3 ms steps
-- `render(alpha, …)` receives the leftover fraction so views interpolate
-  between the previous and current tick
-- `MAX_CATCHUP = 5` caps catch-up so a stalled tab cannot spiral
+```
+ai → tech → production → construction → squads → gather → build
+   → movement → settle → combat → reaper → missions → victory
+```
 
-**Nothing in `render` advances game state.** Units store `prevX/prevZ` and
-`prevFacing`; the renderer lerps between previous and current using `alpha`.
-This is why a 30 Hz sim looks perfectly smooth at 144 fps.
+The reaper runs before missions so a mission can never hold a squad id that was
+pruned this tick; victory runs last so it sees the settled state.
 
-## Commands are the only mutation path
-
-Input and UI never touch `world` fields directly. They call `sim/commands.ts`
-(`cmdSetSelection`, `cmdFormSquad`, `cmdCancelSite`, …). Every command:
-
-- validates before mutating
-- returns `{ ok, reason? }` rather than throwing
-- is a **serializable intent**
-
-That last property is what makes replays and networking possible later — a
-replay is just the recorded stream of commands plus the seed. Keep commands
-serializable: no functions, no Three.js objects, no DOM references in a
-command payload.
-
-## Determinism checklist
-
-When touching `sim/`:
-
-- [ ] No `Math.random()` — use `world.rng`
-- [ ] No `Date.now()` / `performance.now()`
-- [ ] No wall-clock durations — ticks only
-- [ ] No iteration over a structure whose order can vary between runs
-- [ ] No floating-point accumulation that depends on frame timing
-- [ ] No closures, functions, `Map`/`Set` or object references stored on `World`
-      — snapshot/restore/hash all break on unreachable state (D-010)
-
-## Snapshot, restore, hash
-
-`sim/snapshot.ts` provides the three operations every networked feature needs:
+## Snapshot / restore / hash
 
 | Feature | Implementation |
 |---|---|
-| Rollback | `restore()` then N × `simStep()` |
 | Replay seek | `restore()` to nearest keyframe, then re-simulate |
+| Save / load | `snapshot()` + `restore()` |
 | Desync detection | compare `hash()` per tick |
 | Match validation | server re-simulates, confirms final `hash()` |
 
-`restore()` mutates the world **in place** — swapping the object would leave
-every view holding an orphan. `hash()` excludes `prevX`/`prevZ`/`prevFacing`
-(render interpolation state, not simulation inputs) and quantises floats to 1e-6
-so peers agreeing within tolerance are not reported as desynced.
+`restore()` mutates in place — swapping the object would leave every view
+holding an orphan. `hash()` excludes `prevX/prevZ/prevFacing` (render
+interpolation, not sim inputs) and quantises floats to 1e-6 so peers agreeing
+within tolerance are not reported as desynced.
 
-## Rendering model
+## Testing
 
-Painterly stylisation lives in `render/painterly.ts`. The idea, taken from the
-art reference: a surface is not one colour lit and darkened, it is a **hue
-path** — separate shade, midtone and lit colours the shading model walks along.
-Shadows shift hue rather than going black. That single choice is most of the
-difference between "stylised" and "3D render with the lights turned down".
-
-Performance is tiered, not the look. The shading model is fragment maths and
-costs nothing; what scales by tier is shadow resolution, antialiasing, pixel
-ratio, and mesh subdivision. Target: **1080p / 30 fps / 100+ units on a 2017
-integrated GPU.**
-
-## Engine-readiness rule
-
-Longbarrow is also the proving ground for a future open RTS engine. Do not extract
-an abstract engine prematurely, but write new systems so game-specific content is
-not needlessly embedded in reusable mechanics.
-
-When adding a feature, ask:
-
-- Is this a generic mechanic, a Longbarrow rule composition, or authored content?
-- Could faction/resource/unit differences be represented through typed data or
-  capabilities rather than faction-name conditionals?
-- Does the feature preserve serializable commands, snapshots, hashing, headless
-  execution, and deterministic custom rule sets?
-- Is the rendering assumption truly engine-wide, or only Longbarrow art direction?
-
-The target layering and staged extraction plan are documented in
-`docs/ENGINE_VISION.md`.
-
-
-## Canonical map boundary
-
-Future irregular maps must expose one deterministic polygon boundary shared by simulation and presentation. Rendering, navigation, placement, minimaps, fog, camera framing, and terrain skirts must consume that same data. See `MAP_GENERATION.md`.
-
-## Presentation visibility boundary
-
-`src/ui/fogOfWar.ts` derives explored/current vision from deterministic world
-state, while `src/ui/visibility.ts` defines what the local presentation is
-allowed to reveal. Rendering, minimap markers, picking, and click-based target
-acquisition consume that shared policy. Simulation modules must never read it:
-fog cannot change combat, movement, AI, snapshots, hashes, or replay outcomes.
-`player` and `omniscient` are presentation modes; replay/spectator tooling may
-switch modes without mutating the world.
+`npm run verify` = typecheck + lint + tests + build. Every system has a suite;
+`tests/architecture.test.ts` enforces rule 1 and `tests/determinism.test.ts`
+enforces rule 2.

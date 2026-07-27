@@ -11,7 +11,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src tests",
-    "verify": "npm run sync:site && npm run check:site && npm run typecheck && npm run lint && npm run test && npm run build",
+    "verify": "npm run check:docs && npm run sync:site && npm run check:site && npm run typecheck && npm run lint && npm run test && npm run build",
     "dev:lan": "vite --host 0.0.0.0",
     "preview:lan": "vite preview --host 0.0.0.0",
     "sync:site": "node scripts/sync-site-progress.mjs",
@@ -20,7 +20,8 @@
     "build:info": "node scripts/generate-build-info.mjs",
     "release:tag": "node scripts/tag-release.mjs",
     "archive:check": "git archive --format=tar --prefix=Longbarrow-$npm_package_version/ HEAD | tar tf - | head",
-    "check:site": "node scripts/check-site-sync.mjs"
+    "check:site": "node scripts/check-site-sync.mjs",
+    "check:docs": "node scripts/check-docs.mjs"
   },
   "dependencies": {
     "three": "^0.185.1"

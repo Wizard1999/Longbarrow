@@ -86,6 +86,12 @@ direction, which is why `src/sim/` must stay race-agnostic (D-029).
 - Update `docs/CURRENT_STATE.md` when you finish a chunk of work
 - Log a design decision in `docs/DECISIONS.md` when you make one
 - Interpolate in render using the loop's `alpha` — never move a unit in `render`
+- **Add a row to `docs/ARCHITECTURE.md` when you add a file.** The module map is
+  complete by contract: any coding agent must be able to pull this repo and
+  orient with no outside instruction. A map missing half the codebase is worse
+  than none, because it gets trusted.
+- Declare race mechanics as **traits in `src/data/`**, never as a unit-name
+  check inside `src/sim/` (D-029)
 
 ## Current Focus
 
