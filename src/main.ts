@@ -7,6 +7,8 @@ import { cmdCancelSite, cmdFormSquad, cmdSetSelection } from './sim/commands';
 import { squadByNumber } from './sim/squads';
 import { AUTOMATION } from './data/tuning';
 import { createRenderer } from './render/renderer';
+import { QUALITY, detectTier } from './render/quality';
+import { updatePainterlyGlobals } from './render/painterly';
 import { buildTerrainMesh } from './render/terrainMesh';
 import { buildSceneryViews } from './render/sceneryViews';
 import { buildNodeViews, syncNodeViews } from './render/nodeViews';
@@ -24,8 +26,9 @@ import { createChainEditor } from './ui/chainEditor';
 
 const world = buildTestMap(createWorld(1337));
 
-const { scene, renderer } = createRenderer();
-const terrainMesh = buildTerrainMesh(scene);
+const quality = QUALITY[detectTier()];
+const { scene, renderer } = createRenderer(quality);
+const terrainMesh = buildTerrainMesh(scene, quality);
 buildSceneryViews(scene, world);
 
 const views = {
@@ -107,6 +110,7 @@ window.addEventListener('resize', () => {
 const loop = createLoop({
   step: () => simStep(world),
   render: (alpha, realDt, now) => {
+    updatePainterlyGlobals(now, quality.cloudShadows ? 0.28 : 0);
     cam.pan(realDt, keyboard.keys, keyboard.mouseX, keyboard.mouseY);
     cam.update();
     const squadMemberIds = new Set(world.squads.flatMap(s => s.memberIds));
