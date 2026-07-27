@@ -255,6 +255,15 @@ export interface World {
    *  stat modifiers — they are derived on demand, never baked into units, so
    *  restore/replay cannot leave a unit carrying stats it should not have. */
   tech: Record<Team, TeamTechState>;
+  /**
+   * Whether developer commands are permitted.
+   *
+   * Simulation state, not a UI flag, for two reasons: a replay of a dev session
+   * must re-enable it at the same tick or every recorded cheat is refused during
+   * playback, and being hashed means a competitive result can prove cheats were
+   * never enabled. See `sim/dev.ts`.
+   */
+  devMode: boolean;
 }
 
 export interface TeamTechState {

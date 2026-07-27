@@ -37,6 +37,9 @@ export function createWorld(seed: number, startHour = 8, mapSeed = seed): World 
     ai: null,
     missions: [],
     tech: { player: createTechState(), rival: createTechState() },
+    // Off by default, and turned on only by an explicit recorded command, so a
+    // match cannot start cheat-enabled by accident.
+    devMode: false,
   };
 }
 

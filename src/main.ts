@@ -36,6 +36,8 @@ import { FogOfWarField, playerVisionSources } from './ui/fogOfWar';
 import { createVisibilityController, visibilityModeFromSearch } from './ui/visibility';
 import { createFogOverlay } from './render/fogOverlay';
 import { createTutorial } from './ui/tutorial';
+import { createDevConsole } from './ui/devConsole';
+import type { DevConsole } from './ui/devConsole';
 import { Recorder } from './sim/replay';
 import { configureLiveRecording, issueCommand } from './replay/live';
 
@@ -85,8 +87,15 @@ createMouse({
   commandFeedback: commandFeedback.show,
 });
 
+// Created after the loop, since the console drives loop pacing — but the
+// keyboard handler exists before it, so it consults this reference lazily.
+let devConsole: DevConsole | null = null;
+
 const keyboard = createKeyboard({
   onKey(k, e) {
+    // First refusal: while the console is open it owns the keyboard, or typing
+    // "s" into it would also fire the stop-order hotkey.
+    if (devConsole?.handleKey(e)) { e.preventDefault(); return; }
     // Ctrl+1..5 forms a squad; 1..5 selects one. Squads are persistent (Q1),
     // so the number key is a real handle, not a saved selection.
     const n = Number(k);
@@ -228,5 +237,20 @@ const loop = createLoop({
 });
 
 const sandbox = createSandbox({ world, loop, camera: cam, renderer, ui, scene, quality, recorder, visibility });
+
+// Cheats route through sim/dev.ts into the replay stream; pacing and fog are
+// host concerns and stay out of it (see ui/devConsole.ts).
+devConsole = createDevConsole(world, {
+  setPaused: on => loop.setPaused(on),
+  isPaused: () => loop.isPaused(),
+  setSpeed: x => loop.setSpeed(x),
+  getSpeed: () => loop.getSpeed(),
+  stepOnce: () => loop.stepOnce(),
+  setRevealAll: on => visibility.setMode(on ? 'omniscient' : 'player'),
+  isRevealAll: () => visibility.mode === 'omniscient',
+  // Spawn where the player is looking, which is almost always what is meant.
+  spawnPoint: () => ({ x: cam.state.focusX, z: cam.state.focusZ }),
+});
+
 cam.update();
 loop.start();

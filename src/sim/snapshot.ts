@@ -89,6 +89,8 @@ export function hash(world: World): string {
   mixF(world.resources.player);
   mixF(world.resources.rival);
   mixS(world.winner ?? '-');
+  // Hashed so a clean competitive result is provable, not merely claimed.
+  mix(world.devMode ? 1 : 0);
   mix(world.eliminationTicks.player); mix(world.eliminationTicks.rival);
   if (world.ai) {
     mixS(world.ai.team); mix(world.ai.nextThinkTick); mix(world.ai.attacking ? 1 : 0);

@@ -68,6 +68,7 @@ Imports `core/` and `data/` **only**.
 | `squads.ts` | Persistent squads and behaviour chains. |
 | `missions.ts` | Missions above squads (D-007/D-027). **Currently inert** — records intent, does not yet drive squad behaviour. |
 | `tech.ts` | Research engine. Modifiers **derived** from the researched list, never baked into units (D-028). |
+| `dev.ts` | Developer commands (grant, spawn, kill) as ordinary deterministic commands, gated on hashed `world.devMode` so dev sessions still replay. |
 | `terrain.ts` | Single source of truth for terrain height; the render mesh samples this rather than duplicating the formula. |
 | `mapBoundary.ts` | Generated polygon play area; orders and movement are clamped to it. |
 | `map.ts` | Map assembly + `MAP_VERSION`. Map seed is separate from match seed (D-017). |
@@ -121,6 +122,7 @@ lerp using the loop's `alpha`. That is why a 30 Hz sim looks smooth at 144 fps.
 | `hud.ts` | Resources, supply, clock, selection card, victory announcement. |
 | `chainEditor.ts` | Behaviour-chain editor. |
 | `researchPanel.ts` | Tech track panel (D-028); queues and cancels research via `issueCommand` so it lands in the replay stream. |
+| `devConsole.ts` | Backtick console. Cheats route through `sim/dev.ts` into the replay stream; pause/speed/tick/reveal are host-only and deliberately unrecorded. |
 | `minimap.ts` | Tactical map with visibility state. |
 | `fogOfWar.ts` | Presentation-side visibility field (unexplored/explored/visible). |
 | `visibility.ts` | Single controller governing what the player may see, click and target. |
