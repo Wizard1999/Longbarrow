@@ -1,3 +1,43 @@
+## v1.24.0 — Dev console, softened fog, and the four design blockers closed (88%)
+**Date:** 2026-07-27
+
+Phase 1's last unchecked item lands, and the design questions that had been
+open since the full-document audit are answered.
+
+- **In-game developer console** (`ui/devConsole.ts` + `sim/dev.ts`). Backtick to
+  open. Cheats (`/dev`, `/add`, `/spawn`, `/kill`) are ordinary deterministic
+  commands recorded into the replay stream; host controls (`/pause`, `/speed`,
+  `/tick`, `/reveal`) change how the session is observed and are deliberately
+  *not* recorded. `world.devMode` is hashed simulation state, so a dev session
+  replays correctly and a clean competitive result is provable rather than
+  claimed. `REPLAY_VERSION` 6 → 7.
+- **Fog of war softened** (B-004). Replaced the grid of instanced quads with one
+  terrain-following sheet sampling an R8 coverage texture through linear
+  filtering and a two-band smoothstep, so cell boundaries read as gradients.
+  Ground outside the map polygon is written as clear, fading the fog across the
+  rim instead of cutting it. One draw call and a ~2 KB upload per frame in place
+  of up to ~2,300 instanced quads.
+- **All four `GAME_DESIGN.md § 11.1` design blockers resolved and locked:**
+  D-031 two gathered resources (common Material, rare Legacy; Dominion and
+  Relics deferred), D-032 stealth as terrain concealment rather than cloaking,
+  D-033 map geometry as a generation problem rather than a new system, D-034 a
+  single supply pool for every unit including air. D-035 records the arcade
+  design target (*Halo*/*Quake*, not *Battlefield*) that came out of the same
+  pass.
+- **Engine-first content boundary is now executable.** `tests/architecture.test.ts`
+  fails the build if `src/sim/` names any unit, race, resource or technology, in
+  code or in a user-facing string, with an explicit debt list for `ai.ts` and
+  `map.ts` that may only shrink. It found four pre-existing leaks on its first
+  run. D-029 had been written in three documents and still got broken during
+  this session, which is the point: doctrine that cannot fail a build is a
+  suggestion.
+- Genericised resource vocabulary inside `sim/` (`'not enough Legacy'` and
+  friends became `'insufficient resources'`).
+- Added the missing `researchPanel.ts` module-map row that was failing
+  `npm run check:docs`, and closed B-001, which had outlived its own fix.
+- 340 → 382 tests. Full gate green: docs check, site sync, typecheck, lint,
+  tests, production build.
+
 ## v1.23.0 — Core direct RTS orders (84%)
 
 - Added replay-safe attack-move, patrol, stop, and hold-position commands.

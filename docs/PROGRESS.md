@@ -1,7 +1,7 @@
 # Live Development Progress
 
 **Last updated:** 2026-07-27
-**Current overall completion:** **84%** of the active 11-phase development plan.
+**Current overall completion:** **88%** of the active 11-phase development plan.
 
 This file is the live scoreboard. Update it whenever a benchmark lands, scope is
 added, or a task changes state. `CURRENT_STATE.md` explains the project in detail;
@@ -16,17 +16,22 @@ this file answers "where are we right now?" at a glance.
 | 2. Developer sandbox framework | 10% | Complete | 100% | Scenario presets, controls, metrics, selected-order readout, and world overlays implemented |
 | 3. War-table camera | 15% | In progress | 97% | Whole-board framing plus adaptive near clipping across miniature and cosmological zoom |
 | 4. Selection and command reliability | 10% | In progress | 96% | Direct attack-move, patrol, stop, and hold-position orders are replay-safe, polygon-safe, and exposed through hotkeys and selection cards |
-| 5. Debug overlay and observability | 10% | In progress | 98% | Shared fog policy now drives minimap, 3D world, picking, replay/spectator overrides, and developer vision controls |
-| 6. Visual asset foundation | 15% | In progress | 30% | Public site now has a single Play entry, full-size concept viewer, and corrected distant hero composition |
+| 5. Debug overlay and observability | 10% | Complete | 100% | In-game dev console with replay-recorded cheats, host-only pacing controls, and hashed dev-mode gating |
+| 6. Visual asset foundation | 15% | In progress | 42% | Painterly materials now cover terrain, units, buildings, scenery, and nodes; concept-art gallery and war-table hero published |
 | 7. LOD and performance architecture | 10% | In progress | 82% | Screen-consistent strategic markers, distance LOD, scenery culling, and persistent in-game quality selection |
-| 8. World presentation | 10% | In progress | 88% | Instanced 3D fog overlay now obscures unexplored/explored terrain and hides unseen rival world views |
-| 9. Core gameplay expansion | 5% | In progress | 82% | Core RTS direct orders now include attack-move, patrol, stop, and hold-position alongside tutorial, production, economy, and automation chains |
+| 8. World presentation | 10% | In progress | 95% | Fog of war rebuilt as a terrain-following sampled coverage texture: soft cell boundaries, soft polygon rim, one draw call |
+| 9. Core gameplay expansion | 5% | In progress | 88% | Research reachable in-game through the tech panel; all four §11.1 design blockers resolved (D-031–D-035) |
 | 10. Replay/save validation | 5% | In progress | 100% | Live player-command capture, AI-aware playback, endpoint hashes, export/verify/import, and director policy foundation |
 
-Weighted overall: approximately **84%**.
+Weighted overall: approximately **88%**.
 
 ## Most recent completed benchmarks
 
+- [x] In-game developer console: cheats routed through `sim/dev.ts` into the replay stream, host-only pause/speed/tick/reveal kept out of it, and a hashed `devMode` flag so dev sessions replay correctly while a clean competitive result stays provable.
+- [x] Fog of war softened (B-004): one terrain-following sheet sampling an R8 coverage texture with linear filtering and a two-band smoothstep, replacing ~2,300 instanced quads with a single draw call.
+- [x] All four long-standing design blockers resolved and locked: two-resource economy, terrain concealment, map geometry as generation, and a single shared supply pool (D-031–D-035).
+- [x] Engine-first content boundary now executable: `tests/architecture.test.ts` fails the build if `src/sim/` names any unit, race, resource, or tech, with a shrinking debt list. Caught four pre-existing leaks on its first run.
+- [x] Research UI shipped, closing the gap where a complete tech system existed that no player could reach.
 - [x] Replay-safe core RTS direct orders: attack-move, patrol, stop, and hold-position, with hotkeys, selection-card buttons, polygon clamping, and deterministic order-state hashing.
 - [x] Optional guided tutorial mode with deterministic-state observation, seven-step onboarding, persistent completion state, and a permanent in-game launcher.
 - [x] Full 3D fog-of-war enforcement with shared visibility policy, hidden-rival rendering/picking, resource memory, spectator/replay omniscience, and instanced terrain overlay.
@@ -104,7 +109,7 @@ browser-first RTS engine and creator ecosystem. The platform track includes
 content-defined factions, units, resources, lore, balance, scenarios, custom
 landing pages, validation, templates, and eventual creator tools.
 
-This does **not** change the current 84% game-production score. It is tracked as a
+This does **not** change the current 88% game-production score. It is tracked as a
 long-term platform track whose architectural rules apply now, while extraction and
 creator tooling follow only after Greenmantle proves the systems in real play.
 See `ENGINE_VISION.md`.

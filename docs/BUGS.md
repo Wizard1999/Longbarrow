@@ -30,7 +30,11 @@ instanced quads. Five tests cover the coverage export, including agreement with
 `sceneryViews.ts` and `nodeViews.ts` still build `MeshStandardMaterial`, so they
 do not match the painterly shading applied elsewhere. Cosmetic inconsistency,
 not a defect in behaviour.
-**Status:** open — folded into the art pass in `TODO.md`.
+**Status:** FIXED — verified stale 2026-07-27. Both files draw their materials
+from `render/materials.ts` (`rockMaterial`, `barkMaterial`, `leafMaterial`,
+`legacyMaterial`); no stock material remains in either. The report outlived the
+fix, which is its own small lesson: a bug list nobody re-checks is as misleading
+as a module map nobody maintains.
 
 ### B-002 · unknown · perf · 100-unit performance is unverified
 `DECISIONS.md` D-006 commits to 100+ units at 1080p/30fps on a 2017 integrated

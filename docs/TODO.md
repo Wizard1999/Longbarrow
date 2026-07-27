@@ -15,14 +15,16 @@ roster breadth: 3 of 7 ground units exist.
       the existing positional combat mechanics *matter*.
 - [ ] **Ballista** (siege) — strong vs buildings, needs escort. Buildings
       already have HP and `siegeMul` already exists in the tech effects.
-- [ ] **Chronicler** (support/detector) — extends Command range, reveals
-      stealth. Blocked on stealth/detection being designed at all (§11.1).
+- [ ] **Chronicler** (support/detector) — extends Command range, widens
+      detection. **Unblocked:** D-032 settles stealth as terrain concealment, so
+      this needs a detection radius rather than a whole cloak system.
 - [ ] **Sentinel** (anti-air) — blocked on air units existing (Phase 4.2).
 - [ ] **Warbringer** (heavy) — doctrine-gated late game.
-- [ ] **Research UI** — the tech system has no interface yet; research can
-      only be issued programmatically. **This is the top gap for an alpha:** a
-      whole system exists that a player cannot reach.
-- [ ] **Soften the fog overlay** (B-004) — colour fixed, still hard-tiled.
+- [x] **Research UI** — `ui/researchPanel.ts`; queues and cancels through
+      `issueCommand`, so research lands in the replay stream.
+- [x] **Soften the fog overlay** (B-004) — one terrain-following sheet sampling an
+      R8 coverage texture with linear filtering and a two-band smoothstep.
+      Cheaper as well: one draw call instead of ~2,300 instanced quads.
 - [x] **Teach the AI to research** — picks the cheapest reachable upgrade above
       a reserve. Cohort's track is forgiving, so cost order is a genuinely
       reasonable strategy rather than a placeholder.
@@ -40,22 +42,25 @@ roster breadth: 3 of 7 ground units exist.
 > ✅ **Sequencing checkpoint complete:** the war-table camera foundation now exists.
 > Remaining art work should be authored and evaluated against its miniature-to-cosmological zoom range.
 
-- [ ] **Art pass — painterly shading model.** `palette.ts`, `quality.ts`,
-      `painterly.ts` and `renderer.ts` are written. Remaining: apply the
-      painterly material to terrain, units, buildings, scenery and nodes; add a
-      quality selector to the HUD; verify against the 100-unit perf target.
+- [x] **Art pass — painterly shading model.** Terrain, units, buildings, scenery
+      and nodes all draw shared painterly materials from `render/materials.ts`;
+      the quality selector is in the HUD and persists.
+- [ ] **Verify the 100-unit perf target** (D-006, B-002) — the last open piece of
+      the art pass, and the only one that needs real hardware. `/spawn worker 100`
+      in the dev console plus the existing `dev/performanceMonitor.ts` makes this
+      a manual check now rather than a harness to build.
 
 ## Next up
 
 - [x] **Core direct RTS orders.** Attack-move, patrol, stop, and hold-position are now plain deterministic commands, recorded in replay format v4, exposed through A/P/S/H and selection-card controls, and hashed as simulation state. Remaining polish: command cursors, audio, target-following attack orders, and browser feel validation.
 
-- [ ] **In-game dev console.** Backtick to open. Commands operate through
-      `sim/commands.ts` so they stay replay-safe. Minimum set:
-      `/add <n> <resource>`, `/pause`, `/speed <x>`, `/spawn <type> <n> [team]`,
-      `/kill`, `/reveal`, `/tick`, `/help`.
-      Must be gated behind a creative/dev-mode flag so it cannot run in a
-      competitive match. **Log every console command into the replay stream** —
-      a replay that silently omits them will desync.
+- [x] **In-game dev console.** Backtick opens it. `ui/devConsole.ts` +
+      `sim/dev.ts`. Cheats (`/dev`, `/add`, `/spawn`, `/kill`) are real commands
+      recorded into the replay stream; host controls (`/pause`, `/speed`,
+      `/tick`, `/reveal`) are presentation and deliberately *not* recorded.
+      Gated on `world.devMode`, which is hashed sim state — so a dev session
+      replays correctly *and* a clean competitive result is provable.
+      `REPLAY_VERSION` 7.
 
 - [x] **Basic CPU opponent.** See `DECISIONS.md` D-009. Grow it alongside
       features rather than writing it late. First version: build workers,

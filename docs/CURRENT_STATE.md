@@ -6,76 +6,130 @@
 
 ## 🔑 SESSION HANDOFF — read before starting work
 
-Everything below existed only in a chat that has ended. It is written down
-because it would otherwise be lost.
+**v1.24.0 · 382 tests · 70 modules documented · `npm run verify` green · nothing unpushed.**
+
+### What this session did
+
+1. **Phase 1 is functionally complete.** The dev console — the last unchecked
+   Phase 1 roadmap item — landed, plus the fog softening (B-004). The only
+   Phase 1 item still genuinely open is **verifying the 100-unit perf target**
+   (B-002), which needs real hardware and cannot be done in a container.
+2. **All four `§ 11.1` design blockers are answered by the designer and locked:**
+   D-031 (two gathered resources: common **Material**, rare **Legacy**; Dominion
+   and Relics deferred), D-032 (stealth is **terrain concealment**, no cloaking),
+   D-033 (map geometry is a **generation** problem, not a new system), D-034 (one
+   supply pool for **every** unit, air included). D-035 records the arcade design
+   target — *Halo*/*Quake*, not *Battlefield*.
+3. **The engine-first rule became executable.** See below; this is the most
+   important thing in this entry.
+
+### The lesson worth carrying forward
+
+D-029 (engine-first) was written in `START_HERE.md`, `CLAUDE.md` and
+`DECISIONS.md`, and **was still broken during this session** — a proposed
+two-resource schema that implied two named fields on `World`, which would have
+welded Greenmantle's economy into the engine while passing the entire gate.
+
+The fix was not more prose. `tests/architecture.test.ts` now fails the build if
+`src/sim/` names any unit, race, resource or technology, in code *or* in a
+user-facing string, with an explicit debt list (`ai.ts`, `map.ts`) that may only
+shrink. **It found four pre-existing leaks on its first run** — `'not enough
+Legacy'` had been sitting in `sim/tech.ts` since the research work.
+
+So: **when you notice a rule is only prose, encode it as a test that day.**
+Doctrine that cannot fail a build is a suggestion, and it decays silently.
 
 ### Where things are
 
-- `main` and `claude/project-plan-review-34kyva` are **identical** and current.
-  Either is safe to start from.
-- **340 tests · 68 modules documented · `npm run verify` green.**
-- Working tree clean, nothing unpushed.
+- Work branch: `claude/greenmantle-project-setup-hq8rg0`, pushed. `main` was
+  identical to the previous session's branch at the start of this one.
+- `origin` **must** be `Wizard1999/Greenmantle` — verified correct this session.
+  Containers are recreated between sessions and re-clone from the *original*
+  repo, silently resetting it. A push to the wrong remote **reports success**.
 
 ### Known environment hazards
 
-1. **The git remote resets.** Containers are recreated between sessions and
-   re-clone from the *original* repo (`Wizard1999/RTS`), silently resetting
-   `origin`. This happened **three times** in one session and sent commits to
-   the wrong repository. A push to the wrong remote **reports success**.
-   Always `git remote -v` before trusting a push. Fix in `START_HERE.md § 0`.
-2. **Tag pushes are blocked.** `git push origin <tag>` fails with a proxy
-   disconnect/403 — a different permission from repository contents, which
-   works fine. `v1.12.0` exists locally and could not be published. Not worth
-   chasing: the authoritative version lives in `package.json` and `VERSION`.
-   If tags matter later, create the release through the GitHub web UI.
+1. **The git remote resets** (above). Always `git remote -v` before trusting a push.
+2. **Tag pushes are blocked** — proxy 403, a different permission from repository
+   contents. The authoritative version lives in `package.json` and `VERSION`.
+   Cut releases through the GitHub web UI if tags start mattering.
 3. **Pushes to `main` intermittently reject** as non-fast-forward even when a
-   clean fast-forward is available. Retrying later has worked every time. Do
-   not force-push in response to this.
-
-### Decisions taken without designer review
-
-- **D-026 "World Turtle"** — the far-zoom world silhouette — arrived in an
-  external import, not from the designer, and is recorded as a *locked*
-  presentation direction. It is a real scope addition. **Worth confirming it is
-  wanted** before more art is built on it.
+   clean fast-forward exists. Retrying has worked every time. Never force-push
+   in response.
+4. **`AskUserQuestion` answers can be lost in transit.** It happened this
+   session: the designer answered all four blockers and the response arrived
+   empty. If answers vanish, ask for them in plain chat rather than re-issuing
+   the prompt, and record decisions as `⏳ proposed` until confirmed — that habit
+   is what made the wrong guess cost a rewrite instead of a codebase.
 
 ### Immediate next work, in priority order
 
-1. **Research UI.** The tech system (D-028) is complete, hashed and replayed —
-   and no player can reach it. A whole system is invisible. This is the single
-   biggest gap between "Phase 1 complete" and "an alpha that makes sense".
-2. **Dev console.** Last unchecked Phase 1 roadmap item; already specced in
-   `TODO.md`. Must route through `sim/commands.ts` and be recorded into the
-   replay stream, or replays of dev sessions desync.
-3. **Soften the fog** (B-004). Colour was fixed (it was pure black, violating
-   D-005); the hard tiling is structural and remains.
-4. **Outrider unit.** Highest-value roster addition: flanking mechanics already
-   exist in combat and nothing currently exploits them.
-
-### Which model to use
-
-Not everything here needs the strongest model. From experience across this
-project:
-
-- **Needs the strong model:** anything touching `src/sim/` (determinism is
-  subtle and fails silently), the replay/hash format, the mission→squad
-  behaviour design, the race-roster abstraction, and vetting external imports.
-- **Fine for a cheaper model:** new units and views following existing
-  patterns, CSS and landing-page work, documentation prose, tests for systems
-  that already have an established test shape, `.bat` launchers.
+1. **Two-resource migration (D-031).** The largest queued change. Implement as a
+   **resource registry in `src/data/` plus a bag keyed by resource id** — *not*
+   two fields on `World`, which is the mistake described above. Touches sim state
+   shape, every cost in `src/data/`, HUD, AI reasoning, `SAVE_VERSION` and the
+   state hash, and **must land atomically**: a half-migrated economy passes tests
+   while being incoherent. Guard rail from D-031: no per-worker allocation UI,
+   ever — the player's decision is *which nodes to hold*.
+   Iterate resources in the **declared order from `src/data/`**, never
+   `Object.keys()`, or insertion order reaches results.
+2. **Outrider** (flanker). Highest-value roster addition: flanking already exists
+   in combat and nothing exploits it. 3 of 7 Cohort ground units built.
+3. **Chronicler** — now unblocked by D-032. It needs a detection radius, not a
+   cloak system.
+4. **Terrain concealment (D-032)** as a declared terrain trait plus per-unit
+   detection radius, read generically. Note `ui/fogOfWar.ts` currently hardcodes
+   vision radii per unit type — those are balance numbers and belong in
+   `src/data/` before concealment is built on top of them.
+5. **Generator complication (D-033 + D-035).** Ramps, chokepoints and alternate
+   routes must arise from the generator, authored toward the arcade target.
 
 ### Still pending on the designer
 
-- **Rename the GitHub repository** to match the Greenmantle codename. Until
-  then `origin` must stay `Wizard1999/Greenmantle` (D-030 explains why an agent
-  must not "correct" this).
-- Four design blockers remain unanswered in `GAME_DESIGN.md § 11.1` — resource
-  naming, stealth/detection, map geometry, air-vs-supply. Each blocks specific
-  work listed in `TODO.md`.
+- **Rename the GitHub repository** to match the Greenmantle codename. Until then
+  `origin` stays `Wizard1999/Greenmantle` (D-030 explains why an agent must not
+  "correct" this).
+- **D-026 "World Turtle"** arrived in an external import rather than from the
+  designer and is recorded as locked. It is a real scope addition and is still
+  worth an explicit confirmation.
+
+### Which model to use
+
+- **Needs the strong model:** anything touching `src/sim/` (determinism fails
+  silently), the resource-registry migration, the replay/hash format, the
+  mission→squad behaviour design, and vetting external imports.
+- **Fine for a cheaper model:** new units and views following existing patterns,
+  CSS and landing-page work, documentation prose, tests for systems with an
+  established shape, `.bat` launchers.
 
 ---
 
-## ⚡ Latest — renamed to Greenmantle; painterly pass on units and buildings
+## ⚡ Latest — dev console, softened fog, design blockers closed (v1.24.0)
+
+**382 tests · full gate green.**
+
+- **Dev console** (`ui/devConsole.ts` + `sim/dev.ts`). Backtick to open. The
+  design question was which commands are simulation state: cheats (`/dev`,
+  `/add`, `/spawn`, `/kill`) are recorded commands, host controls (`/pause`,
+  `/speed`, `/tick`, `/reveal`) are not, because the sim has no concept of
+  "paused" and recording no-ops would imply it does. `world.devMode` is hashed
+  sim state so dev sessions replay *and* clean results are provable.
+  `REPLAY_VERSION` 7.
+- **Fog softened (B-004).** One terrain-following sheet sampling an R8 coverage
+  texture with linear filtering, replacing ~2,300 instanced quads with one draw
+  call. Outside the polygon is written *clear* so the rim fades rather than cuts.
+- **Four design blockers locked** (D-031…D-034) plus **D-035** (arcade
+  legibility over realism).
+- **Engine-first is now enforced by a test**, not just documented — it caught
+  four pre-existing leaks immediately.
+- **B-001 closed as stale**: scenery and nodes had already been on painterly
+  materials for some time. A bug list nobody re-checks misleads exactly like a
+  stale module map.
+
+**Phase 1 functionally complete.** Only the 100-unit perf verification (B-002)
+remains, and it needs real hardware.
+
+## ⚡ Previous — renamed to Greenmantle; painterly pass on units and buildings
 
 **340 tests · 68 modules documented · full gate green.**
 
