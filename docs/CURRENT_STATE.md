@@ -4,6 +4,77 @@
 > the newest entry is immediately below, older history is archived further
 > down under "Historical log".
 
+## 🔑 SESSION HANDOFF — read before starting work
+
+Everything below existed only in a chat that has ended. It is written down
+because it would otherwise be lost.
+
+### Where things are
+
+- `main` and `claude/project-plan-review-34kyva` are **identical** and current.
+  Either is safe to start from.
+- **340 tests · 68 modules documented · `npm run verify` green.**
+- Working tree clean, nothing unpushed.
+
+### Known environment hazards
+
+1. **The git remote resets.** Containers are recreated between sessions and
+   re-clone from the *original* repo (`Wizard1999/RTS`), silently resetting
+   `origin`. This happened **three times** in one session and sent commits to
+   the wrong repository. A push to the wrong remote **reports success**.
+   Always `git remote -v` before trusting a push. Fix in `START_HERE.md § 0`.
+2. **Tag pushes are blocked.** `git push origin <tag>` fails with a proxy
+   disconnect/403 — a different permission from repository contents, which
+   works fine. `v1.12.0` exists locally and could not be published. Not worth
+   chasing: the authoritative version lives in `package.json` and `VERSION`.
+   If tags matter later, create the release through the GitHub web UI.
+3. **Pushes to `main` intermittently reject** as non-fast-forward even when a
+   clean fast-forward is available. Retrying later has worked every time. Do
+   not force-push in response to this.
+
+### Decisions taken without designer review
+
+- **D-026 "World Turtle"** — the far-zoom world silhouette — arrived in an
+  external import, not from the designer, and is recorded as a *locked*
+  presentation direction. It is a real scope addition. **Worth confirming it is
+  wanted** before more art is built on it.
+
+### Immediate next work, in priority order
+
+1. **Research UI.** The tech system (D-028) is complete, hashed and replayed —
+   and no player can reach it. A whole system is invisible. This is the single
+   biggest gap between "Phase 1 complete" and "an alpha that makes sense".
+2. **Dev console.** Last unchecked Phase 1 roadmap item; already specced in
+   `TODO.md`. Must route through `sim/commands.ts` and be recorded into the
+   replay stream, or replays of dev sessions desync.
+3. **Soften the fog** (B-004). Colour was fixed (it was pure black, violating
+   D-005); the hard tiling is structural and remains.
+4. **Outrider unit.** Highest-value roster addition: flanking mechanics already
+   exist in combat and nothing currently exploits them.
+
+### Which model to use
+
+Not everything here needs the strongest model. From experience across this
+project:
+
+- **Needs the strong model:** anything touching `src/sim/` (determinism is
+  subtle and fails silently), the replay/hash format, the mission→squad
+  behaviour design, the race-roster abstraction, and vetting external imports.
+- **Fine for a cheaper model:** new units and views following existing
+  patterns, CSS and landing-page work, documentation prose, tests for systems
+  that already have an established test shape, `.bat` launchers.
+
+### Still pending on the designer
+
+- **Rename the GitHub repository** to match the Greenmantle codename. Until
+  then `origin` must stay `Wizard1999/Longbarrow` (D-030 explains why an agent
+  must not "correct" this).
+- Four design blockers remain unanswered in `GAME_DESIGN.md § 11.1` — resource
+  naming, stealth/detection, map geometry, air-vs-supply. Each blocks specific
+  work listed in `TODO.md`.
+
+---
+
 ## ⚡ Latest — renamed to Greenmantle; painterly pass on units and buildings
 
 **340 tests · 68 modules documented · full gate green.**
