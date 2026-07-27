@@ -34,6 +34,35 @@ Runs in the browser. No engine, no framework — TypeScript, Three.js and Vite.
 
 See the full [original concept-art gallery](docs/CONCEPT_ART.md).
 
+## Downloading a versioned copy
+
+Use the **Releases** page, or any tag. A download taken from tag `v1.12.0`
+extracts to `Longbarrow-1.12.0/`.
+
+A download taken from a *branch* extracts to `Longbarrow-main/` instead —
+GitHub names archives after the ref and a repository cannot override that. Those
+downloads still carry their version internally: the `VERSION` file at the root
+is stamped with the exact commit and date when the archive is built.
+
+To check what you have:
+
+```bash
+cat VERSION                      # in an extracted archive
+git describe --tags --always     # in a git checkout
+```
+
+Cutting a release:
+
+```bash
+# bump "version" in package.json first
+npm run release:tag
+git push origin v<version>
+```
+
+The tag is generated from `package.json`, so the tag, the in-game build
+identifier and the package version cannot drift apart. It refuses to run on a
+dirty tree, and refuses to move an existing tag.
+
 ## Quick start
 
 ```bash
