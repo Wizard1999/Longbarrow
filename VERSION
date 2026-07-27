@@ -1,0 +1,17 @@
+Longbarrow
+ref:      $Format:%(describe:tags)$
+commit:   $Format:%H$
+short:    $Format:%h$
+date:     $Format:%cI$
+
+This file is stamped automatically when the project is downloaded from GitHub
+as a ZIP or tarball. If the lines above still read "$Format:...$", you are in a
+git working checkout rather than an extracted archive — ask git instead:
+
+    git describe --tags --always
+
+The extracted FOLDER carries the version only when you download from a tag or
+release (Longbarrow-1.12.0/). A download from a branch is named after the
+branch (Longbarrow-main/), because that is how GitHub names archives and it is
+not something the repository can override. Use the Releases page, or the tag
+you want, to get a version-stamped folder.

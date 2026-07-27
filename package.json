@@ -1,7 +1,7 @@
 {
   "name": "longbarrow",
   "private": true,
-  "version": "1.1.0",
+  "version": "1.12.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,7 +17,9 @@
     "sync:site": "node scripts/sync-site-progress.mjs",
     "predev": "npm run sync:site && npm run build:info",
     "prebuild": "npm run sync:site && npm run build:info",
-    "build:info": "node scripts/generate-build-info.mjs"
+    "build:info": "node scripts/generate-build-info.mjs",
+    "release:tag": "node scripts/tag-release.mjs",
+    "archive:check": "git archive --format=tar --prefix=Longbarrow-$npm_package_version/ HEAD | tar tf - | head"
   },
   "dependencies": {
     "three": "^0.185.1"

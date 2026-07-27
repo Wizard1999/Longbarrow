@@ -1,0 +1,5 @@
+# Substituted by `git archive`, which is what GitHub runs to build the ZIP and
+# tarball downloads. In a normal working checkout these placeholders stay
+# literal — that is expected, and scripts/generate-build-info.mjs treats an
+# unsubstituted file as "not an archive" and falls back to asking git directly.
+VERSION export-subst
