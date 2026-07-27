@@ -186,7 +186,7 @@ export function rallyFor(b: Building, unitType: UnitTypeKey): RallyPoint {
   return b.rallyByType[unitType] ?? b.rally;
 }
 
-/** Placing does not build. It commits the essence and creates a site; a worker
+/** Placing does not build. It commits the resource cost and creates a site; a worker
  *  still has to walk there. Any workers passed in are assigned immediately. */
 export function cmdPlaceBuilding(
   world: World, team: Team, typeKey: BuildingTypeKey, x: number, z: number,

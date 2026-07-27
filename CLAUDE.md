@@ -67,8 +67,32 @@ concise rationale, decisions, evidence, and verification rather than private
 chain-of-thought. Treat claims about model internals as unverified unless reliable
 evidence is present.
 
-See also `docs/ENGINE_VISION.md` — the open RTS engine and creator-platform
-direction, which is why `src/sim/` must stay race-agnostic (D-029).
+## The mission, because it changes what "correct" means
+
+**This is a game engine first. We are building the engine by building the game.**
+See `docs/ENGINE_VISION.md`. Greenmantle is the first game on it, not the point
+of it.
+
+The practical consequence, and the one that gets missed: **`src/sim/` is an RTS
+engine that happens to be running Greenmantle.** It must not know the name of
+anything a future game author could replace — not units, not races, not
+resources, not the stealth model, not the character of the terrain. Every one of
+those is content declared in `src/data/` and read generically.
+
+The test to apply before touching `src/sim/`, especially before adding a field to
+`World` or a string literal anywhere in it:
+
+> *Could someone building a completely different RTS on this engine want this to
+> be different? If yes, it is data, not code.*
+
+Worked example, from a real mistake: "the game has two resources, Material and
+Legacy" (D-031) is **content**. Implementing it as two fields on `World` would
+have been **architecture** — and would have silently welded Greenmantle's economy
+into the engine while passing every existing test. The right shape is a resource
+registry in `src/data/` and a bag keyed by resource id, so a game author can ship
+one resource or five without opening `src/sim/`. Same pattern for stealth: this
+game declares terrain concealment (D-032), and the engine must still make a
+StarCraft-style cloak reachable as content rather than as a fork.
 
 ## Important Rules
 
@@ -79,6 +103,9 @@ direction, which is why `src/sim/` must stay race-agnostic (D-029).
 - Use wall-clock time in the sim — durations are **ticks**, never seconds
 - Use `Math.random()` in the sim — use the seeded RNG in `src/core/rng.ts`
 - Iterate a `Map`/`Set` in a way that lets insertion order change results
+- Name game content inside `src/sim/` — no unit, race, resource or tech name, in
+  code *or* in a user-facing string. Enforced by `tests/architecture.test.ts`
+  ("engine-first content boundary")
 
 **Always:**
 - Express durations in ticks (`TICK_HZ` is 30 — see `docs/DECISIONS.md` D-004)
@@ -92,6 +119,10 @@ direction, which is why `src/sim/` must stay race-agnostic (D-029).
   than none, because it gets trusted.
 - Declare race mechanics as **traits in `src/data/`**, never as a unit-name
   check inside `src/sim/` (D-029)
+- **Encode a rule as a test the moment you notice it is only prose.** D-029 was
+  written in three documents and still got broken, because nothing executed it.
+  The test added for it found a pre-existing violation on its first run. Doctrine
+  that cannot fail the build is a suggestion.
 
 ## Current Focus
 

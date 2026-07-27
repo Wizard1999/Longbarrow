@@ -127,25 +127,38 @@ hashed and recorded in replays. What remains is the generator and the UI.
 - [ ] **Show the map seed in-match and in replays** so a good map can be noted
       and shared.
 
-## Design blockers
+## Design blockers — all resolved 2026-07-27
 
-These need a designer decision before the dependent work can start.
+The four `GAME_DESIGN.md § 11.1` blockers were answered by the designer and are
+locked as **D-031** (two resources: common Material + rare Legacy), **D-032**
+(stealth is terrain concealment), **D-033** (map geometry is generation, not a
+new system) and **D-034** (one supply pool for every unit, air included), plus
+**D-035** (arcade legibility over realism) which came out of the same pass.
 
-> **All four have a proposed answer with reasoning in `DECISIONS.md` D-031…D-034,
-> marked ⏳ proposed.** The designer answered them once and the response was lost
-> in transit; the proposals are the recommendation, not the ruling. Confirm or
-> overturn each, then flip its status to locked and tick the box here.
+Work these unblocked, in dependency order:
 
-- [ ] **Resource names and count.** One universal gatherable or several?
-      "Essence" and "Dominion" appear in the UI blueprint but were never
-      formally adopted. Blocks the resources HUD panel.
-      (`GAME_DESIGN.md § 11.1`)
-- [ ] **Stealth / detection.** Two unit designs already assume this system
-      exists; it is defined nowhere. (`GAME_DESIGN.md § 11.1`)
-- [ ] **Map geometry** — are tunnels/ramps/hidden routes a distinct system or
-      redundant with existing terrain rules? (`GAME_DESIGN.md § 11.1`)
-- [ ] **Air units vs. supply/automation pool** — shared or separate?
-      (`GAME_DESIGN.md § 11.1`)
+- [ ] **Two-resource migration (D-031).** Replace the single `essence` with
+      **Material** (common) and **Legacy** (rare). Touches sim fields, every cost
+      in `src/data/`, HUD, AI economic reasoning, `SAVE_VERSION` and the state
+      hash. **Must land atomically** — a half-migrated economy passes tests while
+      being incoherent. Guard rail: no per-worker allocation UI, ever; workers
+      self-rebalance and the player's decision is which nodes to hold.
+- [ ] **Material's colour.** Must avoid violet (Legacy, D-025), teal (Conclave)
+      and green (Mycora), and stay distinct from Titanfolk's stone. Warm ochre
+      leads.
+- [ ] **Terrain concealment (D-032).** A concealing terrain trait plus a
+      detection radius per unit, read generically by the engine — never a
+      unit-name check. Unblocks the **Chronicler**.
+- [ ] **Generator complication (D-033 + D-035).** The procedural generator must
+      innately produce ramps, chokepoints, alternate and hidden routes, authored
+      toward an arcade *Halo*/*Quake* feel: readable, exploratory, deliberately
+      not realistic. Folds into the procedural map work above rather than being
+      its own system.
+- [ ] **Domain/territory system (deferred by D-031).** Dominion returns as
+      territory mechanics later, not as a currency. This is where control range
+      finally gets a job (`OPEN_QUESTIONS.md` A7).
+- [ ] **Relics — blocked on PvP** (D-031). Rare swing opportunities are a
+      competitive-integrity question first.
 
 ## Day/night follow-ups (D-013)
 

@@ -85,7 +85,7 @@ export function stepAi(world: World, ai: AiState): void {
   //
   //    Command gates population, control range and automation together (§8.1),
   //    so an AI that never builds simply stops: its starting Standard provides
-  //    just enough Command for its starting army, and it then banks essence
+  //    just enough Command for its starting army, and it then banks resources
   //    forever with a full supply bar. Outposts are the only way out.
   const capped = supplyFree(world, ai.team) <= AI.expandAtSupplyFree;
   const roomToGrow = supplyCap(world, ai.team) < SUPPLY_MAX;

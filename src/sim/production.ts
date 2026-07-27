@@ -15,7 +15,7 @@ export function canTrain(world: World, buildingId: EntityId, unitType: UnitTypeK
   if (!bt.produces.includes(unitType)) return { ok: false, reason: 'cannot build that here' };
   if (b.queue.length >= MAX_QUEUE) return { ok: false, reason: 'queue full' };
   const ut = UNIT_TYPES[unitType];
-  if (world.resources[b.team] < ut.cost) return { ok: false, reason: 'not enough essence' };
+  if (world.resources[b.team] < ut.cost) return { ok: false, reason: 'insufficient resources' };
   if (supplyFree(world, b.team) < ut.supply) return { ok: false, reason: 'not enough Command' };
   return { ok: true };
 }

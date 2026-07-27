@@ -48,7 +48,7 @@ export function canResearch(world: World, team: Team, id: TechId): CommandResult
       return { ok: false, reason: `requires ${TECH[req].label}` };
     }
   }
-  if (world.resources[team] < def.cost) return { ok: false, reason: 'not enough Legacy' };
+  if (world.resources[team] < def.cost) return { ok: false, reason: 'insufficient resources' };
   return { ok: true };
 }
 
