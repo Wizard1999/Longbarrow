@@ -78,6 +78,23 @@ art work, so units/buildings/scenery are styled once against the real camera.
 - [ ] Re-examine the D-005 art omissions: close-range detail was dropped on the
       assumption of a far top-down camera, which no longer holds
 
+## Procedural maps & map browser (D-017)
+
+Seed plumbing is done: `mapSeed` is separate from the match seed, versioned,
+hashed and recorded in replays. What remains is the generator and the UI.
+
+- [ ] **Procedural map generation.** Terrain is currently a fixed formula and
+      the layout is hand-placed, so seeds vary only scenery today. Needs:
+      seeded heightfield, resource placement, spawn placement — all preserving
+      the rotational symmetry `tests/world.test.ts` already enforces.
+- [ ] **Bump `MAP_VERSION`** with each generator change. This is what stops old
+      replays silently playing on new terrain.
+- [ ] **Map browser on the main screen** — generate seeds without playing,
+      preview them, page through, favourite them, enter a seed by hand.
+      Safe to build because previewing costs the match generator nothing.
+- [ ] **Show the map seed in-match and in replays** so a good map can be noted
+      and shared.
+
 ## Design blockers
 
 These need a designer decision before the dependent work can start.

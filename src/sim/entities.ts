@@ -66,13 +66,24 @@ export function spawnSquad(
   return out;
 }
 
-export function generateScenery(world: World, count: number): void {
+/**
+ * Scenery is part of the *map*, so it draws from a map-seeded generator passed
+ * in — never from `world.rngState`, the match generator.
+ *
+ * If it drew from the match generator, generating a map would advance match
+ * randomness, and two matches on the same map would diverge purely because one
+ * of them previewed the map first. It would also make a map browser impossible:
+ * previewing a seed would corrupt the match you then played on it.
+ */
+export function generateScenery(
+  world: World, count: number, rng: { rngState: number },
+): void {
   for (let i = 0; i < count; i++) {
-    const x = (rngNext(world) - 0.5) * 64;
-    const z = (rngNext(world) - 0.5) * 64;
-    const kind = rngNext(world) < 0.5 ? 'rock' : 'tree';
-    const scale = 0.6 + rngNext(world) * 0.6;
-    const spin = rngNext(world) * Math.PI * 2;
+    const x = (rngNext(rng) - 0.5) * 64;
+    const z = (rngNext(rng) - 0.5) * 64;
+    const kind = rngNext(rng) < 0.5 ? 'rock' : 'tree';
+    const scale = 0.6 + rngNext(rng) * 0.6;
+    const spin = rngNext(rng) * Math.PI * 2;
     // keep clear of both bases and both resource clusters
     const nearBuilding = world.buildings.some(b => Math.hypot(x - b.x, z - b.z) < 7);
     const nearNode = world.nodes.some(n => Math.hypot(x - n.x, z - n.z) < 5);

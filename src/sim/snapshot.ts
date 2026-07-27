@@ -84,6 +84,8 @@ export function hash(world: World): string {
   mix(world.dayStartTick);
   mix(world.nextId);
   mix(world.rngState);
+  mix(world.mapSeed);
+  mix(world.mapVersion);
   mixF(world.resources.player);
   mixF(world.resources.rival);
 

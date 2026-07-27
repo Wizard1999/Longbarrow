@@ -421,3 +421,59 @@ step — do not start with netcode, start by measuring snapshot cost at 100+ uni
 back into `World`. A closure, a `Map`, or an object reference between entities
 would break replays and validation too, not just rollback — and it would be
 invisible until something desyncs. Keep the rule.
+
+---
+
+## D-017 — Map seed is separate from match seed
+**Date:** 2026-07-27
+
+**Decision:** `World.mapSeed` is distinct from the match seed. The same map seed
+always produces the same map, and map generation draws from its own generator —
+never from `world.rngState`. Maps also carry a `MAP_VERSION`.
+
+**Reason.** They look like one number and must not be. Three things break if
+they are shared:
+
+1. **A map browser becomes impossible.** Previewing a seed would advance the
+   match generator, so the match you then played would differ from the match
+   you would have played without previewing.
+2. **You cannot replay a match on a map you liked.** With one seed there is no
+   way to hold the map fixed and vary the match, or vice versa.
+3. **Matches on different maps diverge for unrelated reasons.** Generating a
+   larger map consumes more random draws, silently shifting every later combat
+   roll.
+
+**`MAP_VERSION` is the non-obvious half.** A seed alone does not reproduce a
+map — the generator must match too. Without a version, improving map generation
+would silently make every existing seed produce different terrain, and old
+replays would play out on ground that no longer matches what was recorded.
+Versioning converts that from a plausible wrong answer into an explicit
+rejection, exactly as tick rate already does.
+
+**Consequence:** `mapSeed` and `mapVersion` are in the hashed state and in the
+replay format (`REPLAY_VERSION` → 2). `generateScenery()` takes its RNG source
+as an argument rather than reaching for the world's.
+
+**Still to build:** actual procedural generation. Terrain is currently a fixed
+formula and the map layout is hand-placed, so seeds vary only scenery today.
+The seed *plumbing* is done and correct, which is the part that would have been
+expensive to retrofit; the generator can be written whenever.
+
+---
+
+## D-018 — Multiplayer path: deterministic lockstep with input delay
+**Date:** 2026-07-27
+
+**Decision:** When multiplayer arrives, build **deterministic lockstep with
+input delay**. Confirmed by the designer, superseding rollback (D-016).
+
+**Reason:** It is what most RTS ship, for the reason RTS keep choosing it —
+state is far too large to snapshot per frame at 100+ units. It also reuses what
+already exists: `sim/replay.ts` produces exactly the serializable per-tick
+command stream lockstep needs to exchange, and `hash()` gives per-tick desync
+detection for free.
+
+**Consequence:** input delay becomes a tuning number (typically 2–4 ticks; at
+30 Hz that is 66–133 ms). This raises the value of the immediate
+input-acknowledgement work already in `TODO.md` — under lockstep, local
+feedback on the frame of the click is what hides the delay.

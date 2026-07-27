@@ -3,7 +3,7 @@
 **Date:** 2026-07-27
 **Repository:** `Wizard1999/Longbarrow` (private) — migrated from `Wizard1999/RTS`
 **Branch:** `claude/project-plan-review-34kyva` · `main` is current
-**Tests:** 185 passing · typecheck clean · lint clean · build clean
+**Tests:** 197 passing · typecheck clean · lint clean · build clean
 
 ---
 
@@ -108,6 +108,24 @@ mismatched tick rate or version rather than playing them wrong.
 **Not yet wired into live play** — input and UI still call `cmd*` directly.
 Routing them through `Recorder.apply()` is the last step before real matches
 record, and it is mechanical.
+
+### Map seeds separated from match seeds
+`mapSeed` + `MAP_VERSION`, 12 tests.
+
+Map generation now draws from its own generator, never `world.rngState`. That
+separation is what makes a **map browser** possible at all — previewing a seed
+would otherwise advance the match generator, so the match you played after
+browsing would differ from the one you would have played without.
+
+`MAP_VERSION` is the non-obvious half: a seed alone does not reproduce a map,
+the generator has to match too. Without it, improving map generation would
+silently replay old matches on different terrain. Replay format bumped to v2
+and now carries both.
+
+**Not yet procedural** — terrain is still a fixed formula and the layout is
+hand-placed, so seeds currently vary only scenery. The plumbing is the part that
+would have been expensive to retrofit; the generator itself can be written
+whenever.
 
 ## Currently working on
 

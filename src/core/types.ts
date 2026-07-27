@@ -138,6 +138,13 @@ export interface World {
   /** Plain-number PRNG state, not a closure — snapshot/restore and hashing
    *  depend on every byte of sim state being reachable data (D-010). */
   rngState: number;
+  /** Seed for map generation, deliberately separate from the match seed. Same
+   *  mapSeed always yields the same map; browsing maps never touches the match
+   *  generator. */
+  mapSeed: number;
+  /** Generator version the map was built with — a seed alone cannot reproduce
+   *  a map if the generator has changed underneath it. */
+  mapVersion: number;
   tick: number;
   /** Tick offset into the day/night cycle at match start, so a game can
    *  begin at any hour and still replay identically. */

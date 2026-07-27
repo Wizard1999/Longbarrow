@@ -1,6 +1,7 @@
 import type { World } from '../core/types';
 import { rngSeed } from '../core/rng';
 import { startTickForHour } from './daynight';
+import { MAP_VERSION } from './map';
 import { stepProduction } from './production';
 import { stepBuild, stepConstruction } from './construction';
 import { stepGather } from './economy';
@@ -8,10 +9,12 @@ import { stepMovement } from './movement';
 import { stepSquads } from './squads';
 import { stepSettle } from './combat';
 
-export function createWorld(seed: number, startHour = 8): World {
+export function createWorld(seed: number, startHour = 8, mapSeed = seed): World {
   return {
     seed,
     rngState: rngSeed(seed),
+    mapSeed: rngSeed(mapSeed),
+    mapVersion: MAP_VERSION,
     tick: 0,
     dayStartTick: startTickForHour(startHour),
     nextId: 1,

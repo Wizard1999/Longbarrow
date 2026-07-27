@@ -3,7 +3,7 @@ import type {
 } from '../core/types';
 import { TICK_HZ } from '../core/loop';
 import { createWorld, simStep } from './world';
-import { buildTestMap } from './map';
+import { MAP_VERSION, buildTestMap } from './map';
 import {
   cmdAddChainStep, cmdAssignBuilders, cmdCancelSite, cmdCancelTrain, cmdClearChain,
   cmdDisbandSquad, cmdFormSquad, cmdGather, cmdMove, cmdPlaceBuilding,
@@ -23,7 +23,7 @@ import {
  */
 
 /** Bump when the meaning of a command or of a sim rule changes. */
-export const REPLAY_VERSION = 1;
+export const REPLAY_VERSION = 2;
 
 /**
  * Every player action, as plain serializable data.
@@ -67,6 +67,13 @@ export interface Replay {
   /** Recorded because tick rate is baked into every duration constant. A replay
    *  from a different tick rate must be rejected, not played. */
   tickRate: number;
+  /** The map, recorded separately from the match seed so a replay pins the
+   *  terrain it was actually played on. */
+  mapSeed: number;
+  /** The generator that built that map. A seed alone cannot reproduce a map if
+   *  the generator changed underneath it — without this, altering map
+   *  generation would silently replay old matches on different terrain. */
+  mapVersion: number;
   commands: TimedCommand[];
 }
 
@@ -114,6 +121,7 @@ export class Recorder {
   constructor(
     private readonly seed: number,
     private readonly startHour: number,
+    private readonly mapSeed: number = seed,
   ) {}
 
   /** Record and apply in one step, so the two can never drift apart. */
@@ -132,6 +140,8 @@ export class Recorder {
       seed: this.seed,
       startHour: this.startHour,
       tickRate: TICK_HZ,
+      mapSeed: this.mapSeed,
+      mapVersion: MAP_VERSION,
       commands: [...this.log],
     };
   }
@@ -156,6 +166,12 @@ export function checkReplay(r: Replay): ReplayCheck {
   if (r.tickRate !== TICK_HZ) {
     return { ok: false, reason: `replay recorded at ${r.tickRate}Hz, this build runs at ${TICK_HZ}Hz` };
   }
+  if (r.mapVersion !== MAP_VERSION) {
+    return {
+      ok: false,
+      reason: `replay built on map generator v${r.mapVersion}, this build has v${MAP_VERSION}`,
+    };
+  }
   return { ok: true };
 }
 
@@ -170,7 +186,7 @@ export function playback(r: Replay, untilTick: number): World {
   const check = checkReplay(r);
   if (!check.ok) throw new Error(`cannot play replay: ${check.reason}`);
 
-  const world = buildTestMap(createWorld(r.seed, r.startHour));
+  const world = buildTestMap(createWorld(r.seed, r.startHour, r.mapSeed));
 
   // Bucket by tick so playback is O(commands) rather than O(ticks x commands).
   const byTick = new Map<number, Command[]>();
