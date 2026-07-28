@@ -52,6 +52,13 @@ An optional guided introduction is available from the in-game **Tutorial** butto
 
 See the full [original concept-art gallery](docs/CONCEPT_ART.md).
 
+## What it actually looks like right now
+
+Concept art above; **real in-game captures** in
+[`docs/SCREENSHOTS.md`](docs/SCREENSHOTS.md), kept deliberately honest — the
+build does not look like the concept art yet, and that page says so and shows
+the distance.
+
 ## About the artwork
 
 **All imagery in this repository and on the development site is concept art —

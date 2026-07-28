@@ -29,6 +29,33 @@ roster breadth: 3 of 7 ground units exist.
       a reserve. Cohort's track is forgiving, so cost order is a genuinely
       reasonable strategy rather than a placeholder.
 
+## Visual overhaul — make it genuinely pretty (next major push)
+
+Designer direction, 2026-07-27: the game should be **much** better looking, soon,
+drawing on the CodePen references in `ART_REFERENCES.md`. The real in-game
+captures in `SCREENSHOTS.md` are the honest baseline — the painterly shading
+model is correct, but nearly everything else that makes a scene read well is
+missing. Ordered by visual return per unit of effort:
+
+- [ ] **Ground material variation.** Terrain is one flat green mass. Needs slope
+      and height driven blending (grass / dry earth / rock / moss) so elevation
+      is readable at a glance, which D-035 makes a *legibility* requirement and
+      not just decoration.
+- [ ] **Contact shadows / ambient occlusion where geometry meets ground.**
+      Nothing currently sits *in* the world; everything floats on it. Cheapest
+      single change with the largest payoff.
+- [ ] **Silhouette variety in units and buildings.** Units are still near-
+      cylinders. D-014's miniature zoom means they are inspected closely now.
+- [ ] **Depth in the void.** The black surround is currently featureless; the
+      table needs to feel suspended in something (D-026 World Turtle staging).
+- [ ] **Review the two CodePen references** in `ART_REFERENCES.md` for
+      transferable technique, and measure the cost of each before adopting —
+      D-006's 2017-integrated-GPU target is the constraint that killed the
+      reference's technique stack last time. Take the light model, not the
+      technique stack.
+- [ ] **Re-shoot `SCREENSHOTS.md` on real hardware at High** so the gallery
+      stops under-selling the shading that already exists.
+
 ## Engine-first cleanup (D-029)
 
 - [ ] **Race-roster abstraction** — `sim/ai.ts` still hardcodes
