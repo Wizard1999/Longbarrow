@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { freshMap, gatherOf, must, run, workersOf } from './helpers';
+import { banked, freshMap, gatherOf, must, run, stock, workersOf } from './helpers';
 import { simStep } from '../src/sim/world';
 import { cmdGather, cmdMove } from '../src/sim/commands';
 import { totalResourcesRemaining } from '../src/sim/economy';
-import { ECON } from '../src/data/tuning';
 import type { Unit } from '../src/core/types';
+import { RESOURCES } from '../src/data/resources';
 
 // [6] gather loop — one command, runs forever (set-and-forget, §8.2)
 describe('[6] gather loop', () => {
@@ -12,11 +12,11 @@ describe('[6] gather loop', () => {
   const ws = workersOf(w, 'player');
   const node = must(w.nodes.find(n => n.x < 0));
   const accepted = cmdGather(w, ws.map(u => u.id), node.id);
-  const startedAtZero = w.resources.player === 0;
+  const startedAtZero = stock(w, 'player') === 0;
   run(w, 200);                       // 10 seconds
-  const at10s = w.resources.player;
+  const at10s = banked(w, 'player');
   run(w, 1000);                      // 50 more seconds, still no input
-  const atMinute = w.resources.player;
+  const atMinute = banked(w, 'player');
 
   it('all four workers accepted the order', () => expect(accepted.length).toBe(4));
   it('resources start at zero', () => expect(startedAtZero).toBe(true));
@@ -38,9 +38,9 @@ describe('[7] conservation', () => {
   const carried = workersOf(w, 'player').reduce((s, u) => s + gatherOf(u).carrying, 0);
 
   it('banked + carried + remaining == starting total', () => {
-    expect(w.resources.player + carried + totalResourcesRemaining(w)).toBe(startOnMap);
+    expect(banked(w, 'player') + carried + totalResourcesRemaining(w)).toBe(startOnMap);
   });
-  it('rival gained nothing', () => expect(w.resources.rival).toBe(0));
+  it('rival gained nothing', () => expect(banked(w, 'rival')).toBe(0));
 });
 
 // [8] carry amounts are exact multiples (no rounding drift)
@@ -51,7 +51,7 @@ describe('[8] carry amounts are exact multiples', () => {
   run(w, 3000);
 
   it('banked essence is a whole multiple of carryAmount', () => {
-    expect(w.resources.player % ECON.carryAmount).toBe(0);
+    expect(stock(w, 'player') % RESOURCES.material.carryAmount).toBe(0);
   });
 });
 
@@ -59,7 +59,7 @@ describe('[8] carry amounts are exact multiples', () => {
 describe('[9] node depletion and automatic re-tasking', () => {
   const w = freshMap();
   const target = must(w.nodes.find(n => n.x < 0));
-  target.amount = ECON.carryAmount * 2;         // nearly dry
+  target.amount = RESOURCES.material.carryAmount * 2;         // nearly dry
   const u = must(workersOf(w, 'player')[0]);
   cmdGather(w, [u.id], target.id);
   run(w, 1200);
@@ -70,7 +70,7 @@ describe('[9] node depletion and automatic re-tasking', () => {
     expect(gatherOf(u).nodeId).not.toBe(target.id);
   });
   it('and is still banking essence', () => {
-    expect(w.resources.player).toBeGreaterThan(ECON.carryAmount * 2);
+    expect(banked(w, 'player')).toBeGreaterThan(RESOURCES.material.carryAmount * 2);
   });
 });
 
@@ -79,13 +79,13 @@ describe('[10] graceful stop when the map is exhausted', () => {
   const w = freshMap();
   for (const n of w.nodes) n.amount = 0;
   const first = must(w.nodes[0]);
-  first.amount = ECON.carryAmount;
+  first.amount = RESOURCES.material.carryAmount;
   const u = must(workersOf(w, 'player')[0]);
   cmdGather(w, [u.id], first.id);
   run(w, 2000);
 
   it('map fully exhausted', () => expect(totalResourcesRemaining(w)).toBe(0));
-  it('last load was still delivered', () => expect(w.resources.player).toBe(ECON.carryAmount));
+  it('last load was still delivered', () => expect(stock(w, 'player')).toBe(RESOURCES.material.carryAmount));
   it('worker went idle instead of spinning', () => expect(gatherOf(u).state).toBe('idle'));
   it('and dropped its target', () => expect(u.target).toBeNull());
 });

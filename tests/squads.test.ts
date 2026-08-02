@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { freshMap, gatherOf, must, run, workersOf } from './helpers';
+import { freshMap, fund, gatherOf, must, run, stock, workersOf } from './helpers';
 import {
   cmdAddChainStep, cmdClearChain, cmdFormSquad, cmdMove, cmdPlaceBuilding,
   cmdRemoveChainStep, cmdRunChain, cmdSetChainLoop, cmdStopChain,
@@ -141,7 +141,7 @@ describe('[27] Command gates simultaneous chains', () => {
 
   it('an outpost raises the cap and lets a second chain run', () => {
     const w2 = freshMap();
-    w2.resources.player = 10000;
+    fund(w2, 'player', 10000);
     const ws2 = workersOf(w2, 'player');
     const builder = must(ws2[0]);
     cmdPlaceBuilding(w2, 'player', 'outpost', -2, 6, [builder.id]);
@@ -195,7 +195,7 @@ describe('[29] a gather chain step puts workers to work', () => {
   run(w, 1200);
 
   it('essence is being banked with no further input', () => {
-    expect(w.resources.player).toBeGreaterThan(0);
+    expect(stock(w, 'player')).toBeGreaterThan(0);
   });
   it('workers are employed', () => {
     expect(ws.some(u => gatherOf(u).state !== 'idle')).toBe(true);

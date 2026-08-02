@@ -21,6 +21,8 @@
  * without hashing behaviour (D-010).
  */
 
+import type { ResourceCost } from './resources';
+
 export type TechId =
   | 'reinforcedPlate'
   | 'measuredVolley'
@@ -50,7 +52,13 @@ export interface TechEffect {
 export interface TechDef {
   id: TechId;
   label: string;
-  cost: number;
+  /**
+   * Research is paid in both currencies: Material for the labour, Legacy for
+   * the understanding. Legacy is the rare one and sits on contested ground, so
+   * the tech curve is bought with map control rather than only with time
+   * (D-031).
+   */
+  cost: ResourceCost;
   researchTicks: number;
   /** All of these must be researched first. Kept short — this is a track, not a web. */
   requires: readonly TechId[];
@@ -68,7 +76,7 @@ export const TECH: Record<TechId, TechDef> = {
   reinforcedPlate: {
     id: 'reinforcedPlate',
     label: 'Reinforced Plate',
-    cost: 120,
+    cost: { material: 90, legacy: 30 },
     researchTicks: 450,          // 15s at 30Hz
     requires: [],
     effects: [{ category: 'melee', defenseAdd: 0.06 }],
@@ -77,7 +85,7 @@ export const TECH: Record<TechId, TechDef> = {
   measuredVolley: {
     id: 'measuredVolley',
     label: 'Measured Volley',
-    cost: 120,
+    cost: { material: 90, legacy: 30 },
     researchTicks: 450,
     requires: [],
     effects: [{ category: 'ranged', damageMul: 1.15 }],
@@ -86,7 +94,7 @@ export const TECH: Record<TechId, TechDef> = {
   quarryDiscipline: {
     id: 'quarryDiscipline',
     label: 'Quarry Discipline',
-    cost: 100,
+    cost: { material: 75, legacy: 25 },
     researchTicks: 360,
     requires: [],
     effects: [{ category: 'worker', carryMul: 1.25 }],
@@ -97,7 +105,7 @@ export const TECH: Record<TechId, TechDef> = {
   deepSeams: {
     id: 'deepSeams',
     label: 'Deep Seams',
-    cost: 180,
+    cost: { material: 135, legacy: 45 },
     researchTicks: 540,
     requires: ['quarryDiscipline'],
     effects: [{ category: 'worker', carryMul: 1.25 }],
@@ -112,7 +120,7 @@ export const TECH: Record<TechId, TechDef> = {
   attritionDoctrine: {
     id: 'attritionDoctrine',
     label: 'Attrition Doctrine',
-    cost: 220,
+    cost: { material: 165, legacy: 55 },
     researchTicks: 600,
     requires: ['reinforcedPlate'],
     pairedWith: 'vanguardDoctrine',
@@ -122,7 +130,7 @@ export const TECH: Record<TechId, TechDef> = {
   vanguardDoctrine: {
     id: 'vanguardDoctrine',
     label: 'Vanguard Doctrine',
-    cost: 220,
+    cost: { material: 165, legacy: 55 },
     researchTicks: 600,
     requires: ['reinforcedPlate'],
     pairedWith: 'attritionDoctrine',
@@ -134,7 +142,7 @@ export const TECH: Record<TechId, TechDef> = {
   enduringFrames: {
     id: 'enduringFrames',
     label: 'Enduring Frames',
-    cost: 300,
+    cost: { material: 225, legacy: 75 },
     researchTicks: 750,
     requires: ['attritionDoctrine', 'vanguardDoctrine'],
     effects: [

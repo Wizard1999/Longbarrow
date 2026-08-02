@@ -3,6 +3,17 @@ import { TECH } from '../data/tech';
 import type { TechId } from '../data/tech';
 import { availableTech, canResearch, cmdCancelResearch, cmdResearch } from '../sim/tech';
 import { issueCommand } from '../replay/live';
+import { RESOURCES, RESOURCE_ORDER } from '../data/resources';
+import type { ResourceCost } from '../data/resources';
+import { canAfford } from '../sim/resources';
+
+/** "90 Material · 30 Legacy", built from the registry rather than hardcoded. */
+function costLabel(cost: ResourceCost): string {
+  return RESOURCE_ORDER
+    .filter(id => (cost[id] ?? 0) > 0)
+    .map(id => `${cost[id]} ${RESOURCES[id].label}`)
+    .join(' · ') || 'free';
+}
 
 /**
  * The research panel.
@@ -49,13 +60,13 @@ export function createResearchPanel(
   function cancel(): void {
     issueCommand({ t: 'cancelResearch', team: 'player' },
       () => cmdCancelResearch(world, 'player'));
-    flash('research cancelled — Legacy refunded');
+    flash('research cancelled — cost refunded');
   }
 
   function renderOptions(ids: TechId[]): void {
     body!.replaceChildren(...ids.map((id) => {
       const def = TECH[id];
-      const affordable = world.resources.player >= def.cost;
+      const affordable = canAfford(world.resources.player, def.cost);
 
       const row = document.createElement('button');
       row.className = 'tech-row';
@@ -68,7 +79,7 @@ export function createResearchPanel(
 
       const cost = document.createElement('span');
       cost.className = 'tech-cost';
-      cost.textContent = String(def.cost);
+      cost.textContent = costLabel(def.cost);
 
       row.append(name, cost);
 
@@ -127,7 +138,8 @@ export function createResearchPanel(
     progress!.hidden = true;
     const ids = availableTech(world, 'player');
     // Affordability is in the key so a row un-greys the moment it is payable.
-    const key = ids.map(id => `${id}:${world.resources.player >= TECH[id].cost}`).join('|');
+    const key = ids.map(id =>
+      `${id}:${canAfford(world.resources.player, TECH[id].cost)}`).join('|');
     if (key === renderedKey) return;
     renderedKey = key;
     renderOptions(ids);

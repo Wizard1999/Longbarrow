@@ -43,6 +43,16 @@ export const PALETTE = {
    */
   legacy: { shade: c(0x3b2a55), mid: c(0xb98ad9), lit: c(0xf0dcff) },
 
+  /**
+   * The common resource (D-031). Warm ochre: it has to be instantly separable
+   * from violet Legacy at a glance, and it may not borrow an element's colour —
+   * teal is Conclave, green is Mycora, violet is already Legacy. Ochre reads as
+   * quarried earth and sits close enough to the sunlight that it never competes
+   * with the rare resource for attention, which is the right hierarchy: Legacy
+   * is the one worth crossing the map for.
+   */
+  material: { shade: c(0x4a3418), mid: c(0xc79a4a), lit: c(0xf6dfa8) },
+
   teamPlayer: { shade: c(0x1e2f6b), mid: c(0x3b5bdb), lit: c(0x8fb2ff) },
   teamRival: { shade: c(0x5c1a1a), mid: c(0xb02e2e), lit: c(0xff8a7a) },
 } as const satisfies Record<string, HuePath>;

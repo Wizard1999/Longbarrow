@@ -12,6 +12,7 @@ import {
   automationSlots, createSquad, findSquad, runningSquads, stopSquadsContaining,
 } from './squads';
 import { clampPointToMapBoundary, mapBoundaryForSeed } from './mapBoundary';
+import { pay, refund } from './resources';
 
 // The ONLY way anything outside the sim mutates the sim.
 
@@ -103,7 +104,7 @@ export function cmdTrain(world: World, buildingId: EntityId, unitType: UnitTypeK
   if (!check.ok) return check;
   const b = world.buildings.find(x => x.id === buildingId);
   if (!b) return { ok: false, reason: 'no such building' };
-  world.resources[b.team] -= UNIT_TYPES[unitType].cost;
+  pay(world.resources[b.team], UNIT_TYPES[unitType].cost);
   b.queue.push({ type: unitType, ticksLeft: UNIT_TYPES[unitType].buildTicks });
   return { ok: true };
 }
@@ -113,7 +114,7 @@ export function cmdCancelTrain(world: World, buildingId: EntityId, index: number
   if (!b || index < 0 || index >= b.queue.length) return { ok: false, reason: 'nothing to cancel' };
   const [item] = b.queue.splice(index, 1);
   if (!item) return { ok: false, reason: 'nothing to cancel' };
-  world.resources[b.team] += UNIT_TYPES[item.type].cost;   // full refund
+  refund(world.resources[b.team], UNIT_TYPES[item.type].cost);   // full refund
   return { ok: true };
 }
 
@@ -194,7 +195,7 @@ export function cmdPlaceBuilding(
 ): CommandResult {
   const check = canPlaceBuilding(world, team, typeKey, x, z);
   if (!check.ok) return check;
-  world.resources[team] -= BUILDING_TYPES[typeKey].cost;
+  pay(world.resources[team], BUILDING_TYPES[typeKey].cost);
   const site = spawnSite(world, typeKey, team, x, z);
   if (builderIds.length) cmdAssignBuilders(world, builderIds, site.id);
   return { ok: true, siteId: site.id };
@@ -221,7 +222,7 @@ export function cmdCancelSite(world: World, siteId: EntityId): CommandResult {
   if (i < 0) return { ok: false, reason: 'no such site' };
   const [site] = world.sites.splice(i, 1);
   if (!site) return { ok: false, reason: 'no such site' };
-  world.resources[site.team] += BUILDING_TYPES[site.type].cost;   // full refund
+  refund(world.resources[site.team], BUILDING_TYPES[site.type].cost);   // full refund
   for (const u of world.units) {
     if (u.build && u.build.siteId === siteId) { u.build.siteId = null; u.target = null; }
   }

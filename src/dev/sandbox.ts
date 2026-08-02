@@ -13,6 +13,7 @@ import { parseReplay, serializeReplay, verifyReplay } from '../sim/replay';
 import { restore } from '../sim/snapshot';
 import { ReplayTimeline } from '../replay/timeline';
 import type { VisibilityController } from '../ui/visibility';
+import { RESOURCE_ORDER } from '../data/resources';
 
 export type SandboxMode = 'camera' | 'battle' | 'units' | 'economy' | 'performance';
 
@@ -91,7 +92,7 @@ function seedScenario(world: World, mode: SandboxMode): void {
     for (let i = 0; i < 4; i++) spawnUnit(world, 'worker', 'player', 8 + i * 1.5, 0);
   } else if (mode === 'economy') {
     for (let i = 0; i < 8; i++) spawnUnit(world, 'worker', 'player', -12 + i * 1.4, 8);
-    world.resources.player += 500;
+    for (const id of RESOURCE_ORDER) world.resources.player[id] += 500;
   } else if (mode === 'performance') {
     for (let row = 0; row < 5; row++) {
       spawnSquad(world, row % 2 ? 'marksman' : 'legionnaire', 'player', -24, -16 + row * 8, 20);

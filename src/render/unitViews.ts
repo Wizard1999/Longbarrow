@@ -4,11 +4,12 @@ import { UNIT_TYPES } from '../data/units';
 import { terrainHeightAt } from '../sim/terrain';
 import { shieldWallStacks } from '../sim/combat';
 import { COMBAT } from '../data/tuning';
-import { essenceMat } from './nodeViews';
+import { resourceMaterial } from './materials';
 import type { QualityTier } from './quality';
 import { lodDistance3D, lodForDistance, strategicMarkerScale } from './lod';
 import type { VisibilityController } from '../ui/visibility';
 import { boneMaterial, trimMaterial } from './materials';
+import { RESOURCE_ORDER } from '../data/resources';
 
 export const TEAM_COLORS: Record<Team, number> = { player: 0x3b5bdb, rival: 0xb02e2e };
 
@@ -70,10 +71,12 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
     detailRoot.add(shield);
   }
 
-  // carried essence — only workers, only visible while hauling
+  // The carried load — only workers, only visible while hauling. Its material
+  // is swapped to match what is actually in hand, so a glance at a worker
+  // says which resource it is running (D-031).
   let carry: THREE.Mesh | null = null;
   if (isWorker) {
-    carry = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), essenceMat);
+    carry = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), resourceMaterial(RESOURCE_ORDER[0]!));
     carry.position.y = bodyH + 0.85;
     carry.visible = false;
     detailRoot.add(carry);
@@ -171,7 +174,15 @@ export function syncUnitViews(
     v.userData.pickTarget = d.pickTarget;
     d.ring.visible = u.selected;
     d.squadRing.visible = squadMemberIds.has(u.id) && lod !== 'world';
-    if (d.carry) d.carry.visible = (u.gather?.carrying ?? 0) > 0;
+    if (d.carry) {
+      const hauling = (u.gather?.carrying ?? 0) > 0;
+      d.carry.visible = hauling;
+      // Materials are shared and cached per resource, so this assignment is a
+      // pointer swap rather than a shader compile (D-006's draw-call budget).
+      if (hauling && u.gather?.carryResource) {
+        d.carry.material = resourceMaterial(u.gather.carryResource);
+      }
+    }
     if (d.wall) {
       const frac = shieldWallStacks(world, u) / COMBAT.shieldWallMaxNeighbours;
       (d.wall.material as THREE.MeshBasicMaterial).opacity = frac * 0.85;

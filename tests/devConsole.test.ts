@@ -7,7 +7,7 @@ import {
   DEV_SPAWN_LIMIT, cmdDevGrantResources, cmdDevKill, cmdDevSpawn, cmdSetDevMode,
 } from '../src/sim/dev';
 import { Recorder, dispatch } from '../src/sim/replay';
-import { run } from './helpers';
+import { run, stock } from './helpers';
 import {
   applyDevRequest, parseDevCommand,
 } from '../src/ui/devConsole';
@@ -61,15 +61,15 @@ describe('dev command behaviour', () => {
   it('grants resources and never drops below zero', () => {
     const w = devOn(fresh());
     cmdDevGrantResources(w, 'player', 250);
-    expect(w.resources.player).toBe(250);
+    expect(stock(w, 'player')).toBe(250);
     cmdDevGrantResources(w, 'player', -1000);
-    expect(w.resources.player).toBe(0);
+    expect(stock(w, 'player')).toBe(0);
   });
 
   it('floors fractional grants, so two peers cannot disagree', () => {
     const w = devOn(fresh());
     cmdDevGrantResources(w, 'player', 10.7);
-    expect(w.resources.player).toBe(10);
+    expect(stock(w, 'player')).toBe(10);
   });
 
   it('rejects a non-numeric grant', () => {
@@ -187,7 +187,7 @@ describe('console grammar', () => {
 
   it('parses a grant with an explicit team', () => {
     expect(parseDevCommand('/add 500 enemy')).toEqual({
-      kind: 'grant', amount: 500, team: 'rival',
+      kind: 'grant', amount: 500, team: 'rival', resource: null,
     });
   });
 
@@ -298,7 +298,7 @@ describe('console dispatch', () => {
   it('surfaces the refusal when cheats are off', () => {
     const w = fresh();
     const h = host();
-    expect(applyDevRequest(w, h, { kind: 'grant', amount: 100, team: 'player' }))
+    expect(applyDevRequest(w, h, { kind: 'grant', amount: 100, team: 'player', resource: null }))
       .toEqual(['dev mode is off']);
   });
 

@@ -9,7 +9,7 @@ import {
   approachFrom, cohesionEffectiveness, elevationMultiplier, findTarget,
   flankMultiplier, localCrowding, resolvedDamage,
 } from '../src/sim/combat';
-import { must, run } from './helpers';
+import { banked, must, run } from './helpers';
 import type { Unit, World } from '../src/core/types';
 
 const fresh = (seed = 1337) => buildTestMap(createWorld(seed));
@@ -215,7 +215,7 @@ describe('[1.11] AI opponent', () => {
   it('gathers without being told', () => {
     const w = enableAi(fresh());
     run(w, 200);
-    expect(w.resources.rival).toBeGreaterThan(0);
+    expect(banked(w, 'rival')).toBeGreaterThan(0);
   });
 
   it('builds an army', () => {

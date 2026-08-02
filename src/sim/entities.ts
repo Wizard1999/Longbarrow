@@ -3,9 +3,10 @@ import type {
 } from '../core/types';
 import { UNIT_TYPES } from '../data/units';
 import { BUILDING_TYPES } from '../data/buildings';
-import { ECON } from '../data/tuning';
 import { rngNext } from '../core/rng';
 import { clampPointToMapBoundary, mapBoundaryForSeed, pointInMapBoundary } from './mapBoundary';
+import { RESOURCES } from '../data/resources';
+import type { ResourceId } from '../data/resources';
 
 export function spawnUnit(
   world: World, typeKey: UnitTypeKey, team: Team, x: number, z: number,
@@ -26,7 +27,7 @@ export function spawnUnit(
     patrolTo: null,
     patrolHeading: 'to',
     selected: false,
-    gather: t.isWorker ? { state: 'idle', nodeId: null, carrying: 0, timer: 0 } : null,
+    gather: t.isWorker ? { state: 'idle', nodeId: null, carrying: 0, carryResource: null, timer: 0 } : null,
     build: t.isWorker ? { siteId: null } : null,
     hp: t.combat.hp,
     stillTicks: 0,
@@ -59,16 +60,18 @@ export function spawnBuilding(
 }
 
 export function spawnResourceNode(
-  world: World, x: number, z: number, amount?: number,
+  world: World, x: number, z: number, resource: ResourceId, amount?: number,
 ): ResourceNode {
+  const capacity = amount ?? RESOURCES[resource].nodeCapacity;
   const boundary = mapBoundaryForSeed(world.mapSeed);
   const safe = clampPointToMapBoundary(boundary, x, z, 1.2);
   x = safe.x; z = safe.z;
   const n: ResourceNode = {
     id: world.nextId++,
+    resource,
     x, z,
-    amount: amount ?? ECON.nodeCapacity,
-    maxAmount: amount ?? ECON.nodeCapacity,
+    amount: capacity,
+    maxAmount: capacity,
   };
   world.nodes.push(n);
   return n;

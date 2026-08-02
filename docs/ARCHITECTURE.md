@@ -49,6 +49,7 @@ Race content lives here so the engine stays generic.
 | `units.ts` | Unit stat table + **traits** (`isWorker`, `formsShieldWall`). |
 | `buildings.ts` | Building stats: HP, command supply, control radius, what it produces. |
 | `tech.ts` | Cohort's research track (D-028). Declarative effects, category-wide. |
+| `resources.ts` | **The resource registry (D-031).** Declares which currencies exist, their rarity, node capacity, carry amount and gather share. Change the economy here and `src/sim/` needs no edit. |
 
 ## `src/sim/` — the deterministic simulation
 
@@ -69,6 +70,7 @@ Imports `core/` and `data/` **only**.
 | `missions.ts` | Missions above squads (D-007/D-027). **Currently inert** — records intent, does not yet drive squad behaviour. |
 | `tech.ts` | Research engine. Modifiers **derived** from the researched list, never baked into units (D-028). |
 | `dev.ts` | Developer commands (grant, spawn, kill) as ordinary deterministic commands, gated on hashed `world.devMode` so dev sessions still replay. |
+| `resources.ts` | Resource mechanics read generically from the registry: afford, pay, refund, reserve, and the worker rebalance. Walks `RESOURCE_ORDER`, never `Object.keys()`. |
 | `terrain.ts` | Single source of truth for terrain height; the render mesh samples this rather than duplicating the formula. |
 | `mapBoundary.ts` | Generated polygon play area; orders and movement are clamped to it. |
 | `map.ts` | Map assembly + `MAP_VERSION`. Map seed is separate from match seed (D-017). |

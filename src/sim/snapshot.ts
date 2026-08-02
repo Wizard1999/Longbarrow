@@ -1,4 +1,5 @@
 import type { World } from '../core/types';
+import { RESOURCE_ORDER } from '../data/resources';
 
 /**
  * Snapshot, restore and hash of the whole simulation.
@@ -86,8 +87,10 @@ export function hash(world: World): string {
   mix(world.rngState);
   mix(world.mapSeed);
   mix(world.mapVersion);
-  mixF(world.resources.player);
-  mixF(world.resources.rival);
+  // Declared order, never Object.keys: insertion order must never decide a hash.
+  for (const team of ['player', 'rival'] as const) {
+    for (const id of RESOURCE_ORDER) mixF(world.resources[team][id]);
+  }
   mixS(world.winner ?? '-');
   // Hashed so a clean competitive result is provable, not merely claimed.
   mix(world.devMode ? 1 : 0);
@@ -109,6 +112,7 @@ export function hash(world: World): string {
     if (u.gather) {
       mixS(u.gather.state); mix(u.gather.nodeId ?? -1);
       mixF(u.gather.carrying); mix(u.gather.timer);
+      mixS(u.gather.carryResource ?? '-');
     }
     mix(u.build?.siteId ?? -1);
     mix(u.targetId ?? -1); mix(u.attackCd);
@@ -128,7 +132,7 @@ export function hash(world: World): string {
     }
   }
 
-  for (const n of world.nodes) { mix(n.id); mixF(n.amount); }
+  for (const n of world.nodes) { mix(n.id); mixS(n.resource); mixF(n.amount); }
   for (const s of world.sites) { mix(s.id); mixS(s.type); mixF(s.progress); }
 
   // Research changes every unit's effective stats, so peers disagreeing about

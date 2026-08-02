@@ -1,6 +1,8 @@
 import type { CommandResult, EntityId, Team, UnitTypeKey, World } from '../core/types';
 import { UNIT_TYPES } from '../data/units';
 import { spawnSquad } from './entities';
+import { RESOURCES, RESOURCE_ORDER } from '../data/resources';
+import type { ResourceId } from '../data/resources';
 
 /**
  * Developer commands (cheats), as ordinary deterministic simulation commands.
@@ -49,18 +51,28 @@ function requireDevMode(world: World): CommandResult | null {
 /**
  * Grant resources to a team.
  *
- * Deliberately generic in the amount and the team, and deliberately unaware of
- * *which* resource — the world holds one stock per team today and a registry-keyed
- * bag after D-031 lands, and this command should need no change either way.
+ * Generic over the registry: `resource` names one declared resource, or `null`
+ * to top up every one of them. This file never learns how many exist or what
+ * they are called, so a game shipping a different economy inherits the cheat
+ * unchanged (D-029, D-031).
  */
-export function cmdDevGrantResources(world: World, team: Team, amount: number): CommandResult {
+export function cmdDevGrantResources(
+  world: World, team: Team, amount: number, resource: ResourceId | null = null,
+): CommandResult {
   const gate = requireDevMode(world);
   if (gate) return gate;
   if (!Number.isFinite(amount)) return { ok: false, reason: 'amount must be a number' };
+  if (resource !== null && !RESOURCES[resource]) return { ok: false, reason: 'no such resource' };
   // Floor, because a fractional stock would hash differently on two machines
   // that computed it via different routes, and the whole point is determinism.
   const delta = Math.floor(amount);
-  world.resources[team] = Math.max(0, world.resources[team] + delta);
+  const bag = world.resources[team];
+  // `null` means every declared resource, so a dev can top up without naming
+  // them — and without this file learning what they are called.
+  for (const id of RESOURCE_ORDER) {
+    if (resource !== null && id !== resource) continue;
+    bag[id] = Math.max(0, bag[id] + delta);
+  }
   return { ok: true };
 }
 

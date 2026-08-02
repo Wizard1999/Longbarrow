@@ -4,6 +4,7 @@ import { BUILD, PLACE_CLEARANCE } from '../data/tuning';
 import { circleInMapBoundary, mapBoundaryForSeed } from './mapBoundary';
 import { spawnBuilding } from './entities';
 import { approachPoint } from './economy';
+import { canAfford } from './resources';
 
 // Cohort's "Queue & Walk" (§8.1): a worker walks to the site and builds; the
 // worker can be reassigned mid-build and construction PAUSES rather than
@@ -16,7 +17,7 @@ export function canPlaceBuilding(
   const t = BUILDING_TYPES[typeKey];
   const boundary = mapBoundaryForSeed(world.mapSeed);
   if (!circleInMapBoundary(boundary, x, z, t.radius + 2)) return { ok: false, reason: 'off the map' };
-  if (world.resources[team] < t.cost) return { ok: false, reason: 'insufficient resources' };
+  if (!canAfford(world.resources[team], t.cost)) return { ok: false, reason: 'insufficient resources' };
   for (const b of world.buildings) {
     if (Math.hypot(b.x - x, b.z - z) < t.radius + b.radius + PLACE_CLEARANCE) {
       return { ok: false, reason: 'too close to a structure' };

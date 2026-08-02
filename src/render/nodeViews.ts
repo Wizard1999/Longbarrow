@@ -3,18 +3,15 @@ import type { EntityId, World } from '../core/types';
 import { GOLDEN_ANGLE } from '../core/loop';
 import { terrainHeightAt } from '../sim/terrain';
 import type { VisibilityController } from '../ui/visibility';
-import { legacyMaterial } from './materials';
+import { legacyMaterial, resourceMaterial } from './materials';
 
 /** Also used for the shard a worker carries on the return trip, so the thing
  *  being hauled is visibly the thing that came out of the node. */
 export const legacyMat = legacyMaterial();
 
-/** @deprecated Old name from when the resource was called "essence" and was
- *  teal. Kept as an alias only until the D-021 rename lands properly. */
-export const essenceMat = legacyMat;
-
-/** Legacy nodes: pale violet crystalline shards. They visibly shrink as they deplete,
- *  so map state is readable at a glance without a UI overlay. */
+/** Resource nodes: crystalline shards coloured by which resource they yield, so
+ *  a scarce node is identifiable across the board without a UI overlay. They
+ *  visibly shrink as they deplete, for the same reason. */
 export function buildNodeViews(scene: THREE.Scene, world: World): Map<EntityId, THREE.Group> {
   const nodeViews = new Map<EntityId, THREE.Group>();
   for (const n of world.nodes) {
@@ -22,7 +19,7 @@ export function buildNodeViews(scene: THREE.Scene, world: World): Map<EntityId, 
     for (let i = 0; i < 5; i++) {
       const a = i * GOLDEN_ANGLE;
       const h = 0.9 + (i % 3) * 0.45;
-      const shard = new THREE.Mesh(new THREE.ConeGeometry(0.34, h, 5), essenceMat);
+      const shard = new THREE.Mesh(new THREE.ConeGeometry(0.34, h, 5), resourceMaterial(n.resource));
       shard.position.set(Math.cos(a) * 0.62, h / 2, Math.sin(a) * 0.62);
       shard.rotation.set(Math.cos(a) * 0.22, a, Math.sin(a) * 0.22);
       shard.castShadow = true;

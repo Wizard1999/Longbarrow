@@ -21,6 +21,7 @@ import {
 import { cmdCancelResearch, cmdResearch } from './tech';
 import { cmdDevGrantResources, cmdDevKill, cmdDevSpawn, cmdSetDevMode } from './dev';
 import type { TechId } from '../data/tech';
+import type { ResourceId } from '../data/resources';
 
 /**
  * Match recording and playback.
@@ -34,7 +35,7 @@ import type { TechId } from '../data/tech';
  */
 
 /** Bump when the meaning of a command or of a sim rule changes. */
-export const REPLAY_VERSION = 7;
+export const REPLAY_VERSION = 8;
 
 /**
  * Every player action, as plain serializable data.
@@ -85,7 +86,7 @@ export type Command =
   // outside the command stream would make every replay of that session diverge
   // from the moment it was used (see sim/dev.ts).
   | { t: 'devMode'; enabled: boolean }
-  | { t: 'devGrant'; team: Team; amount: number }
+  | { t: 'devGrant'; team: Team; amount: number; resource?: ResourceId | null }
   | { t: 'devSpawn'; team: Team; unit: UnitTypeKey; count: number; x: number; z: number }
   | { t: 'devKill'; units: EntityId[] };
 
@@ -172,7 +173,7 @@ export function dispatch(world: World, c: Command): void {
     case 'research': cmdResearch(world, c.team, c.tech); break;
     case 'cancelResearch': cmdCancelResearch(world, c.team); break;
     case 'devMode': cmdSetDevMode(world, c.enabled); break;
-    case 'devGrant': cmdDevGrantResources(world, c.team, c.amount); break;
+    case 'devGrant': cmdDevGrantResources(world, c.team, c.amount, c.resource ?? null); break;
     case 'devSpawn': cmdDevSpawn(world, c.unit, c.team, c.count, c.x, c.z); break;
     case 'devKill': cmdDevKill(world, c.units); break;
   }

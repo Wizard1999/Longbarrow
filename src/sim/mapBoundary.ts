@@ -159,6 +159,15 @@ export interface MapLayout {
   rivalBase: MapLayoutAnchor;
   playerResources: readonly Vec2[];
   rivalResources: readonly Vec2[];
+  /**
+   * Anchors for scarce resources, placed on the centre line so they are
+   * equidistant from both bases.
+   *
+   * Position is the point: D-031 makes the rare resource the reason to hold
+   * specific ground, which only works if reaching it is a contest rather than a
+   * walk. Mirrored like everything else, so neither side is nearer.
+   */
+  contestedResources: readonly Vec2[];
   playerWorkers: Vec2;
   rivalWorkers: Vec2;
   playerArmy: Vec2;
@@ -194,6 +203,9 @@ export function mapLayoutForBoundary(boundary: MapBoundary): MapLayout {
   const rivalBasePoint = mirrored(playerBasePoint);
   const playerResources = [safe(-0.62, 6.5, 2), safe(-0.35, -7.5, 2)];
   const rivalResources = playerResources.map(mirrored);
+  // On the centre line, out at the flanks: no closer to one base than the other.
+  const contestedAnchor = safe(0, 12, 2.5);
+  const contestedResources = [contestedAnchor, mirrored(contestedAnchor)];
   const playerWorkers = safe(-0.38, 2.5, 2.5);
   const playerArmy = safe(-0.28, -1.5, 2.5);
 
@@ -202,6 +214,7 @@ export function mapLayoutForBoundary(boundary: MapBoundary): MapLayout {
     rivalBase: { ...rivalBasePoint, facingX: -dx, facingZ: -dz },
     playerResources,
     rivalResources,
+    contestedResources,
     playerWorkers,
     rivalWorkers: mirrored(playerWorkers),
     playerArmy,

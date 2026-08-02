@@ -1,4 +1,5 @@
 import type { UnitTypeKey } from '../core/types';
+import type { ResourceCost } from './resources';
 
 /** Combat stats. Present on every unit — workers have them so they can be
  *  killed at 1.9 and so the win condition at 1.12 has something to chew on,
@@ -26,7 +27,7 @@ export interface UnitDef {
   arriveEpsilon: number;
   isWorker: boolean;
   supply: number;
-  cost: number;
+  cost: ResourceCost;
   buildTicks: number;
   label: string;
   /**
@@ -45,7 +46,7 @@ export interface UnitDef {
 export const UNIT_TYPES: Record<UnitTypeKey, UnitDef> = {
   legionnaire: {
     speed: 4.2, radius: 0.42, arriveEpsilon: 0.06, isWorker: false,
-    supply: 2, cost: 75, buildTicks: 120, label: 'Legionnaire', formsShieldWall: true,
+    supply: 2, cost: { material: 75 }, buildTicks: 120, label: 'Legionnaire', formsShieldWall: true,
     // Core melee. Its whole identity is the shield wall — see
     // sim/combat.ts shieldWallStacks(): defense climbs with each adjacent
     // Legionnaire, so a formed line is worth far more than the same models
@@ -57,7 +58,7 @@ export const UNIT_TYPES: Record<UnitTypeKey, UnitDef> = {
   },
   marksman: {
     speed: 3.8, radius: 0.38, arriveEpsilon: 0.06, isWorker: false,
-    supply: 2, cost: 85, buildTicks: 135, label: 'Marksman',
+    supply: 2, cost: { material: 85 }, buildTicks: 135, label: 'Marksman',
     // Ranged. Deliberately punishing to kite with: accuracy while moving is a
     // fraction of its accuracy set up, and it takes COMBAT.settleTicks of
     // standing still to get all the way back (§8.7, design doc §2 — skill
@@ -69,7 +70,7 @@ export const UNIT_TYPES: Record<UnitTypeKey, UnitDef> = {
   },
   worker: {
     speed: 3.6, radius: 0.36, arriveEpsilon: 0.06, isWorker: true,
-    supply: 1, cost: 50, buildTicks: 90, label: 'Worker',
+    supply: 1, cost: { material: 50 }, buildTicks: 90, label: 'Worker',
     combat: {
       hp: 60, damage: 3, range: 0.8, attackTicks: 36,
       accuracyStationary: 0.6, accuracyMoving: 0.6, defense: 0,

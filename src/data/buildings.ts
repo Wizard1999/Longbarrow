@@ -1,4 +1,5 @@
 import type { BuildingTypeKey, UnitTypeKey } from '../core/types';
+import type { ResourceCost } from './resources';
 
 /**
  * Command structures. `command` is the supply this building contributes;
@@ -12,7 +13,7 @@ export interface BuildingDef {
   dropoff: boolean;
   command: number;
   controlRadius: number;
-  cost: number;
+  cost: ResourceCost;
   buildTicks: number;
   produces: readonly UnitTypeKey[];
   label: string;
@@ -21,10 +22,10 @@ export interface BuildingDef {
 export const BUILDING_TYPES: Record<BuildingTypeKey, BuildingDef> = {
   standard: {
     radius: 2.2, hp: 2200, dropoff: true, command: 15, controlRadius: 18,
-    cost: 0, buildTicks: 0, produces: ['worker', 'legionnaire', 'marksman'], label: 'Standard',
+    cost: {}, buildTicks: 0, produces: ['worker', 'legionnaire', 'marksman'], label: 'Standard',
   },
   outpost: {
     radius: 1.4, hp: 1100, dropoff: true, command: 8, controlRadius: 11,
-    cost: 100, buildTicks: 150, produces: ['worker'], label: 'Outpost',
+    cost: { material: 100 }, buildTicks: 150, produces: ['worker'], label: 'Outpost',
   },
 };

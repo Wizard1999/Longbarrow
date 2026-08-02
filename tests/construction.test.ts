@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildOf, freshMap, gatherOf, must, run, workersOf } from './helpers';
+import { buildOf, freshMap, fund, gatherOf, must, run, stock, workersOf } from './helpers';
 import { simStep } from '../src/sim/world';
 import {
   cmdAssignBuilders, cmdCancelSite, cmdGather, cmdMove, cmdPlaceBuilding,
@@ -11,7 +11,7 @@ import { BUILDING_TYPES } from '../src/data/buildings';
 // [19] Queue & Walk — construction is walked to, not conjured (1.6)
 describe('[19] Queue & Walk', () => {
   const w = freshMap();
-  w.resources.player = 10000;
+  fund(w, 'player', 10000);
   const u = must(workersOf(w, 'player')[0]);
   const buildingsBefore = w.buildings.length;
 
@@ -40,7 +40,7 @@ describe('[19] Queue & Walk', () => {
 // [20] reassignment PAUSES, it does not cancel (the point of §8.1)
 describe('[20] reassignment pauses, it does not cancel', () => {
   const w = freshMap();
-  w.resources.player = 10000;
+  fund(w, 'player', 10000);
   const u = must(workersOf(w, 'player')[0]);
   const res = cmdPlaceBuilding(w, 'player', 'outpost', -2, 6, [u.id]);
   for (let ticks = 0; ticks < 400 && must(w.sites[0]).progress === 0; ticks++) {
@@ -69,7 +69,7 @@ describe('[20] reassignment pauses, it does not cancel', () => {
 // [21] gathering and building are mutually exclusive
 describe('[21] gathering and building are mutually exclusive', () => {
   const w = freshMap();
-  w.resources.player = 10000;
+  fund(w, 'player', 10000);
   const u = must(workersOf(w, 'player')[0]);
   cmdGather(w, [u.id], must(w.nodes[0]).id);
   const res = cmdPlaceBuilding(w, 'player', 'outpost', -2, 6, [u.id]);
@@ -91,18 +91,18 @@ describe('[21] gathering and building are mutually exclusive', () => {
 // [22] site cancellation and placement blocking
 describe('[22] site cancellation and placement blocking', () => {
   const w = freshMap();
-  w.resources.player = 10000;
+  fund(w, 'player', 10000);
   const u = must(workersOf(w, 'player')[0]);
   const res = cmdPlaceBuilding(w, 'player', 'outpost', -2, 6, [u.id]);
   run(w, 60);
   const blocked = canPlaceBuilding(w, 'player', 'outpost', -2, 6);
 
-  const before = w.resources.player;
+  const before = stock(w, 'player');
   cmdCancelSite(w, must(res.siteId));
 
   it('cannot place a second site on top of the first', () => expect(blocked.ok).toBe(false));
   it('cancelling refunds in full', () => {
-    expect(w.resources.player).toBe(before + BUILDING_TYPES.outpost.cost);
+    expect(stock(w, 'player')).toBe(before + (BUILDING_TYPES.outpost.cost.material ?? 0));
   });
   it('site is gone', () => expect(w.sites.length).toBe(0));
   it('builder was released', () => expect(buildOf(u).siteId).toBeNull());
@@ -115,7 +115,7 @@ describe('[22] site cancellation and placement blocking', () => {
 describe('[23] multiple workers do not rush a build', () => {
   const timeWith = (n: number) => {
     const w = freshMap();
-    w.resources.player = 10000;
+    fund(w, 'player', 10000);
     const ws = workersOf(w, 'player').slice(0, n).map(u => u.id);
     const placed = cmdPlaceBuilding(w, 'player', 'outpost', -2, 6, ws);
     const site = must(w.sites.find(candidate => candidate.id === placed.siteId));

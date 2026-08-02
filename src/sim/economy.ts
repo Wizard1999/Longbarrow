@@ -3,20 +3,47 @@ import { GOLDEN_ANGLE } from '../core/loop';
 import { BUILDING_TYPES } from '../data/buildings';
 import { ECON } from '../data/tuning';
 import { modifiersForUnit } from './tech';
+import { RESOURCES } from '../data/resources';
+import type { ResourceId } from '../data/resources';
+import { neediestResource } from './resources';
 
 export function findNode(world: World, id: EntityId | null): ResourceNode | null {
   return world.nodes.find(n => n.id === id) ?? null;
 }
 
-export function nearestNodeWithResources(world: World, x: number, z: number): ResourceNode | null {
-  let best: ResourceNode | null = null;
-  let bestD = Infinity;
-  for (const n of world.nodes) {
-    if (n.amount <= 0) continue;
-    const d = Math.hypot(n.x - x, n.z - z);
-    if (d < bestD) { bestD = d; best = n; }
+export function nearestNodeWithResources(
+  world: World, x: number, z: number, prefer?: ResourceId | null,
+): ResourceNode | null {
+  // Two passes rather than a blended score: the preferred resource wins outright
+  // if any node of it is still standing, and distance only breaks ties within
+  // that resource. A weighted score would quietly send workers to the near
+  // common node forever and the rare one would never be touched.
+  for (const wanted of [prefer, null]) {
+    let best: ResourceNode | null = null;
+    let bestD = Infinity;
+    for (const n of world.nodes) {
+      if (n.amount <= 0) continue;
+      if (wanted && n.resource !== wanted) continue;
+      const d = Math.hypot(n.x - x, n.z - z);
+      if (d < bestD) { bestD = d; best = n; }
+    }
+    if (best) return best;
   }
-  return best;
+  return null;
+}
+
+/**
+ * The node an idle worker should head for.
+ *
+ * Steers toward whichever declared resource the team is furthest below its
+ * share of, so a two-resource economy needs no worker allocation from the
+ * player — D-031's guard rail. Ties and empty stocks fall through to declared
+ * order, so this stays deterministic.
+ */
+export function preferredNodeFor(
+  world: World, team: Team, x: number, z: number,
+): ResourceNode | null {
+  return nearestNodeWithResources(world, x, z, neediestResource(world.resources[team]));
 }
 
 export function nearestDropoff(world: World, team: Team, x: number, z: number): Building | null {
@@ -71,7 +98,7 @@ export function stepGather(world: World, u: Unit): void {
     // Node ran dry while we were walking: re-target the nearest live one. This
     // is what makes the loop genuinely set-and-forget across a whole match.
     if (!node || node.amount <= 0) {
-      node = nearestNodeWithResources(world, u.x, u.z);
+      node = preferredNodeFor(world, u.team, u.x, u.z);
       if (!node) {
         // Nothing left anywhere. Deliver what we're holding, then stop.
         if (g.carrying > 0) { g.state = 'toBase'; return; }
@@ -101,10 +128,14 @@ export function stepGather(world: World, u: Unit): void {
     if (!node || node.amount <= 0) { g.state = 'toNode'; return; }
     g.timer--;
     if (g.timer <= 0) {
-      const carry = ECON.carryAmount * modifiersForUnit(world, u.team, u.type).carryMul;
+      const carry = RESOURCES[node.resource].carryAmount
+        * modifiersForUnit(world, u.team, u.type).carryMul;
       const taken = Math.min(carry, node.amount);
       node.amount -= taken;
       g.carrying = taken;
+      // Remembered now: the node may be mined out and gone before the worker
+      // gets home, and then nothing would say what it was carrying.
+      g.carryResource = node.resource;
       g.state = 'toBase';
     }
     return;
@@ -128,9 +159,21 @@ export function stepGather(world: World, u: Unit): void {
   if (g.state === 'depositing') {
     g.timer--;
     if (g.timer <= 0) {
-      world.resources[u.team] += g.carrying;
+      if (g.carryResource) world.resources[u.team][g.carryResource] += g.carrying;
       g.carrying = 0;
+      g.carryResource = null;
       g.state = 'toNode';
+
+      // Re-aim only when this worker's resource is no longer the one the team is
+      // short of. Re-picking every trip would send workers ping-ponging across
+      // the map; never re-picking would leave the scarce resource untouched
+      // forever, which is the failure D-031's guard rail exists to prevent.
+      const node = findNode(world, g.nodeId);
+      const wanted = neediestResource(world.resources[u.team]);
+      if (wanted && (!node || node.resource !== wanted)) {
+        const next = nearestNodeWithResources(world, u.x, u.z, wanted);
+        if (next) g.nodeId = next.id;
+      }
     }
   }
 }

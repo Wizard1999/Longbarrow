@@ -1,5 +1,7 @@
 import type { Team, UnitTypeKey, World } from '../core/types';
 import { UNIT_TYPES } from '../data/units';
+import { RESOURCES, RESOURCE_ORDER } from '../data/resources';
+import type { ResourceId } from '../data/resources';
 import { DEV_SPAWN_LIMIT } from '../sim/dev';
 import { cmdDevGrantResources, cmdDevKill, cmdDevSpawn, cmdSetDevMode } from '../sim/dev';
 import { issueCommand } from '../replay/live';
@@ -28,7 +30,7 @@ export type DevRequest =
   | { kind: 'help' }
   | { kind: 'clear' }
   | { kind: 'devMode'; enabled: boolean }
-  | { kind: 'grant'; amount: number; team: Team }
+  | { kind: 'grant'; amount: number; team: Team; resource: ResourceId | null }
   | { kind: 'spawn'; unit: UnitTypeKey; count: number; team: Team }
   | { kind: 'kill' }
   | { kind: 'pause'; on: boolean | 'toggle' }
@@ -104,10 +106,23 @@ export function parseDevCommand(line: string): DevRequest {
 
     case 'add': case 'give': {
       const amount = Number(args[0]);
-      if (!Number.isFinite(amount)) return { kind: 'error', message: 'usage: /add <amount> [team]' };
-      const team = parseTeam(args[1], 'player');
-      if (!team) return { kind: 'error', message: `unknown team '${args[1]}'` };
-      return { kind: 'grant', amount, team };
+      if (!Number.isFinite(amount)) {
+        return { kind: 'error', message: `usage: /add <amount> [${RESOURCE_ORDER.join('|')}|all] [team]` };
+      }
+      // Resource is optional and may be omitted entirely, in which case the
+      // next word is the team. Checked against the registry, never a list here.
+      let rest = args.slice(1);
+      let resource: ResourceId | null = null;
+      const first = (rest[0] ?? '').toLowerCase();
+      if (first && first !== 'all') {
+        const match = RESOURCE_ORDER.find(id => id.toLowerCase() === first);
+        if (match) { resource = match; rest = rest.slice(1); }
+      } else if (first === 'all') {
+        rest = rest.slice(1);
+      }
+      const team = parseTeam(rest[0], 'player');
+      if (!team) return { kind: 'error', message: `unknown team '${rest[0]}'` };
+      return { kind: 'grant', amount, team, resource };
     }
 
     case 'spawn': {
@@ -167,7 +182,7 @@ export function parseDevCommand(line: string): DevRequest {
 
 export const DEV_HELP: readonly string[] = [
   '/dev [on|off]          enable cheats (recorded into the replay)',
-  '/add <n> [team]        grant resources',
+  '/add <n> [res|all] [team]  grant resources',
   '/spawn <type> [n] [team]  spawn units at the camera focus',
   '/kill                  kill the current selection',
   '/pause [on|off]        pause the simulation',
@@ -199,11 +214,14 @@ export function applyDevRequest(
     }
 
     case 'grant': {
-      const r = issueCommand({ t: 'devGrant', team: req.team, amount: req.amount },
-        () => cmdDevGrantResources(world, req.team, req.amount));
-      return [r.ok
-        ? `${req.team}: ${Math.floor(world.resources[req.team])}`
-        : r.reason ?? 'refused'];
+      const r = issueCommand(
+        { t: 'devGrant', team: req.team, amount: req.amount, resource: req.resource },
+        () => cmdDevGrantResources(world, req.team, req.amount, req.resource),
+      );
+      if (!r.ok) return [r.reason ?? 'refused'];
+      const bag = world.resources[req.team];
+      return [`${req.team}: ` + RESOURCE_ORDER
+        .map(id => `${RESOURCES[id].label} ${Math.floor(bag[id])}`).join(' · ')];
     }
 
     case 'spawn': {

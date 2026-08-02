@@ -3,6 +3,7 @@ import { createPainterlyMaterial } from './painterly';
 import { PALETTE } from './palette';
 import type { HuePath } from './palette';
 import type { Team } from '../core/types';
+import type { ResourceId } from '../data/resources';
 
 /**
  * Shared painterly materials, cached by role.
@@ -65,9 +66,21 @@ export function mossMaterial(): THREE.ShaderMaterial {
   return shared('moss', PALETTE.moss, { soft: 0.2, rim: 0.35, jitter: 0.08 });
 }
 
-/** The gatherable resource. Violet, never teal (D-025). */
+/** The rare gatherable resource. Violet, never teal (D-025). */
 export function legacyMaterial(): THREE.ShaderMaterial {
   return shared('legacy', PALETTE.legacy, { soft: 0.26, rim: 1.0, jitter: 0.02, ambient: 1.8 });
+}
+
+/**
+ * The material for a declared resource, looked up by id (D-031).
+ *
+ * Falls back to the rare look if a game declares a resource with no palette
+ * entry, so adding one to `data/resources.ts` renders *something* rather than
+ * throwing — content should not be able to crash the renderer.
+ */
+export function resourceMaterial(id: ResourceId): THREE.ShaderMaterial {
+  const path = (PALETTE as Record<string, typeof PALETTE.legacy>)[id] ?? PALETTE.legacy;
+  return shared(`resource:${id}`, path, { soft: 0.26, rim: 1.0, jitter: 0.02, ambient: 1.8 });
 }
 
 export function rockMaterial(): THREE.ShaderMaterial {

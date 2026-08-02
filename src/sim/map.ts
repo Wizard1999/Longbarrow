@@ -2,6 +2,12 @@ import type { World } from '../core/types';
 import { rngSeed } from '../core/rng';
 import { generateScenery, spawnBuilding, spawnResourceNode, spawnSquad } from './entities';
 import { mapBoundaryForSeed, mapLayoutForBoundary } from './mapBoundary';
+import { RESOURCES, RESOURCE_ORDER } from '../data/resources';
+
+// Chosen by declared abundance rather than by name, so the engine stays unaware
+// of which resources this game happens to ship (D-029/D-031).
+const COMMON = RESOURCE_ORDER.find(id => RESOURCES[id].abundance === 'common') ?? RESOURCE_ORDER[0]!;
+const RARE = RESOURCE_ORDER.find(id => RESOURCES[id].abundance === 'rare') ?? COMMON;
 
 /**
  * Bump whenever map generation changes shape — different terrain, different
@@ -13,7 +19,7 @@ import { mapBoundaryForSeed, mapLayoutForBoundary } from './mapBoundary';
  * on terrain that no longer matches what was recorded. Versioning turns that
  * from a silent wrong answer into an explicit rejection.
  */
-export const MAP_VERSION = 3;
+export const MAP_VERSION = 4;
 
 /**
  * Phase 1 seeded map (assumption A5). Boundary-derived and rotationally symmetric: rotate 180° about
@@ -31,8 +37,11 @@ export function buildTestMap(world: World): World {
   spawnBuilding(world, 'standard', 'player', layout.playerBase.x, layout.playerBase.z);
   spawnBuilding(world, 'standard', 'rival', layout.rivalBase.x, layout.rivalBase.z);
 
-  for (const n of layout.playerResources) spawnResourceNode(world, n.x, n.z);
-  for (const n of layout.rivalResources) spawnResourceNode(world, n.x, n.z);
+  // Common nodes sit near each base; the scarce ones are out on contested
+  // ground, which is what makes holding territory an economic decision (D-031).
+  for (const n of layout.playerResources) spawnResourceNode(world, n.x, n.z, COMMON);
+  for (const n of layout.rivalResources) spawnResourceNode(world, n.x, n.z, COMMON);
+  for (const n of layout.contestedResources) spawnResourceNode(world, n.x, n.z, RARE);
 
   spawnSquad(world, 'worker', 'player', layout.playerWorkers.x, layout.playerWorkers.z, 4);
   spawnSquad(world, 'legionnaire', 'player', layout.playerArmy.x, layout.playerArmy.z, 4);

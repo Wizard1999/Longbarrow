@@ -1,4 +1,5 @@
 import type { TechId } from '../data/tech';
+import type { ResourceBag, ResourceId } from '../data/resources';
 // Shared ids, vectors and enums. Deliberately dependency-free so that both the
 // sim and the presentation layers can name the same things without the sim
 // ever reaching outward (06 §3).
@@ -26,6 +27,14 @@ export interface GatherJob {
   state: GatherState;
   nodeId: EntityId | null;
   carrying: number;
+  /**
+   * Which resource is in the worker's hands, or null when empty.
+   *
+   * Carried separately from the node id because the node can be mined out and
+   * removed while the worker is still walking home; without this the load would
+   * arrive with nothing to say what it was.
+   */
+  carryResource: ResourceId | null;
   timer: number;
 }
 
@@ -119,6 +128,8 @@ export interface Building {
 
 export interface ResourceNode {
   id: EntityId;
+  /** Which declared resource this node yields (D-031). */
+  resource: ResourceId;
   x: number;
   z: number;
   amount: number;
@@ -234,7 +245,14 @@ export interface World {
   sites: Site[];
   scenery: Scenery[];
   squads: Squad[];
-  resources: Record<Team, number>;
+  /**
+   * Each team's stock, as a bag keyed by resource id rather than named fields.
+   *
+   * A game author must be able to ship a different economy without opening
+   * `src/sim/` — one resource or five, named whatever they like. Named fields
+   * here would weld Greenmantle's economy into the engine (D-031).
+   */
+  resources: Record<Team, ResourceBag>;
   /** Set once a team has won. The sim keeps running; presentation decides what
    *  to do about it. */
   winner: Team | null;
