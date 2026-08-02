@@ -9,7 +9,7 @@ export type EntityId = number;
 export type Team = 'player' | 'rival';
 export const TEAMS: readonly Team[] = ['player', 'rival'];
 
-export type UnitTypeKey = 'legionnaire' | 'marksman' | 'worker';
+export type UnitTypeKey = 'legionnaire' | 'marksman' | 'outrider' | 'worker';
 export type BuildingTypeKey = 'standard' | 'outpost';
 
 export interface Vec2 {

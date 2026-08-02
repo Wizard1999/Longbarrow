@@ -6,7 +6,7 @@
 
 ## 🔑 SESSION HANDOFF — read before starting work
 
-**v1.25.0 · 406 tests · 72 modules documented · `npm run verify` green · nothing unpushed.**
+**v1.26.0 · 416 tests · 72 modules documented · `npm run verify` green · nothing unpushed.**
 
 ### What this session did
 
@@ -64,22 +64,20 @@ Doctrine that cannot fail a build is a suggestion, and it decays silently.
 
 ### Immediate next work, in priority order
 
-1. **Outrider** (flanker). Highest-value roster addition: flanking already exists
-   in combat and nothing exploits it. 3 of 7 Cohort ground units built.
-2. **Play-test and tune the economy split.** The 75/25 gather share, Legacy's
+1. **Play-test and tune the economy split.** The 75/25 gather share, Legacy's
    node capacity and the research cost split are unvalidated first guesses.
    Needs a human at the controls — it is a feel question, not a correctness one.
 3. **Chronicler** — unblocked by D-032. Needs a detection radius, not a cloak
    system.
-4. **Terrain concealment (D-032)** as a declared terrain trait plus a per-unit
-   detection radius, read generically. Note `ui/fogOfWar.ts` still hardcodes
-   vision radii per unit type; those are balance numbers and belong in
-   `src/data/` before concealment is built on top of them.
-5. **Visual overhaul** — the designer's standing request, queued in `TODO.md`
+3. **Terrain concealment (D-032)** as a declared terrain trait plus a per-unit
+   detection radius, read generically. Vision radii now live in the data tables
+   (`UnitDef.vision` / `BuildingDef.vision`), so concealment has a clean base to
+   build on.
+4. **Visual overhaul** — the designer's standing request, queued in `TODO.md`
    ordered by visual return: ground material variation first, then contact
    shadows, then silhouettes. Measure the CodePen references against D-006
    before adopting anything from them.
-6. **Generator complication (D-033 + D-035).** Ramps, chokepoints and alternate
+5. **Generator complication (D-033 + D-035).** Ramps, chokepoints and alternate
    routes must arise from the generator, authored toward the arcade target.
 
 ### Still pending on the designer
@@ -102,7 +100,28 @@ Doctrine that cannot fail a build is a suggestion, and it decays silently.
 
 ---
 
-## ⚡ Latest — two-resource economy as a registry (v1.25.0)
+## ⚡ Latest — the Outrider makes flanking matter (v1.26.0)
+
+**416 tests · full gate green.**
+
+- **Outrider** (§8.7: "exploits flank bonuses; weak head-on"). The mechanic is a
+  declared **`flankExpertise` trait** that scales the *bonus portion* of
+  positional damage — rear ×1.70, side ×1.30, frontal exactly what everyone
+  gets — so the specialist gains nothing head-on and the engine rewards the
+  trait, never the unit's name (D-029). Weak head-on is the rest of the row: no
+  defense, 80 HP, less damage than a Legionnaire. The scout half: fastest ground
+  unit (6.0) and the furthest sight (16).
+- **Vision radii moved to the data tables** (`UnitDef.vision`,
+  `BuildingDef.vision`) out of `ui/fogOfWar.ts` — they are balance numbers, and
+  terrain concealment (D-032) now has a clean base to build on.
+- **Training hotkeys are content**: `UnitDef.hotkey` drives both the HUD label
+  and the key binding, so a new unit declares its own key. Outrider is F.
+- No replay/save bump: `flankExpertise` defaults to 1, so existing units and old
+  command streams are byte-identical.
+
+**4 of 7 Cohort ground units.** Numbers are first guesses, untested by play.
+
+## ⚡ Previous — two-resource economy as a registry (v1.25.0)
 
 **406 tests · full gate green.**
 

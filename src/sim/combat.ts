@@ -177,11 +177,17 @@ export function approachFrom(attacker: Unit, defender: Unit): Approach {
 }
 
 export function flankMultiplier(attacker: Unit, defender: Unit): number {
+  let base: number;
   switch (approachFrom(attacker, defender)) {
-    case 'rear': return COMBAT.flankBonus;
-    case 'side': return COMBAT.sideBonus;
+    case 'rear': base = COMBAT.flankBonus; break;
+    case 'side': base = COMBAT.sideBonus; break;
     default: return 1;
   }
+  // A declared trait scales the bonus *portion*, so a specialist gains nothing
+  // extra head-on — the trait sharpens the asymmetry rather than the unit
+  // (D-029: the engine rewards the trait, never the name).
+  const expertise = UNIT_TYPES[attacker.type].flankExpertise ?? 1;
+  return 1 + (base - 1) * expertise;
 }
 
 /**

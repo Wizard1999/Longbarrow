@@ -40,6 +40,9 @@ import { createDevConsole } from './ui/devConsole';
 import type { DevConsole } from './ui/devConsole';
 import { Recorder } from './sim/replay';
 import { configureLiveRecording, issueCommand } from './replay/live';
+import { UNIT_TYPES } from './data/units';
+import type { UnitTypeKey } from './core/types';
+import type { UnitDef } from './data/units';
 
 void mountBuildBadge();
 
@@ -188,9 +191,11 @@ const keyboard = createKeyboard({
       }
     }
     if (k === 'b' && world.units.some(u => u.selected && u.gather)) ui.placingType = 'outpost';
-    if (k === 'q') hud.tryTrain('worker');
-    if (k === 'e') hud.tryTrain('legionnaire');
-    if (k === 'r') hud.tryTrain('marksman');
+    // Training keys come from the data table, so a new unit declares its own
+    // key and appears here with no input-layer edit.
+    for (const [ut, def] of Object.entries(UNIT_TYPES) as [UnitTypeKey, UnitDef][]) {
+      if (def.hotkey === k) hud.tryTrain(ut);
+    }
   },
 });
 

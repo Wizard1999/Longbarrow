@@ -1,4 +1,8 @@
-import type { Building, Unit, World } from '../core/types';
+import type { World } from '../core/types';
+// Vision radii are balance numbers and live in the data tables (D-031 cleanup);
+// this file only asks "how far does this thing see?"
+import { UNIT_TYPES } from '../data/units';
+import { BUILDING_TYPES } from '../data/buildings';
 import { pointInMapBoundary, type MapBoundary } from '../sim/mapBoundary';
 
 export type FogState = 0 | 1 | 2; // unexplored, explored, visible
@@ -17,25 +21,14 @@ export interface FogCell {
   state: FogState;
 }
 
-const UNIT_VISION: Record<Unit['type'], number> = {
-  worker: 9,
-  legionnaire: 11,
-  marksman: 14,
-};
-
-const BUILDING_VISION: Record<Building['type'], number> = {
-  standard: 17,
-  outpost: 13,
-};
-
 export function playerVisionSources(world: World): VisionSource[] {
   const sources: VisionSource[] = [];
   for (const unit of world.units) {
-    if (unit.team === 'player') sources.push({ x: unit.x, z: unit.z, radius: UNIT_VISION[unit.type] });
+    if (unit.team === 'player') sources.push({ x: unit.x, z: unit.z, radius: UNIT_TYPES[unit.type].vision });
   }
   for (const building of world.buildings) {
     if (building.team === 'player') {
-      sources.push({ x: building.x, z: building.z, radius: BUILDING_VISION[building.type] });
+      sources.push({ x: building.x, z: building.z, radius: BUILDING_TYPES[building.type].vision });
     }
   }
   for (const site of world.sites) {

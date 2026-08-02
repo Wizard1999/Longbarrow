@@ -33,6 +33,7 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
   g.add(detailRoot);
   const isWorker = UNIT_TYPES[unit.type].isWorker;
   const isMarksman = unit.type === 'marksman';
+  const isOutrider = unit.type === 'outrider';
   // Shared, not per-unit: a ShaderMaterial per unit means a shader compile per
   // unit, which stalls exactly when a battle is busiest (see render/materials.ts).
   const bodyMat = boneMaterial(unit.team);
@@ -41,9 +42,9 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
   // Silhouette carries the role, since the design brief wants the battlefield
   // readable at a glance: the Legionnaire is broad and low, the Marksman is
   // narrow and tall with a visible long weapon, the worker is smallest.
-  const bodyH = isWorker ? 0.8 : isMarksman ? 1.1 : 1.0;
-  const rTop = isWorker ? 0.26 : isMarksman ? 0.22 : 0.32;
-  const rBot = isWorker ? 0.34 : isMarksman ? 0.28 : 0.4;
+  const bodyH = isWorker ? 0.8 : isMarksman ? 1.1 : isOutrider ? 1.05 : 1.0;
+  const rTop = isWorker ? 0.26 : isMarksman ? 0.22 : isOutrider ? 0.2 : 0.32;
+  const rBot = isWorker ? 0.34 : isMarksman ? 0.28 : isOutrider ? 0.26 : 0.4;
   const body = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, bodyH, 6), bodyMat);
   body.position.y = bodyH * 0.7;
   const head = new THREE.Mesh(
@@ -61,6 +62,18 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
     stave.rotation.z = -0.32;
     stave.castShadow = true;
     detailRoot.add(stave);
+  }
+
+  if (isOutrider) {
+    // A lance couched low and forward — motion and intent, where the
+    // Marksman's stave angles back and reads as patience. The body lean does
+    // the rest: this unit should look like it is already mid-stride.
+    const lance = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 1.5, 5), trimMat);
+    lance.position.set(0.24, bodyH * 0.75, 0.35);
+    lance.rotation.x = 1.15;
+    lance.castShadow = true;
+    detailRoot.add(lance);
+    detailRoot.rotation.x = 0.08;
   }
 
   if (unit.type === 'legionnaire') {

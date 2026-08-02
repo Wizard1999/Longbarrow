@@ -1,3 +1,23 @@
+## v1.26.0 — Outrider: flanking finally has a customer (91%)
+**Date:** 2026-07-27
+
+- **Outrider** lands — flanker/scout, 4 of 7 Cohort ground units. Its mechanic
+  is a declared `flankExpertise` trait scaling only the *bonus portion* of
+  positional damage: rear ×1.70 and side ×1.30 for an expertise of 2, frontal
+  damage exactly what every unit gets. The engine rewards the trait, never the
+  name (D-029). Weak head-on by the numbers: no defense, 80 HP. Fastest ground
+  unit and the furthest-seeing — the scout half of the spec.
+- **Vision radii are data now.** `UnitDef.vision` and `BuildingDef.vision`
+  replace hardcoded tables inside `ui/fogOfWar.ts`; terrain concealment (D-032)
+  builds on this next.
+- **Training hotkeys are declared in data** (`UnitDef.hotkey`) and drive both
+  the HUD label and the input binding. Outrider trains on **F**.
+- Distinct silhouette: lean body, forward-couched lance, slight forward lean —
+  reads as motion where the Marksman reads as patience.
+- No replay or save bump: the trait defaults to 1 and old command streams are
+  unaffected. 406 → 416 tests, including geometry-correct rear/front fixtures
+  documenting the `atan2(dx, dz)` facing convention.
+
 ## v1.25.0 — Two-resource economy, as a registry (90%)
 **Date:** 2026-07-27
 

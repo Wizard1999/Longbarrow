@@ -6,13 +6,15 @@ Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
 ## Cohort playability — the road to a real match
 
 Tech system landed (D-028). Remaining gap to a *satisfying* Cohort match is
-roster breadth: 3 of 7 ground units exist.
+roster breadth: 4 of 7 ground units exist.
 
 - [x] **Research/tech system** — `src/data/tech.ts` + `src/sim/tech.ts`,
       7 upgrades, 3 tiers, 1 doctrine pair. 24 tests.
-- [ ] **Outrider** (flanker/scout) — fast, weak head-on, exploits the flank
-      bonus that combat already implements. Highest value next unit: it makes
-      the existing positional combat mechanics *matter*.
+- [x] **Outrider** (flanker/scout) — v1.26.0. Declared `flankExpertise` trait
+      scales the *bonus portion* of positional damage (rear ×1.70, side ×1.30,
+      frontal unchanged), so the engine rewards the trait, never the name.
+      Fastest and furthest-seeing ground unit; no defense, 80 HP. Trains from
+      the Standard on F. 4 of 7 Cohort ground units now exist.
 - [ ] **Ballista** (siege) — strong vs buildings, needs escort. Buildings
       already have HP and `siegeMul` already exists in the tech effects.
 - [ ] **Chronicler** (support/detector) — extends Command range, widens

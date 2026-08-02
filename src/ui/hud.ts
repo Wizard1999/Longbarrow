@@ -111,11 +111,10 @@ export function createHud(world: World, ui: UiState): Hud {
       } else if (b) {
         const t = BUILDING_TYPES[b.type];
         cardTitle.textContent = `${t.label} — +${t.command} command`;
-        const hotkeys: Partial<Record<UnitTypeKey, string>> = { worker: 'Q', legionnaire: 'E', marksman: 'R' };
         for (const ut of t.produces) {
           const u = UNIT_TYPES[ut];
           const btn = document.createElement('button');
-          btn.innerHTML = `<b>${u.label} (${hotkeys[ut] ?? ''})</b><span class="c">${costLabel(u.cost)} · ${u.supply} cmd</span>`;
+          btn.innerHTML = `<b>${u.label}${u.hotkey ? ` (${u.hotkey.toUpperCase()})` : ''}</b><span class="c">${costLabel(u.cost)} · ${u.supply} cmd</span>`;
           btn.dataset['unit'] = ut;
           btn.onclick = () => tryTrain(ut);
           cardBtns.appendChild(btn);
