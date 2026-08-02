@@ -1,3 +1,25 @@
+## v1.27.0 — Ground that reads as ground (92%)
+**Date:** 2026-08-02
+
+First item of the visual overhaul, and the one that was costing the most:
+terrain rendered as a single flat green sheet, so the elevation combat
+already rewards was invisible.
+
+- **Height, slope and meadow-noise blending** across three hue paths: valley
+  grass, a new sun-dried `grassHigh` for high ground, and rock on steep faces.
+  Drying starts *below* the high-ground combat threshold, so a contested rise is
+  already changing colour as you climb it. Large-scale noise wobbles the
+  boundary into meadow patches, which is what stops it reading as a contour map.
+- **Guarded behind a `TERRAIN_BLEND` define.** Units, buildings, scenery and
+  nodes compile the exact shader they compiled before and pay nothing for a
+  feature only the ground uses — D-006's budget is why this is a define rather
+  than a branch every fragment evaluates.
+- **Screenshot gallery re-shot** at v1.27.0 and its captions corrected. The
+  previous text called the terrain "one flat green mass"; that is no longer
+  true and the page now says what *is* still wrong instead — the ground's
+  *shape* is soft, with no authored ramps or chokepoints, which is D-033's
+  generator work and the real remaining blocker for D-035.
+
 ## v1.26.0 — Outrider: flanking finally has a customer (91%)
 **Date:** 2026-07-27
 

@@ -6,7 +6,7 @@ worth being blunt: *the game does not look good yet.* The concept art in
 [`CONCEPT_ART.md`](CONCEPT_ART.md) is the target; this page is the honest
 distance still to travel.
 
-Captured at v1.24.0 on 1600×900.
+Captured at v1.27.0 on 1600×900.
 
 > **Caveat on fidelity.** These were taken in a headless container with no GPU,
 > so Chromium fell back to software rendering (SwiftShader) and the quality
@@ -27,44 +27,61 @@ console. At this distance the level-of-detail system deliberately swaps unit
 meshes for strategic markers (D-014) — the dots are the LOD working, not units
 failing to render.
 
-**What this shot says about the work left:** terrain reads as one flat green
-mass. There is no height legibility, no material variation, and nothing that
-tells you where high ground or a chokepoint is. D-035 says maps must be
-*arcade-legible*; this is the evidence that generation, not shading, is the
-blocker.
+**Ground now reads as ground.** The pale ochre patches are high ground drying
+out, mixed by world height, slope and meadow noise — so the elevation that
+combat already rewards is finally visible from the war table (D-035). The
+earlier capture of this same view was one flat lime sheet.
+
+**What this shot still says about the work left:** the *shape* of the terrain is
+soft. Colour tells you roughly where the rises are, but there are no distinct
+ramps, no chokepoints, and no route worth discovering — because the generator
+does not yet author any. That is D-033's job and remains the real blocker for
+arcade legibility; ground colour was only the half of it that shading could
+fix.
 
 ## Contact
 
 ![Two armies meeting](assets/screenshots/04-battle.png)
 
-48 units spawned through the dev console and left to fight. Command shows
-`60/15` — over cap, because cheats do not respect supply — and the research
-panel has lit up now that 4000 is banked. The two forces have met at the
-midpoint between the control rings.
+Outriders (blue) against a Legionnaire line (red), 18 a side, spawned through
+the dev console and left to fight. Command shows `46/15` — over cap, because
+cheats do not respect supply. The research panel is lit now that both currencies
+are banked, and each upgrade shows its split cost: *90 Material · 30 Legacy*.
+
+The Outrider's whole case is visible in the shape of the engagement: it is the
+fastest unit on the roster, so it arrives first and curls around rather than
+meeting the line head-on, which is exactly where its doubled flank bonus pays
+and its zero defense does not.
 
 ## Research
 
 ![Research panel](assets/screenshots/02-research-panel.png)
 
 The tech track (D-028), reachable in-game. Rows grey out when unaffordable and
-light the moment they are payable. Doctrine pairs state explicitly that taking
-one does not forfeit the other — that reassurance is the mechanic.
+light the moment they are payable. Costs are rendered from the resource registry
+rather than hardcoded, so each upgrade shows its real split — Material for the
+labour, Legacy for the understanding (D-031). Doctrine pairs state explicitly
+that taking one does not forfeit the other; that reassurance is the mechanic.
 
 ## Developer console
 
 ![Dev console](assets/screenshots/03-dev-console.png)
 
-Backtick opens it. Every shot on this page was staged through it. Cheats are
-recorded into the replay stream as ordinary commands and gated on hashed
-`devMode`, so a session staged this way still replays exactly — and a clean
-competitive match can prove no cheat was ever enabled.
+Backtick opens it. Every shot on this page was staged through it — `/dev on`,
+`/reveal on`, `/add 2000`, `/spawn`. Cheats are recorded into the replay stream
+as ordinary commands and gated on hashed `devMode`, so a session staged this way
+still replays exactly, and a clean competitive match can prove no cheat was ever
+enabled. `/add` reports both currencies because it walks the resource registry;
+it does not know their names.
 
 ---
 
 ## Where this is going
 
 The gap between these captures and the concept art is the subject of the
-**visual overhaul** queued in [`TODO.md`](TODO.md). In short: the painterly
-shading model is in place and correct, but almost nothing else that makes a
-scene read well has been built — silhouette variety, ground material variation,
-readable elevation, contact shadows, and any sense of depth in the void.
+**visual overhaul** queued in [`TODO.md`](TODO.md). Ground material variation
+and readable elevation are now done — the first item on that list. What remains,
+in order of return: **contact shadows** where geometry meets ground (nothing
+currently sits *in* the world, it all floats on it), **silhouette variety**
+beyond near-cylinders now that the camera can drop to miniature scale, and
+**depth in the void** so the table feels suspended in something.

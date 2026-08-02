@@ -1,5 +1,5 @@
 {
-  "overall": 91,
+  "overall": 92,
   "updated": "2026-07-27",
   "currentWork": [
     "Validate attack-move, patrol, stop, and hold-position feel in a real browser, then refine direct-order feedback and tutorial coverage.",
@@ -50,8 +50,8 @@
     {
       "name": "Visual asset foundation",
       "status": "In progress",
-      "completion": 42,
-      "benchmark": "Painterly materials now cover terrain, units, buildings, scenery, and nodes; concept-art gallery and war-table hero published"
+      "completion": 52,
+      "benchmark": "Height/slope terrain blending makes elevation readable at war-table distance; screenshot gallery re-shot against the current build"
     },
     {
       "name": "LOD and performance architecture",
@@ -79,6 +79,7 @@
     }
   ],
   "milestones": [
+    "Terrain ground-material blending by height, slope and meadow noise, so the elevation that combat rewards is legible from the war table; compiled behind a define so no other material pays for it.",
     "Outrider flanker/scout with a declared `flankExpertise` trait that scales only the positional bonus, vision radii and training hotkeys moved into the data tables.",
     "Two-resource economy (Material and Legacy) implemented as a resource registry in `src/data/` plus generic mechanics in `src/sim/`, so the engine never learns how many currencies exist; workers self-rebalance toward declared shares with no player input.",
     "In-game developer console: cheats routed through `sim/dev.ts` into the replay stream, host-only pause/speed/tick/reveal kept out of it, and a hashed `devMode` flag so dev sessions replay correctly while a clean competitive result stays provable.",

@@ -90,6 +90,17 @@ export function buildTerrainMesh(scene: THREE.Scene, q: QualitySettings, mapSeed
     soft: 0.2,
     rim: 0.15,
     jitter: 0.07,
+    // Ground variation (D-035): drying starts below HIGH_GROUND_THRESHOLD so a
+    // contested rise is already changing colour as you climb it, and is fully
+    // dry well before the peaks. Slope gain is tuned to this map's gentle
+    // normals — see the option's doc comment.
+    terrain: {
+      high: PALETTE.grassHigh,
+      steep: PALETTE.rock,
+      heightLo: 0.25,
+      heightHi: 1.45,
+      slopeGain: 22,
+    },
   }));
   mesh.receiveShadow = true;
   mesh.name = 'polygon-battlefield';

@@ -6,7 +6,7 @@
 
 ## 🔑 SESSION HANDOFF — read before starting work
 
-**v1.26.0 · 416 tests · 72 modules documented · `npm run verify` green · nothing unpushed.**
+**v1.27.0 · 419 tests · 72 modules documented · `npm run verify` green · nothing unpushed.**
 
 ### What this session did
 
@@ -100,7 +100,27 @@ Doctrine that cannot fail a build is a suggestion, and it decays silently.
 
 ---
 
-## ⚡ Latest — the Outrider makes flanking matter (v1.26.0)
+## ⚡ Latest — ground that reads as ground (v1.27.0)
+
+**419 tests · full gate green.**
+
+- **Terrain blends three hue paths** by world height, surface slope and
+  meadow-scale noise: valley grass, sun-dried `grassHigh`, and rock on steep
+  faces. Drying begins below the high-ground combat threshold, so a rise is
+  already changing colour as you climb it. This is the first item of the visual
+  overhaul and the one that was costing most — elevation carries a real damage
+  bonus and was previously invisible (D-035).
+- **Behind a `TERRAIN_BLEND` define**, so every other painterly material
+  compiles unchanged and pays nothing (D-006).
+- **Gallery re-shot** and captions corrected — the old text called the terrain
+  "one flat green mass", which is no longer true. It now names what is still
+  wrong: ground *shape* is soft, with no authored ramps or chokepoints.
+
+**The remaining D-035 blocker is generation, not shading.** Colour tells you
+where the rises are; nothing tells you where the *approaches* are, because the
+generator makes smooth noise. That is D-033.
+
+## ⚡ Previous — the Outrider makes flanking matter (v1.26.0)
 
 **416 tests · full gate green.**
 

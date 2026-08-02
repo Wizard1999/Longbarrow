@@ -39,10 +39,15 @@ captures in `SCREENSHOTS.md` are the honest baseline — the painterly shading
 model is correct, but nearly everything else that makes a scene read well is
 missing. Ordered by visual return per unit of effort:
 
-- [ ] **Ground material variation.** Terrain is one flat green mass. Needs slope
-      and height driven blending (grass / dry earth / rock / moss) so elevation
-      is readable at a glance, which D-035 makes a *legibility* requirement and
-      not just decoration.
+- [x] **Ground material variation** — v1.27.0. Height, slope and meadow noise
+      blend a dry high-ground path and a rock path over the valley grass, so the
+      elevation combat already rewards is visible from the war table. Fragment
+      maths behind a `TERRAIN_BLEND` define, so non-terrain materials compile the
+      shader they always did and pay nothing (D-006).
+- [ ] **Authored ramps and chokepoints.** Ground *colour* now reads; ground
+      *shape* does not. The generator produces smooth noise, so there are no
+      distinct approaches to high ground and nothing worth discovering. This is
+      D-033's generator work and is the real remaining blocker for D-035.
 - [ ] **Contact shadows / ambient occlusion where geometry meets ground.**
       Nothing currently sits *in* the world; everything floats on it. Cheapest
       single change with the largest payoff.

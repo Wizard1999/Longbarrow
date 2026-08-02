@@ -21,6 +21,13 @@ const c = (hex: number) => new THREE.Color(hex);
 /** Cool violet-green shade -> saturated mid -> warm sunlit tip. */
 export const PALETTE = {
   grass: { shade: c(0x3f5d4a), mid: c(0x5f9147), lit: c(0xa8c85c) },
+  /**
+   * Sun-dried grass for high ground. The point is legibility, not decoration:
+   * combat gives high ground a real damage bonus, so elevation has to be
+   * readable from colour at war-table distance (D-035). Warmer and paler than
+   * the valley grass, still inside the same painterly family.
+   */
+  grassHigh: { shade: c(0x625c33), mid: c(0x99a04f), lit: c(0xdcd48b) },
   rock: { shade: c(0x4d4f52), mid: c(0x83837c), lit: c(0xc3bda9) },
   bark: { shade: c(0x3d2e24), mid: c(0x6b4a2f), lit: c(0x9c7746) },
   leaf: { shade: c(0x2f5535), mid: c(0x4f8f3d), lit: c(0x9ccc5a) },

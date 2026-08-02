@@ -61,6 +61,16 @@ uniform float uCloudAmount, uCloudScale, uCloudSoft;
 uniform vec2  uCloudOffset;
 uniform float uOpacity;
 
+#ifdef TERRAIN_BLEND
+// A second and third hue path for ground that is high or steep. Guarded by a
+// define so every non-terrain material compiles the exact shader it always
+// did — units and buildings pay nothing for this.
+uniform vec3 uShadeHigh, uMidHigh, uLitHigh;
+uniform vec3 uShadeSteep, uMidSteep, uLitSteep;
+// x: height where drying starts · y: height where it completes · z: slope gain
+uniform vec3 uBlendParams;
+#endif
+
 varying vec3 vWPos;
 varying vec3 vWNormal;
 
@@ -111,7 +121,24 @@ void main() {
   float jit = (hash21(floor(vWPos.xz * 7.0)) - 0.5) * uJitter;
 
   float t = wrap * mix(0.34, 1.0, shadow);
-  vec3 col = ramp3(t, uShade, uMid, uLit, uSoft, jit);
+
+  vec3 pShade = uShade, pMid = uMid, pLit = uLit;
+#ifdef TERRAIN_BLEND
+  // Ground variation, all of it fragment maths (D-006):
+  //  - height dries the grass out, so elevation is readable as colour — the
+  //    combat high-ground bonus must be visible from the war table (D-035);
+  //  - large-scale noise wobbles that boundary into meadow patches, which is
+  //    what stops the field reading as one flat green sheet;
+  //  - slope pushes toward rock, accenting the flanks of every rise.
+  float meadow = vnoise(vWPos.xz * 0.045) * 0.65 + vnoise(vWPos.xz * 0.13 + 17.0) * 0.35;
+  float hgt = smoothstep(uBlendParams.x, uBlendParams.y, vWPos.y + (meadow - 0.5) * 0.9);
+  float steep = clamp((1.0 - N.y) * uBlendParams.z - 0.35, 0.0, 1.0);
+  pShade = mix(mix(pShade, uShadeHigh, hgt), uShadeSteep, steep);
+  pMid   = mix(mix(pMid,   uMidHigh,   hgt), uMidSteep,   steep);
+  pLit   = mix(mix(pLit,   uLitHigh,   hgt), uLitSteep,   steep);
+#endif
+
+  vec3 col = ramp3(t, pShade, pMid, pLit, uSoft, jit);
 
   float litAmt = smoothstep(0.34, 0.86, t);
   col *= mix(vec3(0.94), uSunColor * 1.28, litAmt * 0.62);
@@ -150,6 +177,22 @@ export interface PainterlyOptions {
   opacity?: number;
   transparent?: boolean;
   side?: THREE.Side;
+  /**
+   * Ground blending: a second hue path for high/dry ground and a third for
+   * steep faces, mixed by world height, slope and meadow noise. Terrain only —
+   * omitting it compiles the identical shader every other material uses.
+   */
+  terrain?: {
+    high: HuePath;
+    steep: HuePath;
+    /** World height where the grass starts drying out. */
+    heightLo: number;
+    /** ...and where it is fully dry. */
+    heightHi: number;
+    /** Gain on (1 − N.y). This map's slopes are gentle (N.y ≈ 0.93–1.0), so
+     *  legible rock accents need a large multiplier. */
+    slopeGain: number;
+  };
 }
 
 /**
@@ -182,6 +225,7 @@ export function createPainterlyMaterial(
     fog: true,
     transparent: opts.transparent ?? false,
     side: opts.side ?? THREE.FrontSide,
+    defines: opts.terrain ? { TERRAIN_BLEND: '' } : {},
     uniforms: THREE.UniformsUtils.merge([
       THREE.UniformsLib['lights'],
       THREE.UniformsLib['fog'],
@@ -202,6 +246,18 @@ export function createPainterlyMaterial(
         uCloudScale: { value: 0.012 },
         uCloudSoft: { value: 0.14 },
         uCloudOffset: { value: new THREE.Vector2() },
+        ...(opts.terrain ? {
+          uShadeHigh: { value: opts.terrain.high.shade.clone() },
+          uMidHigh: { value: opts.terrain.high.mid.clone() },
+          uLitHigh: { value: opts.terrain.high.lit.clone() },
+          uShadeSteep: { value: opts.terrain.steep.shade.clone() },
+          uMidSteep: { value: opts.terrain.steep.mid.clone() },
+          uLitSteep: { value: opts.terrain.steep.lit.clone() },
+          uBlendParams: {
+            value: new THREE.Vector3(
+              opts.terrain.heightLo, opts.terrain.heightHi, opts.terrain.slopeGain),
+          },
+        } : {}),
       },
     ]),
   });
