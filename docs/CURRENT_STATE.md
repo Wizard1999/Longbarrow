@@ -56,7 +56,14 @@ Doctrine that cannot fail a build is a suggestion, and it decays silently.
 3. **Pushes to `main` intermittently reject** as non-fast-forward even when a
    clean fast-forward exists. Retrying has worked every time. Never force-push
    in response.
-4. **`AskUserQuestion` answers can be lost in transit.** It happened this
+4. **Never kill the dev server.** The web/desktop client's preview (the globe
+   icon, `Ctrl+Shift+B`) only appears while something is listening on the dev
+   port. A `pkill -f vite` after taking screenshots silently removed the
+   designer's ability to play the build, and it looked like a client bug rather
+   than something an agent did. If you need the server for tooling, leave it
+   running afterwards — `npm run dev:lan` binds `0.0.0.0`, which is what the
+   port forwarding needs.
+5. **`AskUserQuestion` answers can be lost in transit.** It happened this
    session: the designer answered all four blockers and the response arrived
    empty. If answers vanish, ask for them in plain chat rather than re-issuing
    the prompt, and record decisions as `⏳ proposed` until confirmed — that habit
