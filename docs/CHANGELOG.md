@@ -1,3 +1,43 @@
+## v1.25.0 — Two-resource economy, as a registry (90%)
+**Date:** 2026-07-27
+
+The economy D-031 called for, implemented in the shape D-031 insisted on.
+
+- **Material and Legacy.** Material is common and sits near each base; Legacy is
+  rare, few, and placed on the centre line equidistant from both bases, so the
+  scarce currency is bought with map control rather than with time.
+- **A registry, not two fields.** `src/data/resources.ts` declares which
+  currencies exist and their rarity, node capacity, carry amount and gather
+  share. `src/sim/resources.ts` implements afford / pay / refund / reserve and
+  the worker rebalance by walking `RESOURCE_ORDER`. Stocks are a bag keyed by
+  resource id; costs are `{ [resourceId]: amount }`. A game author ships a
+  different economy by editing one table, without opening `src/sim/`.
+- **Affordability is per resource, never a sum.** A thousand of one currency does
+  not buy something that needs five of another — which is the entire reason to
+  have more than one.
+- **The set-and-forget guard rail is code.** Two currencies normally reintroduce
+  worker micro. Idle workers steer toward whichever resource is furthest below
+  its declared share, and re-aim on deposit only when their current resource
+  stops being the one the team is short of: re-picking every trip would
+  ping-pong workers across the map, never re-picking would leave the rare
+  resource untouched forever. A test runs 6000 ticks with no player input and
+  asserts both resources are banked.
+- **Research is paid in both** — Material for the labour, Legacy for the
+  understanding.
+- **Presentation:** nodes are coloured by resource (warm ochre Material, violet
+  Legacy per D-025), the shard a worker carries swaps to match what is in hand,
+  and the HUD renders one row per declared resource rather than a hardcoded
+  field. Carried loads remember their resource, since a node can be mined out
+  while the worker is still walking home.
+- `REPLAY_VERSION` 8, `SAVE_VERSION` 2, `MAP_VERSION` 4 — command meaning, state
+  shape and map layout all changed.
+- 382 → 406 tests, including conservation across both resources (banked +
+  carried + still in the ground equals the starting total) and a check that no
+  `src/sim/` module names a declared resource.
+
+**Balance is unvalidated.** The 75/25 gather share, Legacy's node capacity and
+the research cost split are first guesses that have never been played.
+
 ## v1.24.0 — Dev console, softened fog, and the four design blockers closed (88%)
 **Date:** 2026-07-27
 

@@ -1,7 +1,7 @@
 # Live Development Progress
 
 **Last updated:** 2026-07-27
-**Current overall completion:** **88%** of the active 11-phase development plan.
+**Current overall completion:** **90%** of the active 11-phase development plan.
 
 This file is the live scoreboard. Update it whenever a benchmark lands, scope is
 added, or a task changes state. `CURRENT_STATE.md` explains the project in detail;
@@ -20,12 +20,14 @@ this file answers "where are we right now?" at a glance.
 | 6. Visual asset foundation | 15% | In progress | 42% | Painterly materials now cover terrain, units, buildings, scenery, and nodes; concept-art gallery and war-table hero published |
 | 7. LOD and performance architecture | 10% | In progress | 82% | Screen-consistent strategic markers, distance LOD, scenery culling, and persistent in-game quality selection |
 | 8. World presentation | 10% | In progress | 95% | Fog of war rebuilt as a terrain-following sampled coverage texture: soft cell boundaries, soft polygon rim, one draw call |
-| 9. Core gameplay expansion | 5% | In progress | 88% | Research reachable in-game through the tech panel; all four §11.1 design blockers resolved (D-031–D-035) |
+| 9. Core gameplay expansion | 5% | In progress | 94% | Two-resource economy live as a data-driven registry, with self-rebalancing workers and research paid in both currencies |
 | 10. Replay/save validation | 5% | In progress | 100% | Live player-command capture, AI-aware playback, endpoint hashes, export/verify/import, and director policy foundation |
 
-Weighted overall: approximately **88%**.
+Weighted overall: approximately **90%**.
 
 ## Most recent completed benchmarks
+
+- [x] Two-resource economy (Material and Legacy) implemented as a resource registry in `src/data/` plus generic mechanics in `src/sim/`, so the engine never learns how many currencies exist; workers self-rebalance toward declared shares with no player input.
 
 - [x] In-game developer console: cheats routed through `sim/dev.ts` into the replay stream, host-only pause/speed/tick/reveal kept out of it, and a hashed `devMode` flag so dev sessions replay correctly while a clean competitive result stays provable.
 - [x] Fog of war softened (B-004): one terrain-following sheet sampling an R8 coverage texture with linear filtering and a two-band smoothstep, replacing ~2,300 instanced quads with a single draw call.
@@ -109,7 +111,7 @@ browser-first RTS engine and creator ecosystem. The platform track includes
 content-defined factions, units, resources, lore, balance, scenarios, custom
 landing pages, validation, templates, and eventual creator tools.
 
-This does **not** change the current 88% game-production score. It is tracked as a
+This does **not** change the current 90% game-production score. It is tracked as a
 long-term platform track whose architectural rules apply now, while extraction and
 creator tooling follow only after Greenmantle proves the systems in real play.
 See `ENGINE_VISION.md`.

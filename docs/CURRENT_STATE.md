@@ -6,7 +6,7 @@
 
 ## 🔑 SESSION HANDOFF — read before starting work
 
-**v1.24.0 · 382 tests · 70 modules documented · `npm run verify` green · nothing unpushed.**
+**v1.25.0 · 406 tests · 72 modules documented · `npm run verify` green · nothing unpushed.**
 
 ### What this session did
 
@@ -64,24 +64,22 @@ Doctrine that cannot fail a build is a suggestion, and it decays silently.
 
 ### Immediate next work, in priority order
 
-1. **Two-resource migration (D-031).** The largest queued change. Implement as a
-   **resource registry in `src/data/` plus a bag keyed by resource id** — *not*
-   two fields on `World`, which is the mistake described above. Touches sim state
-   shape, every cost in `src/data/`, HUD, AI reasoning, `SAVE_VERSION` and the
-   state hash, and **must land atomically**: a half-migrated economy passes tests
-   while being incoherent. Guard rail from D-031: no per-worker allocation UI,
-   ever — the player's decision is *which nodes to hold*.
-   Iterate resources in the **declared order from `src/data/`**, never
-   `Object.keys()`, or insertion order reaches results.
-2. **Outrider** (flanker). Highest-value roster addition: flanking already exists
+1. **Outrider** (flanker). Highest-value roster addition: flanking already exists
    in combat and nothing exploits it. 3 of 7 Cohort ground units built.
-3. **Chronicler** — now unblocked by D-032. It needs a detection radius, not a
-   cloak system.
-4. **Terrain concealment (D-032)** as a declared terrain trait plus per-unit
-   detection radius, read generically. Note `ui/fogOfWar.ts` currently hardcodes
-   vision radii per unit type — those are balance numbers and belong in
+2. **Play-test and tune the economy split.** The 75/25 gather share, Legacy's
+   node capacity and the research cost split are unvalidated first guesses.
+   Needs a human at the controls — it is a feel question, not a correctness one.
+3. **Chronicler** — unblocked by D-032. Needs a detection radius, not a cloak
+   system.
+4. **Terrain concealment (D-032)** as a declared terrain trait plus a per-unit
+   detection radius, read generically. Note `ui/fogOfWar.ts` still hardcodes
+   vision radii per unit type; those are balance numbers and belong in
    `src/data/` before concealment is built on top of them.
-5. **Generator complication (D-033 + D-035).** Ramps, chokepoints and alternate
+5. **Visual overhaul** — the designer's standing request, queued in `TODO.md`
+   ordered by visual return: ground material variation first, then contact
+   shadows, then silhouettes. Measure the CodePen references against D-006
+   before adopting anything from them.
+6. **Generator complication (D-033 + D-035).** Ramps, chokepoints and alternate
    routes must arise from the generator, authored toward the arcade target.
 
 ### Still pending on the designer
@@ -104,7 +102,31 @@ Doctrine that cannot fail a build is a suggestion, and it decays silently.
 
 ---
 
-## ⚡ Latest — dev console, softened fog, design blockers closed (v1.24.0)
+## ⚡ Latest — two-resource economy as a registry (v1.25.0)
+
+**406 tests · full gate green.**
+
+- **Material (common) and Legacy (rare)**, implemented the way D-031 insisted:
+  a **registry** in `src/data/resources.ts` plus generic mechanics in
+  `src/sim/resources.ts`, never named fields on `World`. Stocks are a bag keyed
+  by resource id; costs are `{ [resourceId]: amount }`.
+- **Affordability is per resource, never a sum** — 1000 of one currency does not
+  buy something needing 5 of another.
+- **Workers self-rebalance**, which is the guard rail that keeps two currencies
+  compatible with set-and-forget. They steer toward whichever resource is
+  furthest below its declared share and re-aim on deposit only when their
+  current resource stops being the shortfall. A 6000-tick no-input test asserts
+  both resources get banked.
+- **Research costs both currencies**, and the rare nodes sit on the centre line,
+  so the tech curve is paid for with map control.
+- `REPLAY_VERSION` 8 · `SAVE_VERSION` 2 · `MAP_VERSION` 4.
+- A test now fails the build if any `src/sim/` module so much as names a declared
+  resource — the exact mistake this session opened with.
+
+**Balance unvalidated:** gather shares, node capacities and the research split
+are first guesses. Nothing structural depends on the numbers.
+
+## ⚡ Previous — dev console, softened fog, design blockers closed (v1.24.0)
 
 **382 tests · full gate green.**
 

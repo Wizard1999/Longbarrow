@@ -169,15 +169,17 @@ new system) and **D-034** (one supply pool for every unit, air included), plus
 
 Work these unblocked, in dependency order:
 
-- [ ] **Two-resource migration (D-031).** Replace the single `essence` with
-      **Material** (common) and **Legacy** (rare). Touches sim fields, every cost
-      in `src/data/`, HUD, AI economic reasoning, `SAVE_VERSION` and the state
-      hash. **Must land atomically** — a half-migrated economy passes tests while
-      being incoherent. Guard rail: no per-worker allocation UI, ever; workers
-      self-rebalance and the player's decision is which nodes to hold.
-- [ ] **Material's colour.** Must avoid violet (Legacy, D-025), teal (Conclave)
-      and green (Mycora), and stay distinct from Titanfolk's stone. Warm ochre
-      leads.
+- [x] **Two-resource migration (D-031).** Landed in v1.25.0 as a **registry**
+      (`data/resources.ts`) plus generic mechanics (`sim/resources.ts`), not two
+      fields on `World`. Bag keyed by resource id, costs as `{ [id]: amount }`,
+      affordability per resource. Workers self-rebalance toward the declared
+      share, verified by a 6000-tick no-input test. REPLAY 8 / SAVE 2 / MAP 4.
+- [ ] **Play-test and tune the split.** The 75/25 gather share, Legacy node
+      capacity and the research cost split are unvalidated first guesses. This is
+      a feel question that needs a human at the controls.
+- [x] **Material's colour** — warm ochre (`PALETTE.material`), distinct from
+      violet Legacy and borrowing no element's colour. Nodes and the shard a
+      worker carries are both coloured by resource.
 - [ ] **Terrain concealment (D-032).** A concealing terrain trait plus a
       detection radius per unit, read generically by the engine — never a
       unit-name check. Unblocks the **Chronicler**.

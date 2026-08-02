@@ -788,7 +788,7 @@ reasoning that produced its successor.
 ---
 
 ## D-031 — Two gathered resources: common Material, rare Legacy
-**Date:** 2026-07-27 · **Status:** locked (designer) · **Resolves:** D-021 deferral, `GAME_DESIGN.md § 11.1`, `OPEN_QUESTIONS.md` A1/A6
+**Date:** 2026-07-27 · **Status:** locked (designer) · **Implemented:** v1.25.0 · **Resolves:** D-021 deferral, `GAME_DESIGN.md § 11.1`, `OPEN_QUESTIONS.md` A1/A6
 
 D-021 accepted **Material / Legacy / Dominion / Relics** as a vocabulary
 direction but deferred which of the four are spendable. Settled by the designer:
@@ -844,6 +844,30 @@ must stay distinct from Titanfolk's stone.
 **Rejected:** one universal currency, on the grounds above — it was the prior
 recommendation, and it made every resource node identical and therefore made
 holding ground economically meaningless.
+
+### As implemented (v1.25.0)
+
+- `src/data/resources.ts` is the registry; `src/sim/resources.ts` holds the
+  mechanics and walks `RESOURCE_ORDER`. `World.resources` is a bag keyed by
+  resource id; costs are `{ [resourceId]: amount }`.
+- **Affordability is per resource, never a sum.** 1000 of one currency does not
+  buy something needing 5 of another, which is the entire reason for having more
+  than one.
+- **Research costs both** — Material for the labour, Legacy for the
+  understanding — so the tech curve is bought with map control. Rare nodes sit on
+  the centre line, equidistant from both bases.
+- **The guard rail is code, not prose.** Idle workers steer toward whichever
+  resource is furthest below its declared `gatherShare`, and re-aim on deposit
+  only when their current resource stops being the one the team is short of.
+  Re-picking every trip would ping-pong workers across the map; never re-picking
+  would leave the rare resource untouched forever. A test runs 6000 ticks with no
+  player input and asserts both resources are banked.
+- `tests/resources.test.ts` fails the build if any `src/sim/` module names a
+  declared resource, which is the specific mistake this decision was drafted
+  wrong the first time.
+- **Balance is unvalidated.** The 75/25 gather share, Legacy's 520-capacity
+  nodes and the 75/25 split of research costs are first guesses that have never
+  been played. Expect to tune them; nothing structural depends on the numbers.
 
 ---
 

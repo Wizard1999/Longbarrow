@@ -1,5 +1,5 @@
 {
-  "overall": 88,
+  "overall": 90,
   "updated": "2026-07-27",
   "currentWork": [
     "Validate attack-move, patrol, stop, and hold-position feel in a real browser, then refine direct-order feedback and tutorial coverage.",
@@ -68,8 +68,8 @@
     {
       "name": "Core gameplay expansion",
       "status": "In progress",
-      "completion": 88,
-      "benchmark": "Research reachable in-game through the tech panel; all four §11.1 design blockers resolved (D-031–D-035)"
+      "completion": 94,
+      "benchmark": "Two-resource economy live as a data-driven registry, with self-rebalancing workers and research paid in both currencies"
     },
     {
       "name": "Replay/save validation",
@@ -79,6 +79,7 @@
     }
   ],
   "milestones": [
+    "Two-resource economy (Material and Legacy) implemented as a resource registry in `src/data/` plus generic mechanics in `src/sim/`, so the engine never learns how many currencies exist; workers self-rebalance toward declared shares with no player input.",
     "In-game developer console: cheats routed through `sim/dev.ts` into the replay stream, host-only pause/speed/tick/reveal kept out of it, and a hashed `devMode` flag so dev sessions replay correctly while a clean competitive result stays provable.",
     "Fog of war softened (B-004): one terrain-following sheet sampling an R8 coverage texture with linear filtering and a two-band smoothstep, replacing ~2,300 instanced quads with a single draw call.",
     "All four long-standing design blockers resolved and locked: two-resource economy, terrain concealment, map geometry as generation, and a single shared supply pool (D-031–D-035).",
