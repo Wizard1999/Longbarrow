@@ -6,6 +6,7 @@ import type { QualityTier } from './quality';
 import { lodDistance3D, lodForDistance, strategicMarkerScale } from './lod';
 import type { VisibilityController } from '../ui/visibility';
 import { boneMaterial, glowMaterial, mossMaterial } from './materials';
+import { createGroundShadow } from './groundShadow';
 
 interface BuildingViewData {
   core: THREE.Mesh;
@@ -89,6 +90,10 @@ function makeBuildingView(scene: THREE.Scene, b: Building): THREE.Group {
   strategicMarker.position.y = 0.12;
   strategicMarker.visible = false;
   g.add(strategicMarker);
+
+  // Buildings are the heaviest things on the board, so they need the strongest
+  // grounding; a wider spread reads as the mass sitting into the ground.
+  g.add(createGroundShadow(t.radius, 2.1));
 
   g.position.set(b.x, terrainHeightAt(b.x, b.z), b.z);
   scene.add(g);

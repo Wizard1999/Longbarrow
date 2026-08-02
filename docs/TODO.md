@@ -48,9 +48,10 @@ missing. Ordered by visual return per unit of effort:
       *shape* does not. The generator produces smooth noise, so there are no
       distinct approaches to high ground and nothing worth discovering. This is
       D-033's generator work and is the real remaining blocker for D-035.
-- [ ] **Contact shadows / ambient occlusion where geometry meets ground.**
-      Nothing currently sits *in* the world; everything floats on it. Cheapest
-      single change with the largest payoff.
+- [x] **Contact shadows** — v1.28.0. `render/groundShadow.ts`: one shared
+      material and geometry, a soft violet-shifted ellipse under every unit and
+      building, scaled to caster radius. Crucially works with shadow maps *off*,
+      which is the low tier — previously nothing grounded anything there at all.
 - [ ] **Silhouette variety in units and buildings.** Units are still near-
       cylinders. D-014's miniature zoom means they are inspected closely now.
 - [ ] **Depth in the void.** The black surround is currently featureless; the

@@ -6,7 +6,7 @@
 
 ## 🔑 SESSION HANDOFF — read before starting work
 
-**v1.27.0 · 419 tests · 72 modules documented · `npm run verify` green · nothing unpushed.**
+**v1.28.0 · 425 tests · 73 modules documented · `npm run verify` green · nothing unpushed.**
 
 ### What this session did
 
@@ -100,7 +100,23 @@ Doctrine that cannot fail a build is a suggestion, and it decays silently.
 
 ---
 
-## ⚡ Latest — ground that reads as ground (v1.27.0)
+## ⚡ Latest — contact shadows (v1.28.0)
+
+**425 tests · full gate green.**
+
+- **A soft violet-shifted ellipse under every unit and building**
+  (`render/groundShadow.ts`), scaled to caster radius and spread slightly wider
+  than it. Nothing on the board was grounded before this; the scene read as
+  decals on a plane.
+- **It works with shadow maps off**, which is the whole point: `QUALITY.low`
+  disables shadows, so on the weak machines D-006 targets there was previously
+  no grounding at all. Four instructions of fragment maths, shipped in every
+  tier.
+- One shared material and geometry across all casters, pinned by tests — a
+  `ShaderMaterial` per unit would break the 100-unit target on its own. Lives
+  inside each unit's `detailRoot`, so it vanishes with the body at LOD swap.
+
+## ⚡ Previous — ground that reads as ground (v1.27.0)
 
 **419 tests · full gate green.**
 

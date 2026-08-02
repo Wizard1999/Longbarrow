@@ -1,5 +1,5 @@
 {
-  "overall": 92,
+  "overall": 93,
   "updated": "2026-07-27",
   "currentWork": [
     "Validate attack-move, patrol, stop, and hold-position feel in a real browser, then refine direct-order feedback and tutorial coverage.",
@@ -50,8 +50,8 @@
     {
       "name": "Visual asset foundation",
       "status": "In progress",
-      "completion": 52,
-      "benchmark": "Height/slope terrain blending makes elevation readable at war-table distance; screenshot gallery re-shot against the current build"
+      "completion": 60,
+      "benchmark": "Contact shadows ground every unit and building even with shadow maps off; height/slope terrain blending makes elevation readable"
     },
     {
       "name": "LOD and performance architecture",
@@ -79,6 +79,7 @@
     }
   ],
   "milestones": [
+    "Contact shadows under every unit and building, sharing one material and geometry and working with shadow maps disabled, so the low quality tier is grounded for the first time.",
     "Terrain ground-material blending by height, slope and meadow noise, so the elevation that combat rewards is legible from the war table; compiled behind a define so no other material pays for it.",
     "Outrider flanker/scout with a declared `flankExpertise` trait that scales only the positional bonus, vision radii and training hotkeys moved into the data tables.",
     "Two-resource economy (Material and Legacy) implemented as a resource registry in `src/data/` plus generic mechanics in `src/sim/`, so the engine never learns how many currencies exist; workers self-rebalance toward declared shares with no player input.",

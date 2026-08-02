@@ -1,7 +1,7 @@
 # Live Development Progress
 
 **Last updated:** 2026-07-27
-**Current overall completion:** **92%** of the active 11-phase development plan.
+**Current overall completion:** **93%** of the active 11-phase development plan.
 
 This file is the live scoreboard. Update it whenever a benchmark lands, scope is
 added, or a task changes state. `CURRENT_STATE.md` explains the project in detail;
@@ -17,15 +17,17 @@ this file answers "where are we right now?" at a glance.
 | 3. War-table camera | 15% | In progress | 97% | Whole-board framing plus adaptive near clipping across miniature and cosmological zoom |
 | 4. Selection and command reliability | 10% | In progress | 96% | Direct attack-move, patrol, stop, and hold-position orders are replay-safe, polygon-safe, and exposed through hotkeys and selection cards |
 | 5. Debug overlay and observability | 10% | Complete | 100% | In-game dev console with replay-recorded cheats, host-only pacing controls, and hashed dev-mode gating |
-| 6. Visual asset foundation | 15% | In progress | 52% | Height/slope terrain blending makes elevation readable at war-table distance; screenshot gallery re-shot against the current build |
+| 6. Visual asset foundation | 15% | In progress | 60% | Contact shadows ground every unit and building even with shadow maps off; height/slope terrain blending makes elevation readable |
 | 7. LOD and performance architecture | 10% | In progress | 82% | Screen-consistent strategic markers, distance LOD, scenery culling, and persistent in-game quality selection |
 | 8. World presentation | 10% | In progress | 95% | Fog of war rebuilt as a terrain-following sampled coverage texture: soft cell boundaries, soft polygon rim, one draw call |
 | 9. Core gameplay expansion | 5% | In progress | 96% | Outrider flanker/scout live: declared flank-expertise trait, data-driven vision and hotkeys; 4 of 7 Cohort ground units |
 | 10. Replay/save validation | 5% | In progress | 100% | Live player-command capture, AI-aware playback, endpoint hashes, export/verify/import, and director policy foundation |
 
-Weighted overall: approximately **92%**.
+Weighted overall: approximately **93%**.
 
 ## Most recent completed benchmarks
+
+- [x] Contact shadows under every unit and building, sharing one material and geometry and working with shadow maps disabled, so the low quality tier is grounded for the first time.
 
 - [x] Terrain ground-material blending by height, slope and meadow noise, so the elevation that combat rewards is legible from the war table; compiled behind a define so no other material pays for it.
 
@@ -115,7 +117,7 @@ browser-first RTS engine and creator ecosystem. The platform track includes
 content-defined factions, units, resources, lore, balance, scenarios, custom
 landing pages, validation, templates, and eventual creator tools.
 
-This does **not** change the current 92% game-production score. It is tracked as a
+This does **not** change the current 93% game-production score. It is tracked as a
 long-term platform track whose architectural rules apply now, while extraction and
 creator tooling follow only after Greenmantle proves the systems in real play.
 See `ENGINE_VISION.md`.

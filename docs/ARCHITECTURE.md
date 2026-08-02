@@ -99,6 +99,7 @@ Imports `core/` and `data/` **only**.
 | `siteViews.ts` | Construction sites in progress. |
 | `nodeViews.ts` | Resource nodes; shrink visibly as they deplete. |
 | `sceneryViews.ts` | Decorative rocks and trees; culled beyond tactical range. |
+| `groundShadow.ts` | Contact shadows: one shared soft ellipse under every caster. Works with shadow maps off, so the low tier is grounded too. |
 | `fogOverlay.ts` | Instanced polygon-clipped fog, unexplored vs explored. |
 | `chainVisuals.ts` | Selected squad's behaviour chain drawn on the ground. |
 | `commandFeedback.ts` | Immediate click acknowledgement — fires on the frame of the click, before the tick applies it (D-004). |

@@ -10,6 +10,7 @@ import { lodDistance3D, lodForDistance, strategicMarkerScale } from './lod';
 import type { VisibilityController } from '../ui/visibility';
 import { boneMaterial, trimMaterial } from './materials';
 import { RESOURCE_ORDER } from '../data/resources';
+import { createGroundShadow } from './groundShadow';
 
 export const TEAM_COLORS: Record<Team, number> = { player: 0x3b5bdb, rival: 0xb02e2e };
 
@@ -94,6 +95,11 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
     carry.visible = false;
     detailRoot.add(carry);
   }
+
+  // Contact shadow. Inside detailRoot, so it disappears with the body when LOD
+  // swaps to a strategic marker — a shadow with nothing casting it is worse
+  // than none.
+  detailRoot.add(createGroundShadow(unit.radius));
 
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(isWorker ? 0.46 : 0.55, isWorker ? 0.58 : 0.68, 20),

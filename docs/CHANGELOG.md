@@ -1,3 +1,24 @@
+## v1.28.0 — Contact shadows: things sit in the world (93%)
+**Date:** 2026-08-02
+
+Second item of the visual overhaul. Nothing on the board was grounded —
+units and buildings sat *on* the world rather than *in* it, so the whole
+scene read as decals on a plane.
+
+- **A soft ellipse under every unit and building**, scaled to caster radius and
+  spread slightly wider, because a shadow matching the radius exactly reads as a
+  printed disc rather than as contact.
+- **It works with shadow maps switched off**, which is the point. `QUALITY.low`
+  disables shadows entirely, so on a weak machine — exactly the machine D-006
+  targets — there was previously no grounding of any kind. This is four
+  instructions of fragment maths and ships in every tier.
+- Violet-shifted rather than black (D-005), and attached inside each unit's
+  `detailRoot` so it disappears with the body when LOD swaps to a strategic
+  marker; a shadow with nothing casting it is worse than none.
+- One shared material and one shared geometry across every caster — a
+  `ShaderMaterial` per unit would mean a shader compile per unit and would break
+  the 100-unit target on its own. Tests pin the sharing.
+
 ## v1.27.0 — Ground that reads as ground (92%)
 **Date:** 2026-08-02
 
