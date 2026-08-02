@@ -52,8 +52,18 @@ missing. Ordered by visual return per unit of effort:
       material and geometry, a soft violet-shifted ellipse under every unit and
       building, scaled to caster radius. Crucially works with shadow maps *off*,
       which is the low tier — previously nothing grounded anything there at all.
-- [ ] **Silhouette variety in units and buildings.** Units are still near-
-      cylinders. D-014's miniature zoom means they are inspected closely now.
+- [x] **Silhouette variety in units** — v1.29.0. Proportions are declared per
+      unit in `src/data/` (`SilhouetteDef`) rather than inferred from combat
+      stats, and geometry is shared per type+tier in `render/unitGeometry.ts`.
+      Fixed a real bug on the way: `QUALITY.bodySegments` promised 8/12/16 and
+      **nothing consumed it** — every unit was a hardcoded 6-sided cylinder even
+      on High, which is precisely why they read as cylinders.
+- [ ] **`QUALITY.sceneryDetail` is still unused.** Same class of bug as
+      `bodySegments` was: declared in the tier table, consumed nowhere, so rocks
+      and trees are identical at every quality. Needs the tier threading into
+      `buildSceneryViews`, which currently only receives it in `sync`.
+- [ ] **Building silhouettes.** Only units were done. Buildings are still
+      scaled copies of one form.
 - [ ] **Depth in the void.** The black surround is currently featureless; the
       table needs to feel suspended in something (D-026 World Turtle staging).
 - [ ] **Review the two CodePen references** in `ART_REFERENCES.md` for

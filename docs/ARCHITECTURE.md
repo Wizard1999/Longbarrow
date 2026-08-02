@@ -94,6 +94,7 @@ Imports `core/` and `data/` **only**.
 | `quality.ts` | Low/medium/high tiers. The *look* is not tiered; the *cost* is. |
 | `lod.ts` | Camera-distance level of detail — real silhouettes close, strategic markers at table scale. |
 | `terrainMesh.ts` | Ground mesh, polygon skirt, World Turtle far-zoom silhouette (D-026). |
+| `unitGeometry.ts` | Unit body geometry shared per type and quality tier, built from each unit's declared `silhouette`. Spends the `bodySegments` budget the tiers promise. |
 | `unitViews.ts` | Unit meshes; interpolates with the loop's `alpha`. |
 | `buildingViews.ts` | Building meshes — fossil-and-glow, not machinery (§8.8). |
 | `siteViews.ts` | Construction sites in progress. |

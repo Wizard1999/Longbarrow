@@ -6,7 +6,7 @@
 
 ## 🔑 SESSION HANDOFF — read before starting work
 
-**v1.28.0 · 425 tests · 73 modules documented · `npm run verify` green · nothing unpushed.**
+**v1.29.0 · 435 tests · 74 modules documented · `npm run verify` green · nothing unpushed.**
 
 ### What this session did
 
@@ -107,7 +107,26 @@ Doctrine that cannot fail a build is a suggestion, and it decays silently.
 
 ---
 
-## ⚡ Latest — contact shadows (v1.28.0)
+## ⚡ Latest — unit silhouettes, and a budget nobody was spending (v1.29.0)
+
+**435 tests · full gate green.**
+
+- **`QUALITY.bodySegments` was declared and consumed nowhere.** The tier table
+  promises 8/12/16 radial segments and calls itself the place "'not needlessly
+  low-poly' gets spent"; every unit was a hardcoded six-sided cylinder at every
+  tier, High included. That, not art, is why units read as cylinders. Now spent.
+- **Geometry shared per type and tier** (`render/unitGeometry.ts`). A hundred
+  units meant a hundred identical geometry uploads; materials had been shared
+  for exactly this reason and geometry had not.
+- **Silhouettes are declared per unit** (`SilhouetteDef` in `src/data/`), not
+  inferred. Inference was tried and was wrong twice in one sitting: melee
+  `range` is 0.9, not the 0 its own doc claimed, and speeds cluster too tightly
+  for a threshold to isolate a scout. How a unit reads is an authoring decision.
+
+**Still unspent, same class of bug:** `QUALITY.sceneryDetail` is declared and
+consumed nowhere, so scenery is identical at every tier. Logged in `TODO.md`.
+
+## ⚡ Previous — contact shadows (v1.28.0)
 
 **425 tests · full gate green.**
 

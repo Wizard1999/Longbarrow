@@ -1,3 +1,29 @@
+## v1.29.0 — Unit silhouettes, and a quality budget that was never spent (94%)
+**Date:** 2026-08-02
+
+Third item of the visual overhaul. Chasing "units still read as cylinders"
+turned up the actual cause, which was not an art problem.
+
+- **`QUALITY.bodySegments` was declared and consumed nowhere.** The tier table
+  promises 8/12/16 radial segments and says outright that this is "where 'not
+  needlessly low-poly' gets spent" — and every unit was built with a hardcoded
+  six-sided cylinder at every tier, High included. Now spent, with head
+  subdivision following the tier too.
+- **Geometry is shared per type and tier** (`render/unitGeometry.ts`). A hundred
+  units previously meant a hundred identical `CylinderGeometry` uploads;
+  materials had been shared for exactly this reason and geometry had not.
+- **Silhouettes are declared, not inferred.** Each unit carries a
+  `SilhouetteDef` in `src/data/`. Inference from combat stats was tried first
+  and was wrong twice in one sitting — melee `range` is 0.9 rather than the 0
+  its own doc comment claimed, and unit speeds cluster too tightly for any
+  threshold to isolate a scout. How a unit reads is an authoring decision
+  (D-029), and a game author should set it rather than reverse-engineer which
+  stat thresholds the renderer happens to test.
+- Line infantry gained shoulder mass, so a shield wall reads as one block from
+  the war-table camera. The Outrider is sharply tapered with almost no base
+  mass; the worker is unambiguously the smallest thing on the field.
+- Corrected a stale doc comment claiming melee units declare `range: 0`.
+
 ## v1.28.0 — Contact shadows: things sit in the world (93%)
 **Date:** 2026-08-02
 

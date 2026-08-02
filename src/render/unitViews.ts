@@ -11,6 +11,7 @@ import type { VisibilityController } from '../ui/visibility';
 import { boneMaterial, trimMaterial } from './materials';
 import { RESOURCE_ORDER } from '../data/resources';
 import { createGroundShadow } from './groundShadow';
+import { unitBodyGeometry } from './unitGeometry';
 
 export const TEAM_COLORS: Record<Team, number> = { player: 0x3b5bdb, rival: 0xb02e2e };
 
@@ -28,7 +29,7 @@ interface UnitViewData {
   strategicMarker: THREE.Mesh;
 }
 
-function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
+function makeUnitView(scene: THREE.Scene, unit: Unit, tier: QualityTier): THREE.Group {
   const g = new THREE.Group();
   const detailRoot = new THREE.Group();
   g.add(detailRoot);
@@ -43,17 +44,27 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
   // Silhouette carries the role, since the design brief wants the battlefield
   // readable at a glance: the Legionnaire is broad and low, the Marksman is
   // narrow and tall with a visible long weapon, the worker is smallest.
-  const bodyH = isWorker ? 0.8 : isMarksman ? 1.1 : isOutrider ? 1.05 : 1.0;
-  const rTop = isWorker ? 0.26 : isMarksman ? 0.22 : isOutrider ? 0.2 : 0.32;
-  const rBot = isWorker ? 0.34 : isMarksman ? 0.28 : isOutrider ? 0.26 : 0.4;
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, bodyH, 6), bodyMat);
+  // Shared per type and tier — see unitGeometry.ts. Radial detail comes from
+  // the quality tier, which until now declared a bodySegments budget that
+  // nothing spent, leaving every unit a six-sided cylinder even on High.
+  const shape = unitBodyGeometry(unit.type, tier);
+  const bodyH = shape.bodyHeight;
+  const body = new THREE.Mesh(shape.body, bodyMat);
   body.position.y = bodyH * 0.7;
-  const head = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(isWorker ? 0.23 : isMarksman ? 0.21 : 0.28, 0), trimMat);
+  const head = new THREE.Mesh(shape.head, trimMat);
   head.position.y = bodyH + 0.35;
   body.castShadow = true;
   head.castShadow = true;
   detailRoot.add(body, head);
+
+  // Shoulder mass on line infantry only. A shield wall has to read as a solid
+  // block from the war-table camera, and width at the top is what does that.
+  if (shape.shoulders) {
+    const shoulders = new THREE.Mesh(shape.shoulders, bodyMat);
+    shoulders.position.y = bodyH * 1.02;
+    shoulders.castShadow = true;
+    detailRoot.add(shoulders);
+  }
 
   if (isMarksman) {
     // Long bone stave, angled back over the shoulder — reads as "ranged"
@@ -174,7 +185,7 @@ export function syncUnitViews(
 ): void {
   for (const u of world.units) {
     let v = views.get(u.id);
-    if (!v) { v = makeUnitView(scene, u); views.set(u.id, v); }
+    if (!v) { v = makeUnitView(scene, u, qualityTier); views.set(u.id, v); }
     const d = v.userData as UnitViewData;
     const informationVisible = visibility.entityVisible(u.team, u.x, u.z);
     v.visible = informationVisible;
