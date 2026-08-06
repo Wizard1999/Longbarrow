@@ -56,13 +56,19 @@ Doctrine that cannot fail a build is a suggestion, and it decays silently.
 3. **Pushes to `main` intermittently reject** as non-fast-forward even when a
    clean fast-forward exists. Retrying has worked every time. Never force-push
    in response.
-4. **Never kill the dev server.** The web/desktop client's preview (the globe
-   icon, `Ctrl+Shift+B`) only appears while something is listening on the dev
-   port. A `pkill -f vite` after taking screenshots silently removed the
-   designer's ability to play the build, and it looked like a client bug rather
-   than something an agent did. If you need the server for tooling, leave it
-   running afterwards — `npm run dev:lan` binds `0.0.0.0`, which is what the
-   port forwarding needs.
+4. **The Browser-pane preview does not exist in cloud sessions.** `Ctrl+Shift+B`
+   / the globe icon is a **Claude Desktop** feature that starts a dev server on
+   the *user's own machine* and opens `localhost` in its Browser pane; the Claude
+   Code on the web docs describe no preview feature at all. A cloud session runs
+   in an isolated VM whose localhost is not the user's, so **no amount of
+   starting, rebinding or re-launching the dev server in here will make it
+   appear.** I burned several turns on exactly that. `.claude/launch.json` now
+   configures the pane correctly (port 5173, not the default 3000) for when the
+   repo is opened locally in Desktop. To let the designer play a cloud build,
+   either hand them a branch to run locally or publish a single-file bundle.
+   Still worth leaving the dev server running for your own tooling — and note it
+   has been observed to die on its own, with nothing but normal HMR lines in its
+   log.
 5. **`AskUserQuestion` answers can be lost in transit.** It happened this
    session: the designer answered all four blockers and the response arrived
    empty. If answers vanish, ask for them in plain chat rather than re-issuing

@@ -106,6 +106,14 @@ npm install
 npm run dev
 ```
 
+Then open `http://localhost:5173/`.
+
+**In the Claude Desktop app**, `.claude/launch.json` wires this up for the Browser
+pane — `Ctrl+Shift+B` on Windows, `Cmd+Shift+B` on macOS — so the game previews
+next to the conversation with hot reload. Note that the pane previews servers on
+*your* machine: a Claude Code **cloud/web** session runs in an isolated VM whose
+localhost is not yours, so the preview is a local-session feature only.
+
 ## Scripts
 
 | Command | What |
