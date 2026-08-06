@@ -1,5 +1,5 @@
 {
-  "overall": 95,
+  "overall": 96,
   "updated": "2026-07-27",
   "currentWork": [
     "Validate attack-move, patrol, stop, and hold-position feel in a real browser, then refine direct-order feedback and tutorial coverage.",
@@ -79,6 +79,7 @@
     }
   ],
   "milestones": [
+    "Terrain composed from declared plateaus with cliff edges and ramp windows, giving high ground real approaches and chokepoints, and made 180°-rotationally symmetric — closing a fairness bug where one base held better ground for all of Phase 1.",
     "Declared building silhouettes so the Outpost reads as a forward holding rather than a shrunken capital, plus the last two declared-but-unconsumed quality-tier detail settings.",
     "Unit silhouettes declared per unit in data and shared per type/tier, closing a bug where the quality tiers' radial-segment budget was declared but consumed nowhere.",
     "Contact shadows under every unit and building, sharing one material and geometry and working with shadow maps disabled, so the low quality tier is grounded for the first time.",

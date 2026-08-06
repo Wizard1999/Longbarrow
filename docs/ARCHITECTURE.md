@@ -71,7 +71,7 @@ Imports `core/` and `data/` **only**.
 | `tech.ts` | Research engine. Modifiers **derived** from the researched list, never baked into units (D-028). |
 | `dev.ts` | Developer commands (grant, spawn, kill) as ordinary deterministic commands, gated on hashed `world.devMode` so dev sessions still replay. |
 | `resources.ts` | Resource mechanics read generically from the registry: afford, pay, refund, reserve, and the worker rebalance. Walks `RESOURCE_ORDER`, never `Object.keys()`. |
-| `terrain.ts` | Single source of truth for terrain height; the render mesh samples this rather than duplicating the formula. |
+| `terrain.ts` | Single source of truth for terrain height. Composed from declared plateaus with cliff edges and ramp windows (D-033/D-035), 180°-rotationally symmetric so neither base holds better ground. Still unseeded. |
 | `mapBoundary.ts` | Generated polygon play area; orders and movement are clamped to it. |
 | `map.ts` | Map assembly + `MAP_VERSION`. Map seed is separate from match seed (D-017). |
 | `daynight.ts` | Day/night cycle derived from `world.tick` — never wall clock (D-013). |

@@ -44,10 +44,17 @@ missing. Ordered by visual return per unit of effort:
       elevation combat already rewards is visible from the war table. Fragment
       maths behind a `TERRAIN_BLEND` define, so non-terrain materials compile the
       shader they always did and pay nothing (D-006).
-- [ ] **Authored ramps and chokepoints.** Ground *colour* now reads; ground
-      *shape* does not. The generator produces smooth noise, so there are no
-      distinct approaches to high ground and nothing worth discovering. This is
-      D-033's generator work and is the real remaining blocker for D-035.
+- [x] **Authored ramps and chokepoints** — v1.31.0. Terrain is now composed from
+      declared plateaus with cliff edges and angular **ramp** windows, instead of
+      two sine waves. A central contested plateau with one ramp facing each base,
+      plus a mirrored flank pair with one ramp each. Ramp mouths are narrow, so
+      they are chokepoints for free. Also fixed a fairness bug nobody had caught:
+      terrain was **not** rotationally symmetric, so one base held better ground
+      for all of Phase 1. Now symmetric by construction and tested.
+- [ ] **Seed the terrain.** The composition is fixed, so every match plays the
+      same board. Needs `mapSeed` threaded through `terrainHeightAt`'s fourteen
+      callers, plus a generator that places plateaus and ramps from the seed while
+      preserving symmetry. This is the remaining half of D-033/D-017.
 - [x] **Contact shadows** — v1.28.0. `render/groundShadow.ts`: one shared
       material and geometry, a soft violet-shifted ellipse under every unit and
       building, scaled to caster radius. Crucially works with shadow maps *off*,

@@ -1,3 +1,40 @@
+## v1.31.0 — Ramps, chokepoints, and a terrain fairness bug (96%)
+**Date:** 2026-08-02
+
+The blocker the screenshot gallery had been naming for three versions.
+Terrain was two sine waves: high ground existed and carried a real combat
+bonus, but there was no such thing as an *approach* to it. You were
+uphill or you were not, and no position on the board was worth taking.
+
+- **Terrain is now composed, not sampled.** A gentle base undulation, plus
+  declared plateaus with genuinely steep edges — cliffs, so the top is reachable
+  only where the map says — plus **ramps**: angular windows where the falloff
+  stretches into a walkable climb. Everything a ramp implies follows for free:
+  the mouth is a chokepoint, holding the top is worth doing, and taking the long
+  way to a flank rise is a decision rather than a detour (D-033, D-035).
+- **The board:** a central contested plateau, self-mirrored about the origin,
+  with one ramp facing each base so both sides can climb it and neither is
+  closer. A mirrored flank pair sits off-axis with a single ramp each — the
+  "route worth discovering" D-035 asks for, slower to reach and overlooking the
+  approach to the centre.
+- **Fixed a fairness bug nobody had caught.** The old formula was *not*
+  rotationally symmetric, so one base sat on better ground than the other for
+  the whole of Phase 1. Heights now satisfy `h(x, z) === h(-x, -z)` by
+  construction — mirrored feature pairs and an even base wave — and a test
+  sweeps the board to prove it.
+- That symmetry broke an existing combat test, correctly: it searched for a
+  height gap between an attacker at `(x, z)` and a defender at `(-x, -z)`, which
+  are now always exactly level. It had only ever passed *because* the terrain
+  was unfair. Rewritten to use a plateau top against the foot of its own ramp.
+- Added `terrainSlopeAt` and `terrainFeatures`, so shading and any future
+  pathing cost ask the terrain how steep it is rather than re-deriving it.
+- `MAP_VERSION` 4 → 5.
+
+**Still unseeded.** The composition is fixed, so every match plays this board.
+Seeding it means threading `mapSeed` through fourteen callers and is queued
+separately — this step deliberately fixed what was *unreadable* without also
+changing what is *reproducible*.
+
 ## v1.30.0 — Building silhouettes, and the last unspent tier setting (95%)
 **Date:** 2026-08-02
 

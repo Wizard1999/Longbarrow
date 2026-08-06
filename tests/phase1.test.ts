@@ -11,6 +11,7 @@ import {
 } from '../src/sim/combat';
 import { banked, must, run } from './helpers';
 import type { Unit, World } from '../src/core/types';
+import { terrainFeatures } from '../src/sim/terrain';
 
 const fresh = (seed = 1337) => buildTestMap(createWorld(seed));
 
@@ -113,25 +114,34 @@ describe('[1.10] positioning decides fights', () => {
   });
 
   it('elevation multipliers match the tuning at a real height gap', () => {
-    // The attacker must be searched too, not pinned at the origin: terrain is
-    // floored at TERRAIN_FLOOR, so a unit standing at a low point can never
-    // gain the full threshold over anything.
+    // Positions are chosen independently, NOT as a mirrored pair. Terrain is
+    // now 180°-rotationally symmetric so that neither base starts on better
+    // ground, which means h(x, z) === h(-x, -z) and a mirrored attacker and
+    // defender are always exactly level. The earlier version of this test
+    // searched mirrored positions and only ever passed because the old sine
+    // terrain was unfair.
     const w = empty();
     const a = put(w, 'legionnaire', 'player', 0, 0);
     const d = put(w, 'legionnaire', 'rival', 0, 0);
-    let high = false;
-    let low = false;
-    for (let x = -30; x <= 30 && !(high && low); x += 1) {
-      for (let z = -30; z <= 30 && !(high && low); z += 1) {
-        a.x = x; a.z = z;
-        d.x = -x; d.z = -z;
-        const m = elevationMultiplier(a, d);
-        if (m === COMBAT.highGroundBonus) high = true;
-        if (m === COMBAT.lowGroundPenalty) low = true;
-      }
-    }
-    expect(high).toBe(true);
-    expect(low).toBe(true);
+
+    // A plateau top against the foot of its own ramp: the gap the map is built
+    // to create.
+    const f = terrainFeatures()[0]!;
+    const ramp = f.ramps[0]!;
+    const foot = f.radius + f.rampRun + 1;
+    const top = { x: f.cx, z: f.cz };
+    const bottom = {
+      x: f.cx + Math.cos(ramp) * foot,
+      z: f.cz + Math.sin(ramp) * foot,
+    };
+
+    a.x = top.x; a.z = top.z;
+    d.x = bottom.x; d.z = bottom.z;
+    expect(elevationMultiplier(a, d)).toBe(COMBAT.highGroundBonus);
+
+    a.x = bottom.x; a.z = bottom.z;
+    d.x = top.x; d.z = top.z;
+    expect(elevationMultiplier(a, d)).toBe(COMBAT.lowGroundPenalty);
   });
 
   it('reads the approach angle from the defender facing', () => {

@@ -6,7 +6,7 @@
 
 ## 🔑 SESSION HANDOFF — read before starting work
 
-**v1.30.0 · 440 tests · 74 modules documented · `npm run verify` green · nothing unpushed.**
+**v1.31.0 · 452 tests · 74 modules documented · `npm run verify` green · nothing unpushed.**
 
 ### What this session did
 
@@ -107,7 +107,27 @@ Doctrine that cannot fail a build is a suggestion, and it decays silently.
 
 ---
 
-## ⚡ Latest — building silhouettes, last unspent tier setting (v1.30.0)
+## ⚡ Latest — ramps, chokepoints, terrain fairness (v1.31.0)
+
+**452 tests · full gate green.**
+
+- **Terrain is composed, not sampled.** Base undulation + declared plateaus with
+  cliff edges + **ramps** as angular windows where the falloff stretches into a
+  climb. Central contested plateau with one ramp per base; mirrored flank pair
+  with one each. Narrow ramp mouths are chokepoints for free.
+- **Fairness bug fixed:** the old two-sine terrain was *not* rotationally
+  symmetric, so one base held better ground for all of Phase 1 and nothing
+  tested for it. Now `h(x, z) === h(-x, -z)` by construction, swept by a test.
+- That symmetry correctly broke a combat test which had searched mirrored
+  positions for a height gap — it had only passed *because* terrain was unfair.
+  Rewritten against a plateau top and its own ramp foot.
+- `MAP_VERSION` 5. Added `terrainSlopeAt` / `terrainFeatures`.
+
+**The remaining half:** terrain takes no seed, so every match is this same
+board. Threading `mapSeed` through `terrainHeightAt`'s fourteen callers plus a
+seeded plateau/ramp generator is queued in `TODO.md`.
+
+## ⚡ Previous — building silhouettes, last unspent tier setting (v1.30.0)
 
 **440 tests · full gate green.**
 

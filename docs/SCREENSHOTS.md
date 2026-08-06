@@ -6,7 +6,7 @@ worth being blunt: *the game does not look good yet.* The concept art in
 [`CONCEPT_ART.md`](CONCEPT_ART.md) is the target; this page is the honest
 distance still to travel.
 
-Captured at v1.27.0 on 1600×900.
+Captured at v1.31.0 on 1600×900.
 
 > **Caveat on fidelity.** These were taken in a headless container with no GPU,
 > so Chromium fell back to software rendering (SwiftShader) and the quality
@@ -32,12 +32,21 @@ out, mixed by world height, slope and meadow noise — so the elevation that
 combat already rewards is finally visible from the war table (D-035). The
 earlier capture of this same view was one flat lime sheet.
 
-**What this shot still says about the work left:** the *shape* of the terrain is
-soft. Colour tells you roughly where the rises are, but there are no distinct
-ramps, no chokepoints, and no route worth discovering — because the generator
-does not yet author any. That is D-033's job and remains the real blocker for
-arcade legibility; ground colour was only the half of it that shading could
-fix.
+**And the shape now reads too.** The large ochre mass at the centre is a plateau
+with genuinely steep sides — the dark rims are cliffs you cannot climb — and two
+opposed **ramps** leading up, one facing each base. A mirrored pair of smaller
+rises flanks it, each with a single ramp. Every ramp mouth is narrow, so it is a
+chokepoint; holding the top is worth doing; and going the long way to a flank
+rise is a real decision instead of a detour (D-033, D-035).
+
+The composition is **180°-rotationally symmetric**, which it previously was not:
+the old two-sine terrain gave one base better ground than the other for the whole
+of Phase 1, and nothing tested for it.
+
+**What this shot still says about the work left:** the map is *fixed*. Terrain
+takes no seed, so every match is this same board — map variety is the separate
+procedural-generation item in `TODO.md`, and threading `mapSeed` through
+`terrainHeightAt`'s callers is its own change.
 
 ## Contact
 

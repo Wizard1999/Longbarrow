@@ -1,7 +1,7 @@
 # Live Development Progress
 
 **Last updated:** 2026-07-27
-**Current overall completion:** **95%** of the active 11-phase development plan.
+**Current overall completion:** **96%** of the active 11-phase development plan.
 
 This file is the live scoreboard. Update it whenever a benchmark lands, scope is
 added, or a task changes state. `CURRENT_STATE.md` explains the project in detail;
@@ -23,9 +23,11 @@ this file answers "where are we right now?" at a glance.
 | 9. Core gameplay expansion | 5% | In progress | 96% | Outrider flanker/scout live: declared flank-expertise trait, data-driven vision and hotkeys; 4 of 7 Cohort ground units |
 | 10. Replay/save validation | 5% | In progress | 100% | Live player-command capture, AI-aware playback, endpoint hashes, export/verify/import, and director policy foundation |
 
-Weighted overall: approximately **95%**.
+Weighted overall: approximately **96%**.
 
 ## Most recent completed benchmarks
+
+- [x] Terrain composed from declared plateaus with cliff edges and ramp windows, giving high ground real approaches and chokepoints, and made 180°-rotationally symmetric — closing a fairness bug where one base held better ground for all of Phase 1.
 
 - [x] Declared building silhouettes so the Outpost reads as a forward holding rather than a shrunken capital, plus the last two declared-but-unconsumed quality-tier detail settings.
 
@@ -121,7 +123,7 @@ browser-first RTS engine and creator ecosystem. The platform track includes
 content-defined factions, units, resources, lore, balance, scenarios, custom
 landing pages, validation, templates, and eventual creator tools.
 
-This does **not** change the current 95% game-production score. It is tracked as a
+This does **not** change the current 96% game-production score. It is tracked as a
 long-term platform track whose architectural rules apply now, while extraction and
 creator tooling follow only after Greenmantle proves the systems in real play.
 See `ENGINE_VISION.md`.

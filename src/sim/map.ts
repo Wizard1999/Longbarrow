@@ -19,7 +19,7 @@ const RARE = RESOURCE_ORDER.find(id => RESOURCES[id].abundance === 'rare') ?? CO
  * on terrain that no longer matches what was recorded. Versioning turns that
  * from a silent wrong answer into an explicit rejection.
  */
-export const MAP_VERSION = 4;
+export const MAP_VERSION = 5;
 
 /**
  * Phase 1 seeded map (assumption A5). Boundary-derived and rotationally symmetric: rotate 180° about
