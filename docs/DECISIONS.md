@@ -784,3 +784,229 @@ scripts (`PLAY_GREENMANTLE.bat`, `OPEN_GREENMANTLE_WEBSITE.bat`) and versioned
 handoff naming (`Greenmantle-v1.23.0-work`) now use Greenmantle. D-015 is
 superseded but retained — the reasoning that produced Longbarrow is still the
 reasoning that produced its successor.
+
+---
+
+## D-031 — Two gathered resources: common Material, rare Legacy
+**Date:** 2026-07-27 · **Status:** locked (designer) · **Implemented:** v1.25.0 · **Resolves:** D-021 deferral, `GAME_DESIGN.md § 11.1`, `OPEN_QUESTIONS.md` A1/A6
+
+D-021 accepted **Material / Legacy / Dominion / Relics** as a vocabulary
+direction but deferred which of the four are spendable. Settled by the designer:
+
+| Concept | Status |
+|---|---|
+| **Material** | Gathered currency. **Common**, plentiful, the everyday input — builds and trains. |
+| **Legacy** | Gathered currency. **Rare**, contested, few nodes — buys research and advanced units. Violet (D-025). |
+| **Dominion** | Deferred. Domain/territory mechanics arrive as their own system later, not as a currency now. |
+| **Relics** | Deferred until PvP is settled. Rare opportunities are a competitive-integrity question before they are a content question. |
+
+**Reason for two, one rare:** the scarce resource is what puts a *reason* on
+specific ground. With a single currency, all nodes are interchangeable and map
+control is an abstraction; with a rare second one, the few Legacy nodes are
+objectives whose value comes from position — which is the "terrain decides
+fights" pillar expressed economically rather than only tactically. It also gives
+the tech system (D-028) a real cost curve: research competes against army for a
+resource you cannot simply gather more of by adding workers.
+
+**The tension this creates, and how it is held:** two resources normally
+reintroduce worker micro, which "set-and-forget economy" exists to delete. The
+resolution is that **the split must never require per-worker allocation.**
+Workers take a default assignment and rebalance themselves; a player who ignores
+the economy entirely still gathers both. The decision the player makes is *which
+nodes to hold*, on the map, not *which worker mines what*, in a panel. If
+implementation starts drifting toward a mineral/gas allocation minigame, the
+implementation is wrong, not this decision.
+
+**Engine-first: two is content, not architecture (D-029, `ENGINE_VISION.md`).**
+The engine must not learn the number two. Implement a **resource registry in
+`src/data/`** — an ordered list of resource definitions (id, display name,
+colour, rarity, node behaviour) — and hold stocks as a **bag keyed by resource
+id** rather than named fields on `World`. `material` and `legacy` are then two
+rows of data a game author can delete, rename, or extend to five without
+touching `src/sim/`. Costs become `{ [resourceId]: amount }`, the HUD renders one
+row per declared resource, and the AI reasons over "the resource this thing
+needs" rather than a field name.
+
+Two determinism constraints on that shape, both non-negotiable: iterate resources
+via the **declared order from `src/data/`**, never `Object.keys()` on the bag
+(insertion order must never reach results — see `CLAUDE.md`); and the bag stays a
+plain object, not a `Map`, so `structuredClone` still carries it (D-010).
+
+**Consequence:** the `essence` → registry migration is a real change (sim state
+shape, every cost in `src/data/`, HUD, AI reasoning, `SAVE_VERSION` bump, state
+hash) and must land **atomically** — a half-migrated economy passes tests while
+being incoherent. Queued in `TODO.md` as its own change, not bundled into other
+work. `PALETTE.legacy` and `legacyMat` already name the rare one correctly;
+Material needs a colour that avoids violet (Legacy), teal (Conclave, D-025) and
+green (Mycora) — warm ochre is the leading candidate, with the caveat that it
+must stay distinct from Titanfolk's stone.
+
+**Rejected:** one universal currency, on the grounds above — it was the prior
+recommendation, and it made every resource node identical and therefore made
+holding ground economically meaningless.
+
+### As implemented (v1.25.0)
+
+- `src/data/resources.ts` is the registry; `src/sim/resources.ts` holds the
+  mechanics and walks `RESOURCE_ORDER`. `World.resources` is a bag keyed by
+  resource id; costs are `{ [resourceId]: amount }`.
+- **Affordability is per resource, never a sum.** 1000 of one currency does not
+  buy something needing 5 of another, which is the entire reason for having more
+  than one.
+- **Research costs both** — Material for the labour, Legacy for the
+  understanding — so the tech curve is bought with map control. Rare nodes sit on
+  the centre line, equidistant from both bases.
+- **The guard rail is code, not prose.** Idle workers steer toward whichever
+  resource is furthest below its declared `gatherShare`, and re-aim on deposit
+  only when their current resource stops being the one the team is short of.
+  Re-picking every trip would ping-pong workers across the map; never re-picking
+  would leave the rare resource untouched forever. A test runs 6000 ticks with no
+  player input and asserts both resources are banked.
+- `tests/resources.test.ts` fails the build if any `src/sim/` module names a
+  declared resource, which is the specific mistake this decision was drafted
+  wrong the first time.
+- **Balance is unvalidated.** The 75/25 gather share, Legacy's 520-capacity
+  nodes and the 75/25 split of research costs are first guesses that have never
+  been played. Expect to tune them; nothing structural depends on the numbers.
+
+---
+
+## D-032 — Stealth is terrain concealment, not cloaking
+**Date:** 2026-07-27 · **Status:** locked (designer) · **Resolves:** `GAME_DESIGN.md § 11.1`
+
+Two units already assume a stealth system that was defined nowhere: Cohort's
+Chronicler ("reveals stealth") and Conclave's Phantom ("illusions/stealth").
+
+**The rule:** there are **no permanently invisible units**. Concealment is a
+property of *ground*, not of units. A unit standing in cover (forest, deep
+shadow, and whatever later terrain declares itself concealing) is hidden from
+enemies outside a short detection radius. **Moving fast or attacking reveals
+you.** Detection is a radius every unit has and some units have more of — the
+Chronicler *widens* detection rather than granting a binary reveal.
+
+**Reason:** classic cloak-plus-detector was rejected because it is a hard
+counter. Without the detector unit you do not play badly, you simply lose, and
+the correct response is a build-order lookup rather than a decision on the
+board — the precise failure mode this design exists to avoid. Terrain
+concealment instead feeds the **"terrain decides fights"** pillar: cover becomes
+another reason position beats stats, it is legible from the map itself, and it
+needs no counter-unit to exist for the mechanic to be fair.
+
+**Engine-first: this is Greenmantle's answer, not the engine's only one (D-029,
+`ENGINE_VISION.md`).** Terrain concealment is the rule *this game* declares; the
+engine must make a StarCraft-style cloak reachable as **content, not a fork**.
+So the engine models concealment generically as *sources of concealment* and
+*sources of detection*, each declared as traits in `src/data/`:
+
+- a **terrain** trait can conceal whoever stands on it (Greenmantle uses this),
+- a **unit** trait can conceal its bearer unconditionally (a cloak — declared by a
+  game that wants one, and the engine does not care that Greenmantle doesn't),
+- a **detection radius** on any unit or building reveals concealed things inside
+  it, and a game may set the default radius to zero to get hard-counter cloaking
+  or non-zero to get Greenmantle's softer version.
+
+Resolving "is X visible to team Y" therefore reads declared traits and never asks
+what kind of game this is. Picking terrain-only is one line of content.
+
+**Consequence:** concealment is a **trait read generically by the engine**
+(D-029), never a unit-name check and never an `if (game === 'greenmantle')`. The
+Chronicler is buildable without waiting on a cloak system — it simply declares a
+larger detection radius. Conclave's Phantom becomes illusion-and-cover rather
+than invisibility, a Phase 3 problem with its rules already fixed. A third-party
+game shipping full cloak-and-detector play must require **zero** `src/sim/`
+changes; if it would, this decision was implemented wrongly.
+
+---
+
+---
+
+## D-033 — Map geometry is generation, not a new system; tunnels and ramps emerge
+**Date:** 2026-07-27 · **Status:** locked (designer) · **Resolves:** `GAME_DESIGN.md § 11.1`
+
+An early rejected *theme* ("living playset warfare") carried a mechanical idea
+worth keeping: tunnels, ramps and hidden routes as first-class map elements.
+**Assessed as already covered — this is missing map content, not a missing
+system.** A ramp is a heightfield gradient; a chokepoint is the polygon boundary
+narrowing; a hidden route is fog plus a path nobody watches. All three are
+already expressible with what exists.
+
+**Therefore the work is generation, not mechanics.** Ramps, tunnels and
+alternate routes must **arise innately from the generator** rather than being
+authored as special entities with their own rules. A generator that produces
+smooth noise gives high ground with no distinct approach, which makes positional
+combat unreadable — so producing legible ramps, chokepoints and flankable routes
+is a *correctness condition* on map generation, and belongs with the procedural
+map work already queued. What is wanted from here is **complication**: geometry
+that creates approaches, cover and surprise, generated rather than hand-placed.
+
+**Reason for not building a tunnel entity:** a paired off-surface link needs
+pathing, fog and render support plus its own determinism tests, in exchange for
+something the terrain can already express if the generator is good enough. Solve
+it in generation first; only add an explicit mechanic if generation genuinely
+cannot produce the play.
+
+**See D-035** for the feel these maps are generated *toward* — the arcade
+principle governs what "good geometry" means here.
+
+---
+
+## D-034 — Air draws from the same supply pool as ground
+**Date:** 2026-07-27 · **Status:** locked (designer) · **Resolves:** `GAME_DESIGN.md § 11.1`
+
+§7 names "command bandwidth" as a mechanism discouraging the air deathball but
+never tied it to the §8.3 supply table (Command / Population / Coordination /
+Territory). **Every unit draws from the same per-race pool — air included. There
+is one supply pool, never a per-domain pool.**
+
+**Reason:** this is the whole anti-deathball mechanism, and a separate air pool
+would delete it. If air has its own cap, air is *additive* — massing it costs
+you nothing you were otherwise using, which is how deathballs form and would
+then require a bespoke second anti-mass mechanic to undo. Shared supply makes
+every air unit a ground unit you did not field, so going all-in on air costs you
+the map. §8.3 stays the single lever, with nothing new to tune.
+
+**Consequence:** unblocks Phase 4.2 in advance. The supply system needs no
+structural change to accept air later — air costs are ordinary supply costs in
+`src/data/`. Recorded now because supply design decisions made before this was
+settled could have quietly assumed a separate pool.
+
+---
+
+## D-035 — Arcade legibility over simulation realism
+**Date:** 2026-07-27 · **Status:** locked (designer) · **Scope:** maps, movement, terrain, level geometry
+
+Design target for space and movement: **fun and exploratory, not realistic.**
+The reference frame is *Halo* and *Quake* rather than *Battlefield* — arcade
+geometry, readable at a glance, rewarding curiosity.
+
+**What this means concretely:**
+
+- **Geometry is authored for play, not plausibility.** A ramp exists because it
+  makes an approach interesting, not because erosion would have put it there.
+  Terrain that would be realistic but unreadable is wrong.
+- **Exploration is a reward.** Maps should contain routes and positions worth
+  discovering — the flank nobody took, the ledge that overlooks a node. This is
+  what "complication" in D-033 is aiming at.
+- **Legibility beats fidelity.** If a player cannot tell high ground from low, or
+  see that a gap is passable, the terrain has failed regardless of how good it
+  looks. Painterly art (D-005) serves this: the hue path reads shape.
+- **Movement should feel good before it feels grounded.** Responsiveness and
+  clean silhouettes over weight and simulated friction.
+
+**Reason it is logged:** this is the kind of principle that is obvious to the
+designer and invisible in the repository, so it gets re-litigated every time a
+generator or camera decision comes up. It also resolves a real ambiguity —
+"terrain decides fights" could be read as arguing for realistic, simulationist
+terrain, and it does not. Terrain matters *because it is legible and
+exploitable*, which is an arcade property.
+
+**Engine-first:** arcade is *Greenmantle's* dial setting, not a property welded
+into the generator. Generation exposes its character as **declared presets and
+parameters in `src/data/`** — ramp frequency, chokepoint tightness, route
+redundancy, verticality — so a game author who wants sprawling realistic terrain
+changes numbers rather than code. Greenmantle ships an arcade preset; the
+generator itself must have no opinion.
+
+**Consequence:** governs procedural map generation (D-033), the remaining camera
+work (D-014) and future movement tuning. When realism and readability conflict
+*in Greenmantle*, readability wins without further discussion.

@@ -6,76 +6,279 @@
 
 ## 🔑 SESSION HANDOFF — read before starting work
 
-Everything below existed only in a chat that has ended. It is written down
-because it would otherwise be lost.
+**v1.31.0 · 452 tests · 74 modules documented · `npm run verify` green · nothing unpushed.**
+
+### What this session did
+
+1. **Phase 1 is functionally complete.** The dev console — the last unchecked
+   Phase 1 roadmap item — landed, plus the fog softening (B-004). The only
+   Phase 1 item still genuinely open is **verifying the 100-unit perf target**
+   (B-002), which needs real hardware and cannot be done in a container.
+2. **All four `§ 11.1` design blockers are answered by the designer and locked:**
+   D-031 (two gathered resources: common **Material**, rare **Legacy**; Dominion
+   and Relics deferred), D-032 (stealth is **terrain concealment**, no cloaking),
+   D-033 (map geometry is a **generation** problem, not a new system), D-034 (one
+   supply pool for **every** unit, air included). D-035 records the arcade design
+   target — *Halo*/*Quake*, not *Battlefield*.
+3. **The engine-first rule became executable.** See below; this is the most
+   important thing in this entry.
+
+### The lesson worth carrying forward
+
+D-029 (engine-first) was written in `START_HERE.md`, `CLAUDE.md` and
+`DECISIONS.md`, and **was still broken during this session** — a proposed
+two-resource schema that implied two named fields on `World`, which would have
+welded Greenmantle's economy into the engine while passing the entire gate.
+
+The fix was not more prose. `tests/architecture.test.ts` now fails the build if
+`src/sim/` names any unit, race, resource or technology, in code *or* in a
+user-facing string, with an explicit debt list (`ai.ts`, `map.ts`) that may only
+shrink. **It found four pre-existing leaks on its first run** — `'not enough
+Legacy'` had been sitting in `sim/tech.ts` since the research work.
+
+So: **when you notice a rule is only prose, encode it as a test that day.**
+Doctrine that cannot fail a build is a suggestion, and it decays silently.
 
 ### Where things are
 
-- `main` and `claude/project-plan-review-34kyva` are **identical** and current.
-  Either is safe to start from.
-- **340 tests · 68 modules documented · `npm run verify` green.**
-- Working tree clean, nothing unpushed.
+- Work branch: `claude/greenmantle-project-setup-hq8rg0`, pushed. `main` was
+  identical to the previous session's branch at the start of this one.
+- `origin` **must** be `Wizard1999/Greenmantle` — verified correct this session.
+  Containers are recreated between sessions and re-clone from the *original*
+  repo, silently resetting it. A push to the wrong remote **reports success**.
 
 ### Known environment hazards
 
-1. **The git remote resets.** Containers are recreated between sessions and
-   re-clone from the *original* repo (`Wizard1999/RTS`), silently resetting
-   `origin`. This happened **three times** in one session and sent commits to
-   the wrong repository. A push to the wrong remote **reports success**.
-   Always `git remote -v` before trusting a push. Fix in `START_HERE.md § 0`.
-2. **Tag pushes are blocked.** `git push origin <tag>` fails with a proxy
-   disconnect/403 — a different permission from repository contents, which
-   works fine. `v1.12.0` exists locally and could not be published. Not worth
-   chasing: the authoritative version lives in `package.json` and `VERSION`.
-   If tags matter later, create the release through the GitHub web UI.
+1. **The git remote resets** (above). Always `git remote -v` before trusting a push.
+2. **Tag pushes are blocked** — proxy 403, a different permission from repository
+   contents. The authoritative version lives in `package.json` and `VERSION`.
+   Cut releases through the GitHub web UI if tags start mattering.
 3. **Pushes to `main` intermittently reject** as non-fast-forward even when a
-   clean fast-forward is available. Retrying later has worked every time. Do
-   not force-push in response to this.
-
-### Decisions taken without designer review
-
-- **D-026 "World Turtle"** — the far-zoom world silhouette — arrived in an
-  external import, not from the designer, and is recorded as a *locked*
-  presentation direction. It is a real scope addition. **Worth confirming it is
-  wanted** before more art is built on it.
+   clean fast-forward exists. Retrying has worked every time. Never force-push
+   in response.
+4. **The Browser-pane preview does not exist in cloud sessions.** `Ctrl+Shift+B`
+   / the globe icon is a **Claude Desktop** feature that starts a dev server on
+   the *user's own machine* and opens `localhost` in its Browser pane; the Claude
+   Code on the web docs describe no preview feature at all. A cloud session runs
+   in an isolated VM whose localhost is not the user's, so **no amount of
+   starting, rebinding or re-launching the dev server in here will make it
+   appear.** I burned several turns on exactly that. `.claude/launch.json` now
+   configures the pane correctly (port 5173, not the default 3000) for when the
+   repo is opened locally in Desktop. To let the designer play a cloud build,
+   either hand them a branch to run locally or publish a single-file bundle.
+   Still worth leaving the dev server running for your own tooling — and note it
+   has been observed to die on its own, with nothing but normal HMR lines in its
+   log.
+5. **`AskUserQuestion` answers can be lost in transit.** It happened this
+   session: the designer answered all four blockers and the response arrived
+   empty. If answers vanish, ask for them in plain chat rather than re-issuing
+   the prompt, and record decisions as `⏳ proposed` until confirmed — that habit
+   is what made the wrong guess cost a rewrite instead of a codebase.
 
 ### Immediate next work, in priority order
 
-1. **Research UI.** The tech system (D-028) is complete, hashed and replayed —
-   and no player can reach it. A whole system is invisible. This is the single
-   biggest gap between "Phase 1 complete" and "an alpha that makes sense".
-2. **Dev console.** Last unchecked Phase 1 roadmap item; already specced in
-   `TODO.md`. Must route through `sim/commands.ts` and be recorded into the
-   replay stream, or replays of dev sessions desync.
-3. **Soften the fog** (B-004). Colour was fixed (it was pure black, violating
-   D-005); the hard tiling is structural and remains.
-4. **Outrider unit.** Highest-value roster addition: flanking mechanics already
-   exist in combat and nothing currently exploits them.
-
-### Which model to use
-
-Not everything here needs the strongest model. From experience across this
-project:
-
-- **Needs the strong model:** anything touching `src/sim/` (determinism is
-  subtle and fails silently), the replay/hash format, the mission→squad
-  behaviour design, the race-roster abstraction, and vetting external imports.
-- **Fine for a cheaper model:** new units and views following existing
-  patterns, CSS and landing-page work, documentation prose, tests for systems
-  that already have an established test shape, `.bat` launchers.
+1. **Play-test and tune the economy split.** The 75/25 gather share, Legacy's
+   node capacity and the research cost split are unvalidated first guesses.
+   Needs a human at the controls — it is a feel question, not a correctness one.
+3. **Chronicler** — unblocked by D-032. Needs a detection radius, not a cloak
+   system.
+3. **Terrain concealment (D-032)** as a declared terrain trait plus a per-unit
+   detection radius, read generically. Vision radii now live in the data tables
+   (`UnitDef.vision` / `BuildingDef.vision`), so concealment has a clean base to
+   build on.
+4. **Visual overhaul** — the designer's standing request, queued in `TODO.md`
+   ordered by visual return: ground material variation first, then contact
+   shadows, then silhouettes. Measure the CodePen references against D-006
+   before adopting anything from them.
+5. **Generator complication (D-033 + D-035).** Ramps, chokepoints and alternate
+   routes must arise from the generator, authored toward the arcade target.
 
 ### Still pending on the designer
 
-- **Rename the GitHub repository** to match the Greenmantle codename. Until
-  then `origin` must stay `Wizard1999/Greenmantle` (D-030 explains why an agent
-  must not "correct" this).
-- Four design blockers remain unanswered in `GAME_DESIGN.md § 11.1` — resource
-  naming, stealth/detection, map geometry, air-vs-supply. Each blocks specific
-  work listed in `TODO.md`.
+- **Rename the GitHub repository** to match the Greenmantle codename. Until then
+  `origin` stays `Wizard1999/Greenmantle` (D-030 explains why an agent must not
+  "correct" this).
+- **D-026 "World Turtle"** arrived in an external import rather than from the
+  designer and is recorded as locked. It is a real scope addition and is still
+  worth an explicit confirmation.
+
+### Which model to use
+
+- **Needs the strong model:** anything touching `src/sim/` (determinism fails
+  silently), the resource-registry migration, the replay/hash format, the
+  mission→squad behaviour design, and vetting external imports.
+- **Fine for a cheaper model:** new units and views following existing patterns,
+  CSS and landing-page work, documentation prose, tests for systems with an
+  established shape, `.bat` launchers.
 
 ---
 
-## ⚡ Latest — renamed to Greenmantle; painterly pass on units and buildings
+## ⚡ Latest — ramps, chokepoints, terrain fairness (v1.31.0)
+
+**452 tests · full gate green.**
+
+- **Terrain is composed, not sampled.** Base undulation + declared plateaus with
+  cliff edges + **ramps** as angular windows where the falloff stretches into a
+  climb. Central contested plateau with one ramp per base; mirrored flank pair
+  with one each. Narrow ramp mouths are chokepoints for free.
+- **Fairness bug fixed:** the old two-sine terrain was *not* rotationally
+  symmetric, so one base held better ground for all of Phase 1 and nothing
+  tested for it. Now `h(x, z) === h(-x, -z)` by construction, swept by a test.
+- That symmetry correctly broke a combat test which had searched mirrored
+  positions for a height gap — it had only passed *because* terrain was unfair.
+  Rewritten against a plateau top and its own ramp foot.
+- `MAP_VERSION` 5. Added `terrainSlopeAt` / `terrainFeatures`.
+
+**The remaining half:** terrain takes no seed, so every match is this same
+board. Threading `mapSeed` through `terrainHeightAt`'s fourteen callers plus a
+seeded plateau/ramp generator is queued in `TODO.md`.
+
+## ⚡ Previous — building silhouettes, last unspent tier setting (v1.30.0)
+
+**440 tests · full gate green.**
+
+- **Buildings declare a silhouette** rather than the Outpost being the Standard
+  scaled by radius. Standard: tall, six-ribbed, crowned. Outpost: squat,
+  wide-based, four short ribs, core sunk low. Standard's proportions preserved
+  exactly — only the Outpost changes.
+- **Buildings spend `bodySegments`** (the tier table always said "unit *and
+  building* bodies"), and **`sceneryDetail` is consumed at last**. Both
+  declared-but-unused tier settings are now closed.
+- Building scale basis rewritten from "fraction of the Standard" to world units
+  per silhouette unit, so a new structure is authored on its own terms.
+
+**Visual overhaul status:** ground colour, contact shadows, unit silhouettes and
+building silhouettes are done. What is left on that list is **depth in the void**
+and the CodePen cost review — plus the big one, **authored ramps and
+chokepoints**, which is D-033 generator work and the real remaining blocker for
+D-035's arcade legibility.
+
+## ⚡ Previous — unit silhouettes, and a budget nobody was spending (v1.29.0)
+
+**435 tests · full gate green.**
+
+- **`QUALITY.bodySegments` was declared and consumed nowhere.** The tier table
+  promises 8/12/16 radial segments and calls itself the place "'not needlessly
+  low-poly' gets spent"; every unit was a hardcoded six-sided cylinder at every
+  tier, High included. That, not art, is why units read as cylinders. Now spent.
+- **Geometry shared per type and tier** (`render/unitGeometry.ts`). A hundred
+  units meant a hundred identical geometry uploads; materials had been shared
+  for exactly this reason and geometry had not.
+- **Silhouettes are declared per unit** (`SilhouetteDef` in `src/data/`), not
+  inferred. Inference was tried and was wrong twice in one sitting: melee
+  `range` is 0.9, not the 0 its own doc claimed, and speeds cluster too tightly
+  for a threshold to isolate a scout. How a unit reads is an authoring decision.
+
+**Still unspent, same class of bug:** `QUALITY.sceneryDetail` is declared and
+consumed nowhere, so scenery is identical at every tier. Logged in `TODO.md`.
+
+## ⚡ Previous — contact shadows (v1.28.0)
+
+**425 tests · full gate green.**
+
+- **A soft violet-shifted ellipse under every unit and building**
+  (`render/groundShadow.ts`), scaled to caster radius and spread slightly wider
+  than it. Nothing on the board was grounded before this; the scene read as
+  decals on a plane.
+- **It works with shadow maps off**, which is the whole point: `QUALITY.low`
+  disables shadows, so on the weak machines D-006 targets there was previously
+  no grounding at all. Four instructions of fragment maths, shipped in every
+  tier.
+- One shared material and geometry across all casters, pinned by tests — a
+  `ShaderMaterial` per unit would break the 100-unit target on its own. Lives
+  inside each unit's `detailRoot`, so it vanishes with the body at LOD swap.
+
+## ⚡ Previous — ground that reads as ground (v1.27.0)
+
+**419 tests · full gate green.**
+
+- **Terrain blends three hue paths** by world height, surface slope and
+  meadow-scale noise: valley grass, sun-dried `grassHigh`, and rock on steep
+  faces. Drying begins below the high-ground combat threshold, so a rise is
+  already changing colour as you climb it. This is the first item of the visual
+  overhaul and the one that was costing most — elevation carries a real damage
+  bonus and was previously invisible (D-035).
+- **Behind a `TERRAIN_BLEND` define**, so every other painterly material
+  compiles unchanged and pays nothing (D-006).
+- **Gallery re-shot** and captions corrected — the old text called the terrain
+  "one flat green mass", which is no longer true. It now names what is still
+  wrong: ground *shape* is soft, with no authored ramps or chokepoints.
+
+**The remaining D-035 blocker is generation, not shading.** Colour tells you
+where the rises are; nothing tells you where the *approaches* are, because the
+generator makes smooth noise. That is D-033.
+
+## ⚡ Previous — the Outrider makes flanking matter (v1.26.0)
+
+**416 tests · full gate green.**
+
+- **Outrider** (§8.7: "exploits flank bonuses; weak head-on"). The mechanic is a
+  declared **`flankExpertise` trait** that scales the *bonus portion* of
+  positional damage — rear ×1.70, side ×1.30, frontal exactly what everyone
+  gets — so the specialist gains nothing head-on and the engine rewards the
+  trait, never the unit's name (D-029). Weak head-on is the rest of the row: no
+  defense, 80 HP, less damage than a Legionnaire. The scout half: fastest ground
+  unit (6.0) and the furthest sight (16).
+- **Vision radii moved to the data tables** (`UnitDef.vision`,
+  `BuildingDef.vision`) out of `ui/fogOfWar.ts` — they are balance numbers, and
+  terrain concealment (D-032) now has a clean base to build on.
+- **Training hotkeys are content**: `UnitDef.hotkey` drives both the HUD label
+  and the key binding, so a new unit declares its own key. Outrider is F.
+- No replay/save bump: `flankExpertise` defaults to 1, so existing units and old
+  command streams are byte-identical.
+
+**4 of 7 Cohort ground units.** Numbers are first guesses, untested by play.
+
+## ⚡ Previous — two-resource economy as a registry (v1.25.0)
+
+**406 tests · full gate green.**
+
+- **Material (common) and Legacy (rare)**, implemented the way D-031 insisted:
+  a **registry** in `src/data/resources.ts` plus generic mechanics in
+  `src/sim/resources.ts`, never named fields on `World`. Stocks are a bag keyed
+  by resource id; costs are `{ [resourceId]: amount }`.
+- **Affordability is per resource, never a sum** — 1000 of one currency does not
+  buy something needing 5 of another.
+- **Workers self-rebalance**, which is the guard rail that keeps two currencies
+  compatible with set-and-forget. They steer toward whichever resource is
+  furthest below its declared share and re-aim on deposit only when their
+  current resource stops being the shortfall. A 6000-tick no-input test asserts
+  both resources get banked.
+- **Research costs both currencies**, and the rare nodes sit on the centre line,
+  so the tech curve is paid for with map control.
+- `REPLAY_VERSION` 8 · `SAVE_VERSION` 2 · `MAP_VERSION` 4.
+- A test now fails the build if any `src/sim/` module so much as names a declared
+  resource — the exact mistake this session opened with.
+
+**Balance unvalidated:** gather shares, node capacities and the research split
+are first guesses. Nothing structural depends on the numbers.
+
+## ⚡ Previous — dev console, softened fog, design blockers closed (v1.24.0)
+
+**382 tests · full gate green.**
+
+- **Dev console** (`ui/devConsole.ts` + `sim/dev.ts`). Backtick to open. The
+  design question was which commands are simulation state: cheats (`/dev`,
+  `/add`, `/spawn`, `/kill`) are recorded commands, host controls (`/pause`,
+  `/speed`, `/tick`, `/reveal`) are not, because the sim has no concept of
+  "paused" and recording no-ops would imply it does. `world.devMode` is hashed
+  sim state so dev sessions replay *and* clean results are provable.
+  `REPLAY_VERSION` 7.
+- **Fog softened (B-004).** One terrain-following sheet sampling an R8 coverage
+  texture with linear filtering, replacing ~2,300 instanced quads with one draw
+  call. Outside the polygon is written *clear* so the rim fades rather than cuts.
+- **Four design blockers locked** (D-031…D-034) plus **D-035** (arcade
+  legibility over realism).
+- **Engine-first is now enforced by a test**, not just documented — it caught
+  four pre-existing leaks immediately.
+- **B-001 closed as stale**: scenery and nodes had already been on painterly
+  materials for some time. A bug list nobody re-checks misleads exactly like a
+  stale module map.
+
+**Phase 1 functionally complete.** Only the 100-unit perf verification (B-002)
+remains, and it needs real hardware.
+
+## ⚡ Previous — renamed to Greenmantle; painterly pass on units and buildings
 
 **340 tests · 68 modules documented · full gate green.**
 

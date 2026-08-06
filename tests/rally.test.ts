@@ -4,7 +4,7 @@ import { buildTestMap } from '../src/sim/map';
 import { cmdClearRally, cmdSetRally, cmdTrain, rallyFor } from '../src/sim/commands';
 import { hash } from '../src/sim/snapshot';
 import { UNIT_TYPES } from '../src/data/units';
-import { must, run } from './helpers';
+import { fund, must, run, stock } from './helpers';
 import type { Building, World } from '../src/core/types';
 
 const fresh = (seed = 1337) => buildTestMap(createWorld(seed));
@@ -14,7 +14,7 @@ const playerBase = (w: World): Building =>
 /** Train one unit to completion and hand back the unit that popped out. */
 function trainOne(w: World, type: 'worker' | 'legionnaire' | 'marksman') {
   const before = new Set(w.units.map(u => u.id));
-  w.resources.player = 10_000;
+  fund(w, 'player', 10_000);
   const base = playerBase(w);
   const res = cmdTrain(w, base.id, type);
   expect(res.ok).toBe(true);
@@ -99,13 +99,13 @@ describe('a rally can carry a standing job', () => {
     const node = must(w.nodes[0], 'node');
     cmdSetRally(w, base.id, node.x, node.z,
       { unitType: 'worker', kind: 'gather', targetId: node.id });
-    w.resources.player = 10_000;
+    fund(w, 'player', 10_000);
     cmdTrain(w, base.id, 'worker');
     run(w, UNIT_TYPES.worker.buildTicks + 2);
 
-    const banked = w.resources.player;
+    const banked = stock(w, 'player');
     run(w, 900);
-    expect(w.resources.player).toBeGreaterThan(banked);
+    expect(stock(w, 'player')).toBeGreaterThan(banked);
   });
 
   it('refuses a gather rally with no node, at the moment it is set', () => {

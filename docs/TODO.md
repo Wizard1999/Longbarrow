@@ -6,26 +6,81 @@ Mark items done by moving them to `CHANGELOG.md`, not by deleting them.
 ## Cohort playability — the road to a real match
 
 Tech system landed (D-028). Remaining gap to a *satisfying* Cohort match is
-roster breadth: 3 of 7 ground units exist.
+roster breadth: 4 of 7 ground units exist.
 
 - [x] **Research/tech system** — `src/data/tech.ts` + `src/sim/tech.ts`,
       7 upgrades, 3 tiers, 1 doctrine pair. 24 tests.
-- [ ] **Outrider** (flanker/scout) — fast, weak head-on, exploits the flank
-      bonus that combat already implements. Highest value next unit: it makes
-      the existing positional combat mechanics *matter*.
+- [x] **Outrider** (flanker/scout) — v1.26.0. Declared `flankExpertise` trait
+      scales the *bonus portion* of positional damage (rear ×1.70, side ×1.30,
+      frontal unchanged), so the engine rewards the trait, never the name.
+      Fastest and furthest-seeing ground unit; no defense, 80 HP. Trains from
+      the Standard on F. 4 of 7 Cohort ground units now exist.
 - [ ] **Ballista** (siege) — strong vs buildings, needs escort. Buildings
       already have HP and `siegeMul` already exists in the tech effects.
-- [ ] **Chronicler** (support/detector) — extends Command range, reveals
-      stealth. Blocked on stealth/detection being designed at all (§11.1).
+- [ ] **Chronicler** (support/detector) — extends Command range, widens
+      detection. **Unblocked:** D-032 settles stealth as terrain concealment, so
+      this needs a detection radius rather than a whole cloak system.
 - [ ] **Sentinel** (anti-air) — blocked on air units existing (Phase 4.2).
 - [ ] **Warbringer** (heavy) — doctrine-gated late game.
-- [ ] **Research UI** — the tech system has no interface yet; research can
-      only be issued programmatically. **This is the top gap for an alpha:** a
-      whole system exists that a player cannot reach.
-- [ ] **Soften the fog overlay** (B-004) — colour fixed, still hard-tiled.
+- [x] **Research UI** — `ui/researchPanel.ts`; queues and cancels through
+      `issueCommand`, so research lands in the replay stream.
+- [x] **Soften the fog overlay** (B-004) — one terrain-following sheet sampling an
+      R8 coverage texture with linear filtering and a two-band smoothstep.
+      Cheaper as well: one draw call instead of ~2,300 instanced quads.
 - [x] **Teach the AI to research** — picks the cheapest reachable upgrade above
       a reserve. Cohort's track is forgiving, so cost order is a genuinely
       reasonable strategy rather than a placeholder.
+
+## Visual overhaul — make it genuinely pretty (next major push)
+
+Designer direction, 2026-07-27: the game should be **much** better looking, soon,
+drawing on the CodePen references in `ART_REFERENCES.md`. The real in-game
+captures in `SCREENSHOTS.md` are the honest baseline — the painterly shading
+model is correct, but nearly everything else that makes a scene read well is
+missing. Ordered by visual return per unit of effort:
+
+- [x] **Ground material variation** — v1.27.0. Height, slope and meadow noise
+      blend a dry high-ground path and a rock path over the valley grass, so the
+      elevation combat already rewards is visible from the war table. Fragment
+      maths behind a `TERRAIN_BLEND` define, so non-terrain materials compile the
+      shader they always did and pay nothing (D-006).
+- [x] **Authored ramps and chokepoints** — v1.31.0. Terrain is now composed from
+      declared plateaus with cliff edges and angular **ramp** windows, instead of
+      two sine waves. A central contested plateau with one ramp facing each base,
+      plus a mirrored flank pair with one ramp each. Ramp mouths are narrow, so
+      they are chokepoints for free. Also fixed a fairness bug nobody had caught:
+      terrain was **not** rotationally symmetric, so one base held better ground
+      for all of Phase 1. Now symmetric by construction and tested.
+- [ ] **Seed the terrain.** The composition is fixed, so every match plays the
+      same board. Needs `mapSeed` threaded through `terrainHeightAt`'s fourteen
+      callers, plus a generator that places plateaus and ramps from the seed while
+      preserving symmetry. This is the remaining half of D-033/D-017.
+- [x] **Contact shadows** — v1.28.0. `render/groundShadow.ts`: one shared
+      material and geometry, a soft violet-shifted ellipse under every unit and
+      building, scaled to caster radius. Crucially works with shadow maps *off*,
+      which is the low tier — previously nothing grounded anything there at all.
+- [x] **Silhouette variety in units** — v1.29.0. Proportions are declared per
+      unit in `src/data/` (`SilhouetteDef`) rather than inferred from combat
+      stats, and geometry is shared per type+tier in `render/unitGeometry.ts`.
+      Fixed a real bug on the way: `QUALITY.bodySegments` promised 8/12/16 and
+      **nothing consumed it** — every unit was a hardcoded 6-sided cylinder even
+      on High, which is precisely why they read as cylinders.
+- [x] **`QUALITY.sceneryDetail`** — v1.30.0. Threaded the tier into
+      `buildSceneryViews`; rock and foliage detail now follow it. That closes both
+      declared-but-unconsumed tier settings.
+- [x] **Building silhouettes** — v1.30.0. Declared per building
+      (`BuildingSilhouette` in `src/data/`) instead of the Outpost being the
+      Standard scaled by radius alone. Buildings also spend `bodySegments`, which
+      the tier table always said covered "unit **and building** bodies".
+- [ ] **Depth in the void.** The black surround is currently featureless; the
+      table needs to feel suspended in something (D-026 World Turtle staging).
+- [ ] **Review the two CodePen references** in `ART_REFERENCES.md` for
+      transferable technique, and measure the cost of each before adopting —
+      D-006's 2017-integrated-GPU target is the constraint that killed the
+      reference's technique stack last time. Take the light model, not the
+      technique stack.
+- [ ] **Re-shoot `SCREENSHOTS.md` on real hardware at High** so the gallery
+      stops under-selling the shading that already exists.
 
 ## Engine-first cleanup (D-029)
 
@@ -40,22 +95,25 @@ roster breadth: 3 of 7 ground units exist.
 > ✅ **Sequencing checkpoint complete:** the war-table camera foundation now exists.
 > Remaining art work should be authored and evaluated against its miniature-to-cosmological zoom range.
 
-- [ ] **Art pass — painterly shading model.** `palette.ts`, `quality.ts`,
-      `painterly.ts` and `renderer.ts` are written. Remaining: apply the
-      painterly material to terrain, units, buildings, scenery and nodes; add a
-      quality selector to the HUD; verify against the 100-unit perf target.
+- [x] **Art pass — painterly shading model.** Terrain, units, buildings, scenery
+      and nodes all draw shared painterly materials from `render/materials.ts`;
+      the quality selector is in the HUD and persists.
+- [ ] **Verify the 100-unit perf target** (D-006, B-002) — the last open piece of
+      the art pass, and the only one that needs real hardware. `/spawn worker 100`
+      in the dev console plus the existing `dev/performanceMonitor.ts` makes this
+      a manual check now rather than a harness to build.
 
 ## Next up
 
 - [x] **Core direct RTS orders.** Attack-move, patrol, stop, and hold-position are now plain deterministic commands, recorded in replay format v4, exposed through A/P/S/H and selection-card controls, and hashed as simulation state. Remaining polish: command cursors, audio, target-following attack orders, and browser feel validation.
 
-- [ ] **In-game dev console.** Backtick to open. Commands operate through
-      `sim/commands.ts` so they stay replay-safe. Minimum set:
-      `/add <n> <resource>`, `/pause`, `/speed <x>`, `/spawn <type> <n> [team]`,
-      `/kill`, `/reveal`, `/tick`, `/help`.
-      Must be gated behind a creative/dev-mode flag so it cannot run in a
-      competitive match. **Log every console command into the replay stream** —
-      a replay that silently omits them will desync.
+- [x] **In-game dev console.** Backtick opens it. `ui/devConsole.ts` +
+      `sim/dev.ts`. Cheats (`/dev`, `/add`, `/spawn`, `/kill`) are real commands
+      recorded into the replay stream; host controls (`/pause`, `/speed`,
+      `/tick`, `/reveal`) are presentation and deliberately *not* recorded.
+      Gated on `world.devMode`, which is hashed sim state — so a dev session
+      replays correctly *and* a clean competitive result is provable.
+      `REPLAY_VERSION` 7.
 
 - [x] **Basic CPU opponent.** See `DECISIONS.md` D-009. Grow it alongside
       features rather than writing it late. First version: build workers,
@@ -127,20 +185,40 @@ hashed and recorded in replays. What remains is the generator and the UI.
 - [ ] **Show the map seed in-match and in replays** so a good map can be noted
       and shared.
 
-## Design blockers
+## Design blockers — all resolved 2026-07-27
 
-These need a designer decision before the dependent work can start.
+The four `GAME_DESIGN.md § 11.1` blockers were answered by the designer and are
+locked as **D-031** (two resources: common Material + rare Legacy), **D-032**
+(stealth is terrain concealment), **D-033** (map geometry is generation, not a
+new system) and **D-034** (one supply pool for every unit, air included), plus
+**D-035** (arcade legibility over realism) which came out of the same pass.
 
-- [ ] **Resource names and count.** One universal gatherable or several?
-      "Essence" and "Dominion" appear in the UI blueprint but were never
-      formally adopted. Blocks the resources HUD panel.
-      (`GAME_DESIGN.md § 11.1`)
-- [ ] **Stealth / detection.** Two unit designs already assume this system
-      exists; it is defined nowhere. (`GAME_DESIGN.md § 11.1`)
-- [ ] **Map geometry** — are tunnels/ramps/hidden routes a distinct system or
-      redundant with existing terrain rules? (`GAME_DESIGN.md § 11.1`)
-- [ ] **Air units vs. supply/automation pool** — shared or separate?
-      (`GAME_DESIGN.md § 11.1`)
+Work these unblocked, in dependency order:
+
+- [x] **Two-resource migration (D-031).** Landed in v1.25.0 as a **registry**
+      (`data/resources.ts`) plus generic mechanics (`sim/resources.ts`), not two
+      fields on `World`. Bag keyed by resource id, costs as `{ [id]: amount }`,
+      affordability per resource. Workers self-rebalance toward the declared
+      share, verified by a 6000-tick no-input test. REPLAY 8 / SAVE 2 / MAP 4.
+- [ ] **Play-test and tune the split.** The 75/25 gather share, Legacy node
+      capacity and the research cost split are unvalidated first guesses. This is
+      a feel question that needs a human at the controls.
+- [x] **Material's colour** — warm ochre (`PALETTE.material`), distinct from
+      violet Legacy and borrowing no element's colour. Nodes and the shard a
+      worker carries are both coloured by resource.
+- [ ] **Terrain concealment (D-032).** A concealing terrain trait plus a
+      detection radius per unit, read generically by the engine — never a
+      unit-name check. Unblocks the **Chronicler**.
+- [ ] **Generator complication (D-033 + D-035).** The procedural generator must
+      innately produce ramps, chokepoints, alternate and hidden routes, authored
+      toward an arcade *Halo*/*Quake* feel: readable, exploratory, deliberately
+      not realistic. Folds into the procedural map work above rather than being
+      its own system.
+- [ ] **Domain/territory system (deferred by D-031).** Dominion returns as
+      territory mechanics later, not as a currency. This is where control range
+      finally gets a job (`OPEN_QUESTIONS.md` A7).
+- [ ] **Relics — blocked on PvP** (D-031). Rare swing opportunities are a
+      competitive-integrity question first.
 
 ## Day/night follow-ups (D-013)
 

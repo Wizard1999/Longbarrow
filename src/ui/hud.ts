@@ -11,6 +11,23 @@ import { automationSlots, runningSquads } from '../sim/squads';
 import type { UiState } from '../input/selection';
 import { dayNumber, dayPeriod, daylight, formatClock } from '../sim/daynight';
 import { issueCommand } from '../replay/live';
+import { RESOURCES, RESOURCE_ORDER } from '../data/resources';
+import type { ResourceBag, ResourceCost } from '../data/resources';
+import { canAfford } from '../sim/resources';
+
+/** "90 Material · 30 Legacy" — built from the registry, never hardcoded. */
+function costLabel(cost: ResourceCost): string {
+  const parts = RESOURCE_ORDER
+    .filter(id => (cost[id] ?? 0) > 0)
+    .map(id => `${cost[id]} ${RESOURCES[id].label}`);
+  return parts.length ? parts.join(' · ') : 'free';
+}
+
+function bagTotal(bag: ResourceBag): number {
+  let total = 0;
+  for (const id of RESOURCE_ORDER) total += bag[id];
+  return total;
+}
 
 const el = (id: string): HTMLElement => {
   const found = document.getElementById(id);
@@ -30,7 +47,7 @@ export function createHud(world: World, ui: UiState): Hud {
     units: el('d-units'), sel: el('d-sel'), throttle: el('d-throttle'),
   };
   const resUi = {
-    essence: el('r-essence'), gathering: el('r-gathering'),
+    resources: el('r-resources'), gathering: el('r-gathering'),
     workers: el('r-workers'), remaining: el('r-remaining'), supply: el('r-supply'),
     chains: el('r-chains'),
   };
@@ -87,18 +104,17 @@ export function createHud(world: World, ui: UiState): Hud {
             () => cmdCancelSite(world, site.id),
           );
           ui.selectedSiteId = null;
-          flash('site cancelled, essence refunded');
+          flash('site cancelled, cost refunded');
         };
         cardBtns.appendChild(btn);
         cardHint.textContent = 'right-click the site with a worker selected to resume';
       } else if (b) {
         const t = BUILDING_TYPES[b.type];
         cardTitle.textContent = `${t.label} — +${t.command} command`;
-        const hotkeys: Partial<Record<UnitTypeKey, string>> = { worker: 'Q', legionnaire: 'E', marksman: 'R' };
         for (const ut of t.produces) {
           const u = UNIT_TYPES[ut];
           const btn = document.createElement('button');
-          btn.innerHTML = `<b>${u.label} (${hotkeys[ut] ?? ''})</b><span class="c">${u.cost} essence · ${u.supply} cmd</span>`;
+          btn.innerHTML = `<b>${u.label}${u.hotkey ? ` (${u.hotkey.toUpperCase()})` : ''}</b><span class="c">${costLabel(u.cost)} · ${u.supply} cmd</span>`;
           btn.dataset['unit'] = ut;
           btn.onclick = () => tryTrain(ut);
           cardBtns.appendChild(btn);
@@ -110,11 +126,11 @@ export function createHud(world: World, ui: UiState): Hud {
         if (workers) {
           const t = BUILDING_TYPES.outpost;
           const btn = document.createElement('button');
-          btn.innerHTML = `<b>Build Outpost (B)</b><span class="c">${t.cost} essence · +${t.command} cmd</span>`;
+          btn.innerHTML = `<b>Build Outpost (B)</b><span class="c">${costLabel(t.cost)} · +${t.command} cmd</span>`;
           btn.dataset['build'] = 'outpost';
           btn.onclick = () => { ui.placingType = 'outpost'; };
           cardBtns.appendChild(btn);
-          cardHint.textContent = 'outposts add command, hold territory, and accept essence';
+          cardHint.textContent = 'outposts add command, hold territory, and accept deliveries';
         }
         const combat = sel.some(u => !u.gather);
         if (combat) {
@@ -146,7 +162,7 @@ export function createHud(world: World, ui: UiState): Hud {
       if (unit) {
         btn.disabled = !(b && canTrain(world, b.id, unit).ok);
       } else if (build === 'outpost') {
-        btn.disabled = world.resources.player < BUILDING_TYPES.outpost.cost;
+        btn.disabled = !canAfford(world.resources.player, BUILDING_TYPES.outpost.cost);
       }
     }
 
@@ -172,6 +188,7 @@ export function createHud(world: World, ui: UiState): Hud {
   let tickAtLastSample = 0;
   let lastSample = 0;
   let essenceAtLastSample = 0;
+  let renderedResourceKey = '';
 
   function update(now: number, throttled: boolean): void {
     frameCount++;
@@ -179,11 +196,11 @@ export function createHud(world: World, ui: UiState): Hud {
       const elapsed = (now - lastSample) / 1000;
       const fps = frameCount / elapsed;
       const tps = (world.tick - tickAtLastSample) / elapsed;
-      const measuredRate = ((world.resources.player - essenceAtLastSample) / elapsed) * 60;
+      const measuredRate = ((bagTotal(world.resources.player) - essenceAtLastSample) / elapsed) * 60;
 
       frameCount = 0;
       tickAtLastSample = world.tick;
-      essenceAtLastSample = world.resources.player;
+      essenceAtLastSample = bagTotal(world.resources.player);
       lastSample = now;
 
       dbg.fps.textContent = fps.toFixed(0);
@@ -215,7 +232,25 @@ export function createHud(world: World, ui: UiState): Hud {
                                       : 'DEFEAT — your base was destroyed');
     }
 
-    resUi.essence.textContent = String(world.resources.player);
+    // One entry per declared resource, walked in registry order (D-031) — the
+    // HUD must not know how many there are or what they are called.
+    const bag = world.resources.player;
+    const key = RESOURCE_ORDER.map(id => `${id}:${Math.floor(bag[id])}`).join('|');
+    if (key !== renderedResourceKey) {
+      renderedResourceKey = key;
+      resUi.resources.replaceChildren(...RESOURCE_ORDER.map(id => {
+        const wrap = document.createElement('div');
+        wrap.className = 'res';
+        const big = document.createElement('span');
+        big.className = 'big';
+        big.textContent = String(Math.floor(bag[id]));
+        const sub = document.createElement('span');
+        sub.className = 'sub';
+        sub.textContent = RESOURCES[id].label;
+        wrap.append(big, document.createTextNode(' '), sub);
+        return wrap;
+      }));
+    }
     resUi.gathering.textContent = String(countGathering(world, 'player'));
     resUi.workers.textContent = String(world.units.filter(u => u.team === 'player' && u.gather).length);
     resUi.remaining.textContent = String(totalResourcesRemaining(world));

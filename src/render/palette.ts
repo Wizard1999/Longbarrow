@@ -21,6 +21,13 @@ const c = (hex: number) => new THREE.Color(hex);
 /** Cool violet-green shade -> saturated mid -> warm sunlit tip. */
 export const PALETTE = {
   grass: { shade: c(0x3f5d4a), mid: c(0x5f9147), lit: c(0xa8c85c) },
+  /**
+   * Sun-dried grass for high ground. The point is legibility, not decoration:
+   * combat gives high ground a real damage bonus, so elevation has to be
+   * readable from colour at war-table distance (D-035). Warmer and paler than
+   * the valley grass, still inside the same painterly family.
+   */
+  grassHigh: { shade: c(0x625c33), mid: c(0x99a04f), lit: c(0xdcd48b) },
   rock: { shade: c(0x4d4f52), mid: c(0x83837c), lit: c(0xc3bda9) },
   bark: { shade: c(0x3d2e24), mid: c(0x6b4a2f), lit: c(0x9c7746) },
   leaf: { shade: c(0x2f5535), mid: c(0x4f8f3d), lit: c(0x9ccc5a) },
@@ -42,6 +49,16 @@ export const PALETTE = {
    * against sunlit grass, and says "precious and old" rather than "ore".
    */
   legacy: { shade: c(0x3b2a55), mid: c(0xb98ad9), lit: c(0xf0dcff) },
+
+  /**
+   * The common resource (D-031). Warm ochre: it has to be instantly separable
+   * from violet Legacy at a glance, and it may not borrow an element's colour —
+   * teal is Conclave, green is Mycora, violet is already Legacy. Ochre reads as
+   * quarried earth and sits close enough to the sunlight that it never competes
+   * with the rare resource for attention, which is the right hierarchy: Legacy
+   * is the one worth crossing the map for.
+   */
+  material: { shade: c(0x4a3418), mid: c(0xc79a4a), lit: c(0xf6dfa8) },
 
   teamPlayer: { shade: c(0x1e2f6b), mid: c(0x3b5bdb), lit: c(0x8fb2ff) },
   teamRival: { shade: c(0x5c1a1a), mid: c(0xb02e2e), lit: c(0xff8a7a) },

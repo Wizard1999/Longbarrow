@@ -8,6 +8,7 @@ import { availableTech, cmdResearch } from './tech';
 import { TECH } from '../data/tech';
 import { SUPPLY_MAX } from '../data/tuning';
 import { circleInMapBoundary, mapBoundaryForSeed } from './mapBoundary';
+import { canAfford, costMagnitude, afterReserve } from './resources';
 
 /**
  * A simple AI opponent (step 1.11).
@@ -85,7 +86,7 @@ export function stepAi(world: World, ai: AiState): void {
   //
   //    Command gates population, control range and automation together (§8.1),
   //    so an AI that never builds simply stops: its starting Standard provides
-  //    just enough Command for its starting army, and it then banks essence
+  //    just enough Command for its starting army, and it then banks resources
   //    forever with a full supply bar. Outposts are the only way out.
   const capped = supplyFree(world, ai.team) <= AI.expandAtSupplyFree;
   const roomToGrow = supplyCap(world, ai.team) < SUPPLY_MAX;
@@ -123,8 +124,12 @@ export function stepAi(world: World, ai: AiState): void {
   //    a genuinely reasonable strategy rather than a placeholder.
   if (!world.tech[ai.team].researching) {
     const options = availableTech(world, ai.team)
-      .filter(id => TECH[id].cost <= world.resources[ai.team] - AI.techReserve)
-      .sort((a, b) => TECH[a].cost - TECH[b].cost || (a < b ? -1 : 1));
+      // Affordability is checked per resource against a bag held back as a
+      // reserve, rather than against one total: two costs summing the same are
+      // not interchangeable once there is more than one currency.
+      .filter(id => canAfford(afterReserve(world.resources[ai.team], AI.techReserve), TECH[id].cost))
+      .sort((a, b) =>
+        costMagnitude(TECH[a].cost) - costMagnitude(TECH[b].cost) || (a < b ? -1 : 1));
     const pick = options[0];
     if (pick) cmdResearch(world, ai.team, pick);
   }

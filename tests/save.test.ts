@@ -6,6 +6,7 @@ import {
   SAVE_VERSION, checkSave, createSave, loadSave, parseSave, serializeSave,
 } from '../src/sim/save';
 
+
 describe('save files', () => {
   it('round-trips the complete simulation state', () => {
     const source = buildTestMap(createWorld(1234));
@@ -31,7 +32,7 @@ describe('save files', () => {
   it('rejects tampered world state', () => {
     const world = buildTestMap(createWorld(7));
     const save = createSave(world, '2026-07-27T00:00:00.000Z');
-    save.world.resources.player += 1;
+    save.world.resources.player.material += 1;   // tamper, so the hash must reject it
     const result = checkSave(save);
     expect(result.ok).toBe(false);
     expect(result.reason).toContain('hash mismatch');

@@ -3,7 +3,9 @@ import { MAP_VERSION } from './map';
 import { hash, restore, snapshot } from './snapshot';
 
 /** Bump when the serialized save envelope or required world semantics change. */
-export const SAVE_VERSION = 1;
+// 2: resources became a bag keyed by resource id rather than one number per
+// team (D-031). A v1 save would restore a number where the sim expects a bag.
+export const SAVE_VERSION = 2;
 
 export interface SaveFile {
   /**

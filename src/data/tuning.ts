@@ -102,13 +102,13 @@ export const VICTORY = {
 
 export const ECON = {
   gatherTicks: 45,      // 1.5s to fill up — Cohort is "flat and reliable" (§8.1)
-  carryAmount: 8,       // essence per trip
   depositTicks: 6,      // 0.2s to unload
   gatherRange: 1.4,     // how close a worker must be to a node
   gatherStandoff: 1.05, // where a worker parks — each gets its own slot
   slotEpsilon: 0.12,    // how close to its slot counts as arrived
   dropoffRange: 2.6,    // how close a worker must be to a base
-  nodeCapacity: 1200,   // finite: matches can run until the map is exhausted (§3)
+  // Per-resource capacity and carry amount live in data/resources.ts, so a
+  // game author changing the economy edits one table (D-031).
 };
 
 // Day/night cycle (§ designer request 2026-07-27). Ten real minutes per full

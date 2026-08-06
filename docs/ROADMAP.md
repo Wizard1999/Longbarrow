@@ -43,12 +43,12 @@ core systems before asymmetry is layered on.
 
 | | What | Status |
 |---|---|---|
-| — | Painterly art pass (D-005) | ◐ in flight |
+| — | Painterly art pass (D-005) | ✅ terrain, units, buildings, scenery, nodes; quality tiers persist. Only the 100-unit perf verification remains (B-002) |
 | — | War table camera (D-014) | ◐ core freedom, whole-board view, table edge, LOD, minimap and World Turtle blockout complete; refinement continues |
 | — | Day/night cycle (D-013) | ✅ |
 | — | Snapshot/restore/hash (D-010) | ✅ |
 | — | Tick rate 20 → 30 Hz (D-004) | ✅ |
-| — | Dev console | ⬜ |
+| — | Dev console | ✅ backtick console; cheats are replay-recorded commands gated on hashed `devMode`, host controls deliberately unrecorded |
 | — | Replay system (D-008) | ✅ live capture, verification, deterministic keyframe seeking, and timeline viewer complete; cinematic event observation remains an extension |
 | — | Save/load files | ✅ versioned developer quick-save/import/export with compatibility and hash validation |
 | — | Guided tutorial mode | ✅ optional seven-step state-observing onboarding; dedicated tutorial scenario and polish remain |

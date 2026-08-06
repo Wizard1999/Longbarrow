@@ -1,3 +1,233 @@
+## v1.31.0 — Ramps, chokepoints, and a terrain fairness bug (96%)
+**Date:** 2026-08-02
+
+The blocker the screenshot gallery had been naming for three versions.
+Terrain was two sine waves: high ground existed and carried a real combat
+bonus, but there was no such thing as an *approach* to it. You were
+uphill or you were not, and no position on the board was worth taking.
+
+- **Terrain is now composed, not sampled.** A gentle base undulation, plus
+  declared plateaus with genuinely steep edges — cliffs, so the top is reachable
+  only where the map says — plus **ramps**: angular windows where the falloff
+  stretches into a walkable climb. Everything a ramp implies follows for free:
+  the mouth is a chokepoint, holding the top is worth doing, and taking the long
+  way to a flank rise is a decision rather than a detour (D-033, D-035).
+- **The board:** a central contested plateau, self-mirrored about the origin,
+  with one ramp facing each base so both sides can climb it and neither is
+  closer. A mirrored flank pair sits off-axis with a single ramp each — the
+  "route worth discovering" D-035 asks for, slower to reach and overlooking the
+  approach to the centre.
+- **Fixed a fairness bug nobody had caught.** The old formula was *not*
+  rotationally symmetric, so one base sat on better ground than the other for
+  the whole of Phase 1. Heights now satisfy `h(x, z) === h(-x, -z)` by
+  construction — mirrored feature pairs and an even base wave — and a test
+  sweeps the board to prove it.
+- That symmetry broke an existing combat test, correctly: it searched for a
+  height gap between an attacker at `(x, z)` and a defender at `(-x, -z)`, which
+  are now always exactly level. It had only ever passed *because* the terrain
+  was unfair. Rewritten to use a plateau top against the foot of its own ramp.
+- Added `terrainSlopeAt` and `terrainFeatures`, so shading and any future
+  pathing cost ask the terrain how steep it is rather than re-deriving it.
+- `MAP_VERSION` 4 → 5.
+
+**Still unseeded.** The composition is fixed, so every match plays this board.
+Seeding it means threading `mapSeed` through fourteen callers and is queued
+separately — this step deliberately fixed what was *unreadable* without also
+changing what is *reproducible*.
+
+## v1.30.0 — Building silhouettes, and the last unspent tier setting (95%)
+**Date:** 2026-08-02
+
+Finishes what v1.29.0 started. Both quality-tier settings that were
+declared and consumed nowhere are now spent, and buildings stopped being
+one form at two sizes.
+
+- **Buildings declare a silhouette** (`BuildingSilhouette` in `src/data/`). The
+  Outpost was previously the Standard scaled by radius alone, so the two were
+  the same object at two sizes and said nothing about their roles. The Standard
+  is now tall, six-ribbed and crowned; the Outpost is squat and wide-based with
+  four short ribs and its core sunk low — a forward holding rather than a small
+  capital. The Standard's proportions are preserved exactly; only the Outpost
+  deliberately changes.
+- **Buildings spend `bodySegments` too.** The tier table always said the budget
+  covered "unit **and building** bodies", and every drum and rib was a hardcoded
+  hexagon at every tier, High included — the same bug units had.
+- **`QUALITY.sceneryDetail` is consumed at last.** Threaded the tier into
+  `buildSceneryViews`, so rock subdivision and foliage segments follow quality.
+  Rocks and trees were previously identical in every tier.
+- Rewrote the building scale basis from "fraction of the Standard" to world
+  units per silhouette unit, so a new structure's numbers no longer have to be
+  reasoned about relative to another building.
+
+## v1.29.0 — Unit silhouettes, and a quality budget that was never spent (94%)
+**Date:** 2026-08-02
+
+Third item of the visual overhaul. Chasing "units still read as cylinders"
+turned up the actual cause, which was not an art problem.
+
+- **`QUALITY.bodySegments` was declared and consumed nowhere.** The tier table
+  promises 8/12/16 radial segments and says outright that this is "where 'not
+  needlessly low-poly' gets spent" — and every unit was built with a hardcoded
+  six-sided cylinder at every tier, High included. Now spent, with head
+  subdivision following the tier too.
+- **Geometry is shared per type and tier** (`render/unitGeometry.ts`). A hundred
+  units previously meant a hundred identical `CylinderGeometry` uploads;
+  materials had been shared for exactly this reason and geometry had not.
+- **Silhouettes are declared, not inferred.** Each unit carries a
+  `SilhouetteDef` in `src/data/`. Inference from combat stats was tried first
+  and was wrong twice in one sitting — melee `range` is 0.9 rather than the 0
+  its own doc comment claimed, and unit speeds cluster too tightly for any
+  threshold to isolate a scout. How a unit reads is an authoring decision
+  (D-029), and a game author should set it rather than reverse-engineer which
+  stat thresholds the renderer happens to test.
+- Line infantry gained shoulder mass, so a shield wall reads as one block from
+  the war-table camera. The Outrider is sharply tapered with almost no base
+  mass; the worker is unambiguously the smallest thing on the field.
+- Corrected a stale doc comment claiming melee units declare `range: 0`.
+
+## v1.28.0 — Contact shadows: things sit in the world (93%)
+**Date:** 2026-08-02
+
+Second item of the visual overhaul. Nothing on the board was grounded —
+units and buildings sat *on* the world rather than *in* it, so the whole
+scene read as decals on a plane.
+
+- **A soft ellipse under every unit and building**, scaled to caster radius and
+  spread slightly wider, because a shadow matching the radius exactly reads as a
+  printed disc rather than as contact.
+- **It works with shadow maps switched off**, which is the point. `QUALITY.low`
+  disables shadows entirely, so on a weak machine — exactly the machine D-006
+  targets — there was previously no grounding of any kind. This is four
+  instructions of fragment maths and ships in every tier.
+- Violet-shifted rather than black (D-005), and attached inside each unit's
+  `detailRoot` so it disappears with the body when LOD swaps to a strategic
+  marker; a shadow with nothing casting it is worse than none.
+- One shared material and one shared geometry across every caster — a
+  `ShaderMaterial` per unit would mean a shader compile per unit and would break
+  the 100-unit target on its own. Tests pin the sharing.
+
+## v1.27.0 — Ground that reads as ground (92%)
+**Date:** 2026-08-02
+
+First item of the visual overhaul, and the one that was costing the most:
+terrain rendered as a single flat green sheet, so the elevation combat
+already rewards was invisible.
+
+- **Height, slope and meadow-noise blending** across three hue paths: valley
+  grass, a new sun-dried `grassHigh` for high ground, and rock on steep faces.
+  Drying starts *below* the high-ground combat threshold, so a contested rise is
+  already changing colour as you climb it. Large-scale noise wobbles the
+  boundary into meadow patches, which is what stops it reading as a contour map.
+- **Guarded behind a `TERRAIN_BLEND` define.** Units, buildings, scenery and
+  nodes compile the exact shader they compiled before and pay nothing for a
+  feature only the ground uses — D-006's budget is why this is a define rather
+  than a branch every fragment evaluates.
+- **Screenshot gallery re-shot** at v1.27.0 and its captions corrected. The
+  previous text called the terrain "one flat green mass"; that is no longer
+  true and the page now says what *is* still wrong instead — the ground's
+  *shape* is soft, with no authored ramps or chokepoints, which is D-033's
+  generator work and the real remaining blocker for D-035.
+
+## v1.26.0 — Outrider: flanking finally has a customer (91%)
+**Date:** 2026-07-27
+
+- **Outrider** lands — flanker/scout, 4 of 7 Cohort ground units. Its mechanic
+  is a declared `flankExpertise` trait scaling only the *bonus portion* of
+  positional damage: rear ×1.70 and side ×1.30 for an expertise of 2, frontal
+  damage exactly what every unit gets. The engine rewards the trait, never the
+  name (D-029). Weak head-on by the numbers: no defense, 80 HP. Fastest ground
+  unit and the furthest-seeing — the scout half of the spec.
+- **Vision radii are data now.** `UnitDef.vision` and `BuildingDef.vision`
+  replace hardcoded tables inside `ui/fogOfWar.ts`; terrain concealment (D-032)
+  builds on this next.
+- **Training hotkeys are declared in data** (`UnitDef.hotkey`) and drive both
+  the HUD label and the input binding. Outrider trains on **F**.
+- Distinct silhouette: lean body, forward-couched lance, slight forward lean —
+  reads as motion where the Marksman reads as patience.
+- No replay or save bump: the trait defaults to 1 and old command streams are
+  unaffected. 406 → 416 tests, including geometry-correct rear/front fixtures
+  documenting the `atan2(dx, dz)` facing convention.
+
+## v1.25.0 — Two-resource economy, as a registry (90%)
+**Date:** 2026-07-27
+
+The economy D-031 called for, implemented in the shape D-031 insisted on.
+
+- **Material and Legacy.** Material is common and sits near each base; Legacy is
+  rare, few, and placed on the centre line equidistant from both bases, so the
+  scarce currency is bought with map control rather than with time.
+- **A registry, not two fields.** `src/data/resources.ts` declares which
+  currencies exist and their rarity, node capacity, carry amount and gather
+  share. `src/sim/resources.ts` implements afford / pay / refund / reserve and
+  the worker rebalance by walking `RESOURCE_ORDER`. Stocks are a bag keyed by
+  resource id; costs are `{ [resourceId]: amount }`. A game author ships a
+  different economy by editing one table, without opening `src/sim/`.
+- **Affordability is per resource, never a sum.** A thousand of one currency does
+  not buy something that needs five of another — which is the entire reason to
+  have more than one.
+- **The set-and-forget guard rail is code.** Two currencies normally reintroduce
+  worker micro. Idle workers steer toward whichever resource is furthest below
+  its declared share, and re-aim on deposit only when their current resource
+  stops being the one the team is short of: re-picking every trip would
+  ping-pong workers across the map, never re-picking would leave the rare
+  resource untouched forever. A test runs 6000 ticks with no player input and
+  asserts both resources are banked.
+- **Research is paid in both** — Material for the labour, Legacy for the
+  understanding.
+- **Presentation:** nodes are coloured by resource (warm ochre Material, violet
+  Legacy per D-025), the shard a worker carries swaps to match what is in hand,
+  and the HUD renders one row per declared resource rather than a hardcoded
+  field. Carried loads remember their resource, since a node can be mined out
+  while the worker is still walking home.
+- `REPLAY_VERSION` 8, `SAVE_VERSION` 2, `MAP_VERSION` 4 — command meaning, state
+  shape and map layout all changed.
+- 382 → 406 tests, including conservation across both resources (banked +
+  carried + still in the ground equals the starting total) and a check that no
+  `src/sim/` module names a declared resource.
+
+**Balance is unvalidated.** The 75/25 gather share, Legacy's node capacity and
+the research cost split are first guesses that have never been played.
+
+## v1.24.0 — Dev console, softened fog, and the four design blockers closed (88%)
+**Date:** 2026-07-27
+
+Phase 1's last unchecked item lands, and the design questions that had been
+open since the full-document audit are answered.
+
+- **In-game developer console** (`ui/devConsole.ts` + `sim/dev.ts`). Backtick to
+  open. Cheats (`/dev`, `/add`, `/spawn`, `/kill`) are ordinary deterministic
+  commands recorded into the replay stream; host controls (`/pause`, `/speed`,
+  `/tick`, `/reveal`) change how the session is observed and are deliberately
+  *not* recorded. `world.devMode` is hashed simulation state, so a dev session
+  replays correctly and a clean competitive result is provable rather than
+  claimed. `REPLAY_VERSION` 6 → 7.
+- **Fog of war softened** (B-004). Replaced the grid of instanced quads with one
+  terrain-following sheet sampling an R8 coverage texture through linear
+  filtering and a two-band smoothstep, so cell boundaries read as gradients.
+  Ground outside the map polygon is written as clear, fading the fog across the
+  rim instead of cutting it. One draw call and a ~2 KB upload per frame in place
+  of up to ~2,300 instanced quads.
+- **All four `GAME_DESIGN.md § 11.1` design blockers resolved and locked:**
+  D-031 two gathered resources (common Material, rare Legacy; Dominion and
+  Relics deferred), D-032 stealth as terrain concealment rather than cloaking,
+  D-033 map geometry as a generation problem rather than a new system, D-034 a
+  single supply pool for every unit including air. D-035 records the arcade
+  design target (*Halo*/*Quake*, not *Battlefield*) that came out of the same
+  pass.
+- **Engine-first content boundary is now executable.** `tests/architecture.test.ts`
+  fails the build if `src/sim/` names any unit, race, resource or technology, in
+  code or in a user-facing string, with an explicit debt list for `ai.ts` and
+  `map.ts` that may only shrink. It found four pre-existing leaks on its first
+  run. D-029 had been written in three documents and still got broken during
+  this session, which is the point: doctrine that cannot fail a build is a
+  suggestion.
+- Genericised resource vocabulary inside `sim/` (`'not enough Legacy'` and
+  friends became `'insufficient resources'`).
+- Added the missing `researchPanel.ts` module-map row that was failing
+  `npm run check:docs`, and closed B-001, which had outlived its own fix.
+- 340 → 382 tests. Full gate green: docs check, site sync, typecheck, lint,
+  tests, production build.
+
 ## v1.23.0 — Core direct RTS orders (84%)
 
 - Added replay-safe attack-move, patrol, stop, and hold-position commands.

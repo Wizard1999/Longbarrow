@@ -32,6 +32,20 @@
   #debug .k { color: #666; }
   #debug .warn { color: #b02e2e; font-weight: 600; }
   #debug h4 { margin: 0 0 6px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: #444; }
+  /* Dev console. Monospace and deliberately unstyled-looking: it is a tool,
+     not part of the game's visual language, and should never be mistaken for
+     diegetic UI in a screenshot. */
+  #devconsole { position: fixed; left: 0; right: 0; top: 0; z-index: 60;
+    background: rgba(18, 14, 26, .93); color: #e8e2f2; font: 12px/1.5 ui-monospace, Menlo, Consolas, monospace;
+    border-bottom: 1px solid rgba(190, 170, 230, .35); max-height: 42vh; display: flex; flex-direction: column; }
+  #devconsole[hidden] { display: none; }
+  #devconsole-log { overflow-y: auto; padding: 8px 10px; white-space: pre-wrap; }
+  .devconsole-line { opacity: .92; }
+  #devconsole-prompt { display: flex; gap: 6px; align-items: center;
+    padding: 6px 10px; border-top: 1px solid rgba(190, 170, 230, .22); }
+  #devconsole-prompt span { color: #b9a7e6; }
+  #devconsole-input { flex: 1; background: transparent; border: 0; outline: 0;
+    color: inherit; font: inherit; }
   #research { top: 96px; right: 12px; width: 232px; max-height: 44vh; overflow-y: auto; }
   #research h3 { margin: 0 0 8px; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: #444; }
   .tech-row {
@@ -195,7 +209,7 @@
   <b>Home</b>: frame whole board &middot; <b>T</b>: throttle test &middot; <b>G</b>: select all workers
 </div>
 <div id="res" class="panel">
-  <div><span class="big" id="r-essence">0</span> <span class="sub">essence</span></div>
+  <div id="r-resources"></div>
   <div><span id="r-gathering">0</span>/<span id="r-workers">0</span> <span class="sub">workers gathering</span></div>
   <div><span class="big" id="r-supply">0/0</span> <span class="sub">command</span></div>
   <div><span class="big" id="r-chains">0/0</span> <span class="sub">chains</span></div>
@@ -222,13 +236,21 @@
   <div class="squads" id="chain-squads"></div>
   <div id="chain-body"></div>
 </div>
+<div id="devconsole" hidden>
+  <div id="devconsole-log"></div>
+  <div id="devconsole-prompt">
+    <span>&rsaquo;</span>
+    <input id="devconsole-input" type="text" autocomplete="off" spellcheck="false"
+           aria-label="Developer console command">
+  </div>
+</div>
 <div id="flash" class="panel"></div>
 <div id="debug" class="panel">
   <h4>Debug</h4>
   <div class="row"><span class="k">render fps</span><span id="d-fps">—</span></div>
   <div class="row"><span class="k">sim ticks/s</span><span id="d-tps">—</span></div>
   <div class="row"><span class="k">tick</span><span id="d-tick">—</span></div>
-  <div class="row"><span class="k">essence/min</span><span id="d-rate">—</span></div>
+  <div class="row"><span class="k">income/min</span><span id="d-rate">—</span></div>
   <div class="row"><span class="k">units</span><span id="d-units">—</span></div>
   <div class="row"><span class="k">selected</span><span id="d-sel">—</span></div>
   <div class="row"><span class="k">throttle</span><span id="d-throttle">off</span></div>

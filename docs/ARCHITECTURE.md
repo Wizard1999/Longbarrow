@@ -46,9 +46,10 @@ Race content lives here so the engine stays generic.
 | File | Purpose |
 |---|---|
 | `tuning.ts` | Every balance constant: build, combat, cohesion, economy, automation, AI, victory, day length. |
-| `units.ts` | Unit stat table + **traits** (`isWorker`, `formsShieldWall`). |
-| `buildings.ts` | Building stats: HP, command supply, control radius, what it produces. |
+| `units.ts` | Unit stat table + **traits** (`isWorker`, `formsShieldWall`, `flankExpertise`) + declared `silhouette` and hotkey. |
+| `buildings.ts` | Building stats: HP, command supply, control radius, vision, what it produces, and a declared `silhouette`. |
 | `tech.ts` | Cohort's research track (D-028). Declarative effects, category-wide. |
+| `resources.ts` | **The resource registry (D-031).** Declares which currencies exist, their rarity, node capacity, carry amount and gather share. Change the economy here and `src/sim/` needs no edit. |
 
 ## `src/sim/` — the deterministic simulation
 
@@ -68,7 +69,9 @@ Imports `core/` and `data/` **only**.
 | `squads.ts` | Persistent squads and behaviour chains. |
 | `missions.ts` | Missions above squads (D-007/D-027). **Currently inert** — records intent, does not yet drive squad behaviour. |
 | `tech.ts` | Research engine. Modifiers **derived** from the researched list, never baked into units (D-028). |
-| `terrain.ts` | Single source of truth for terrain height; the render mesh samples this rather than duplicating the formula. |
+| `dev.ts` | Developer commands (grant, spawn, kill) as ordinary deterministic commands, gated on hashed `world.devMode` so dev sessions still replay. |
+| `resources.ts` | Resource mechanics read generically from the registry: afford, pay, refund, reserve, and the worker rebalance. Walks `RESOURCE_ORDER`, never `Object.keys()`. |
+| `terrain.ts` | Single source of truth for terrain height. Composed from declared plateaus with cliff edges and ramp windows (D-033/D-035), 180°-rotationally symmetric so neither base holds better ground. Still unseeded. |
 | `mapBoundary.ts` | Generated polygon play area; orders and movement are clamped to it. |
 | `map.ts` | Map assembly + `MAP_VERSION`. Map seed is separate from match seed (D-017). |
 | `daynight.ts` | Day/night cycle derived from `world.tick` — never wall clock (D-013). |
@@ -91,11 +94,13 @@ Imports `core/` and `data/` **only**.
 | `quality.ts` | Low/medium/high tiers. The *look* is not tiered; the *cost* is. |
 | `lod.ts` | Camera-distance level of detail — real silhouettes close, strategic markers at table scale. |
 | `terrainMesh.ts` | Ground mesh, polygon skirt, World Turtle far-zoom silhouette (D-026). |
+| `unitGeometry.ts` | Unit body geometry shared per type and quality tier, built from each unit's declared `silhouette`. Spends the `bodySegments` budget the tiers promise. |
 | `unitViews.ts` | Unit meshes; interpolates with the loop's `alpha`. |
 | `buildingViews.ts` | Building meshes — fossil-and-glow, not machinery (§8.8). |
 | `siteViews.ts` | Construction sites in progress. |
 | `nodeViews.ts` | Resource nodes; shrink visibly as they deplete. |
 | `sceneryViews.ts` | Decorative rocks and trees; culled beyond tactical range. |
+| `groundShadow.ts` | Contact shadows: one shared soft ellipse under every caster. Works with shadow maps off, so the low tier is grounded too. |
 | `fogOverlay.ts` | Instanced polygon-clipped fog, unexplored vs explored. |
 | `chainVisuals.ts` | Selected squad's behaviour chain drawn on the ground. |
 | `commandFeedback.ts` | Immediate click acknowledgement — fires on the frame of the click, before the tick applies it (D-004). |
@@ -120,6 +125,8 @@ lerp using the loop's `alpha`. That is why a 30 Hz sim looks smooth at 144 fps.
 |---|---|
 | `hud.ts` | Resources, supply, clock, selection card, victory announcement. |
 | `chainEditor.ts` | Behaviour-chain editor. |
+| `researchPanel.ts` | Tech track panel (D-028); queues and cancels research via `issueCommand` so it lands in the replay stream. |
+| `devConsole.ts` | Backtick console. Cheats route through `sim/dev.ts` into the replay stream; pause/speed/tick/reveal are host-only and deliberately unrecorded. |
 | `minimap.ts` | Tactical map with visibility state. |
 | `fogOfWar.ts` | Presentation-side visibility field (unexplored/explored/visible). |
 | `visibility.ts` | Single controller governing what the player may see, click and target. |

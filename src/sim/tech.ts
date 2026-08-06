@@ -2,6 +2,7 @@ import type { CommandResult, Team, UnitTypeKey, World } from '../core/types';
 import { TECH, techCategoryOf } from '../data/tech';
 import type { TechCategory, TechEffect, TechId } from '../data/tech';
 import { UNIT_TYPES } from '../data/units';
+import { canAfford, pay, refund } from './resources';
 
 /**
  * Research (§8.5). Deterministic, hashed and replayed like everything else in
@@ -48,7 +49,9 @@ export function canResearch(world: World, team: Team, id: TechId): CommandResult
       return { ok: false, reason: `requires ${TECH[req].label}` };
     }
   }
-  if (world.resources[team] < def.cost) return { ok: false, reason: 'not enough Legacy' };
+  if (!canAfford(world.resources[team], def.cost)) {
+    return { ok: false, reason: 'insufficient resources' };
+  }
   return { ok: true };
 }
 
@@ -56,7 +59,7 @@ export function cmdResearch(world: World, team: Team, id: TechId): CommandResult
   const check = canResearch(world, team, id);
   if (!check.ok) return check;
   const def = TECH[id];
-  world.resources[team] -= def.cost;
+  pay(world.resources[team], def.cost);
   world.tech[team].researching = { id, ticksLeft: def.researchTicks };
   return { ok: true };
 }
@@ -66,7 +69,7 @@ export function cmdResearch(world: World, team: Team, id: TechId): CommandResult
 export function cmdCancelResearch(world: World, team: Team): CommandResult {
   const state = world.tech[team];
   if (!state.researching) return { ok: false, reason: 'nothing being researched' };
-  world.resources[team] += TECH[state.researching.id].cost;
+  refund(world.resources[team], TECH[state.researching.id].cost);
   state.researching = null;
   return { ok: true };
 }

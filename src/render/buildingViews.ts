@@ -6,6 +6,8 @@ import type { QualityTier } from './quality';
 import { lodDistance3D, lodForDistance, strategicMarkerScale } from './lod';
 import type { VisibilityController } from '../ui/visibility';
 import { boneMaterial, glowMaterial, mossMaterial } from './materials';
+import { createGroundShadow } from './groundShadow';
+import { QUALITY } from './quality';
 
 interface BuildingViewData {
   core: THREE.Mesh;
@@ -24,10 +26,16 @@ interface BuildingViewData {
  * seams. Rival version tinted, same silhouette — still clearly the same
  * civilisation, just a different force.
  */
-function makeBuildingView(scene: THREE.Scene, b: Building): THREE.Group {
+function makeBuildingView(scene: THREE.Scene, b: Building, tier: QualityTier): THREE.Group {
   const t = BUILDING_TYPES[b.type];
   const isPlayer = b.team === 'player';
-  const s = t.radius / 2.2;                        // scale off the Standard
+  const s = t.radius;                              // world units per silhouette unit
+  const sil = t.silhouette;
+  // Radial detail from the quality tier, which promises segments for "unit and
+  // building bodies" and was previously spent on neither — every drum and rib
+  // was a hardcoded hexagon even on High.
+  const seg = QUALITY[tier].bodySegments;
+  const ribSeg = Math.max(4, Math.round(seg * 0.7));
   const stoneMat = boneMaterial(b.team);
   const glowMat = glowMaterial(b.team);
   const mossMat = mossMaterial();
@@ -36,36 +44,40 @@ function makeBuildingView(scene: THREE.Scene, b: Building): THREE.Group {
   const detailRoot = new THREE.Group();
   g.add(detailRoot);
 
-  const drum = new THREE.Mesh(new THREE.CylinderGeometry(2.0 * s, 2.4 * s, 1.5 * s, 6), stoneMat);
-  drum.position.y = 0.75 * s;
+  const drum = new THREE.Mesh(
+    new THREE.CylinderGeometry(sil.drumTop * s, sil.drumBottom * s, sil.drumHeight * s, seg),
+    stoneMat);
+  drum.position.y = sil.drumHeight * s * 0.5;
   drum.castShadow = true;
   drum.receiveShadow = true;
   detailRoot.add(drum);
 
   // Ribs — fossil, not machinery: no joints, no gears, just weathered bone.
-  const ribCount = b.type === 'outpost' ? 4 : 6;
+  const ribCount = sil.ribCount;
   for (let i = 0; i < ribCount; i++) {
     const a = (i / ribCount) * Math.PI * 2;
-    const rib = new THREE.Mesh(new THREE.CylinderGeometry(0.16 * s, 0.22 * s, 2.6 * s, 5), stoneMat);
-    rib.position.set(Math.cos(a) * 1.85 * s, 1.5 * s, Math.sin(a) * 1.85 * s);
+    const rib = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.073 * s, 0.1 * s, sil.ribHeight * s, ribSeg), stoneMat);
+    rib.position.set(Math.cos(a) * 0.84 * s, sil.ribHeight * s * 0.5, Math.sin(a) * 0.84 * s);
     rib.rotation.z = Math.cos(a) * 0.16;
     rib.rotation.x = -Math.sin(a) * 0.16;
     rib.castShadow = true;
     detailRoot.add(rib);
     if (i % 2 === 0) {   // moss gathers in the seams
-      const moss = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3 * s, 0), mossMat);
-      moss.position.set(Math.cos(a) * 1.85 * s, (0.35 + (i % 3) * 0.2) * s, Math.sin(a) * 1.85 * s);
+      const moss = new THREE.Mesh(new THREE.IcosahedronGeometry(0.136 * s, 0), mossMat);
+      moss.position.set(Math.cos(a) * 0.84 * s, (0.16 + (i % 3) * 0.09) * s, Math.sin(a) * 0.84 * s);
       moss.scale.set(1, 0.55, 1);
       detailRoot.add(moss);
     }
   }
 
   // The "still faintly alive" tell.
-  const core = new THREE.Mesh(new THREE.IcosahedronGeometry(0.72 * s, 0), glowMat);
-  core.position.y = 2.5 * s;
+  const core = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(sil.coreScale * s, seg >= 16 ? 1 : 0), glowMat);
+  core.position.y = sil.coreHeight * s;
   detailRoot.add(core);
-  const light = new THREE.PointLight(isPlayer ? 0xffcc66 : 0xff8866, 6, 11 * s);
-  light.position.y = 2.5 * s;
+  const light = new THREE.PointLight(isPlayer ? 0xffcc66 : 0xff8866, 6, 5 * s);
+  light.position.y = sil.coreHeight * s;
   detailRoot.add(light);
 
   const sel = new THREE.Mesh(
@@ -89,6 +101,10 @@ function makeBuildingView(scene: THREE.Scene, b: Building): THREE.Group {
   strategicMarker.position.y = 0.12;
   strategicMarker.visible = false;
   g.add(strategicMarker);
+
+  // Buildings are the heaviest things on the board, so they need the strongest
+  // grounding; a wider spread reads as the mass sitting into the ground.
+  g.add(createGroundShadow(t.radius, 2.1));
 
   g.position.set(b.x, terrainHeightAt(b.x, b.z), b.z);
   scene.add(g);
@@ -120,7 +136,7 @@ export function syncBuildingViews(
   visibility: VisibilityController,
 ): void {
   for (const b of world.buildings) {
-    if (!views.has(b.id)) views.set(b.id, makeBuildingView(scene, b));
+    if (!views.has(b.id)) views.set(b.id, makeBuildingView(scene, b, qualityTier));
   }
   // slow pulse on the cores — "still faintly alive", not machinery
   const pulse = 1 + Math.sin(world.tick * 0.045) * 0.09;

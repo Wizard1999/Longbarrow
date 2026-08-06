@@ -9,13 +9,27 @@ clicking fast. The player acts as an Operations Commander — issuing objectives
 and doctrine to an army that executes them intelligently.
 
 
+![Greenmantle war table concept art](docs/assets/concept-art/war-table-camera-concept.webp)
+
+<p align="center">
+  <em>The war table. The battlefield is a physical miniature suspended in a black
+  void — the camera runs from inside the grass to the whole board at once.</em>
+</p>
+
 ![Greenmantle contested battlefield concept art](docs/assets/concept-art/contested-ground.webp)
 
 <p align="center">
   <em>Fossilized memory meets an aggressive tide of iridescent life.</em>
 </p>
 
-Runs in the browser. No engine, no framework — TypeScript, Three.js and Vite. Maps now use deterministic irregular polygon boundaries rather than a permanent square board.
+**It is a game engine first.** Greenmantle is the first game built on it, and the
+engine is being extracted by building that game rather than designed in the
+abstract — so `src/sim/` must not know the name of any unit, race, resource or
+stealth rule a different RTS might want changed. Those are content declared in
+`src/data/`, and `tests/architecture.test.ts` fails the build if they leak
+inward. See [`docs/ENGINE_VISION.md`](docs/ENGINE_VISION.md).
+
+Runs in the browser. No engine dependency, no framework — TypeScript, Three.js and Vite. Maps now use deterministic irregular polygon boundaries rather than a permanent square board.
 
 The current build also enforces polygon-aware fog of war across the tactical map and full 3D battlefield: unseen rival forces disappear from presentation and cannot be targeted through hidden information, while replay/spectator modes can opt into omniscient vision.
 
@@ -37,6 +51,13 @@ An optional guided introduction is available from the in-game **Tutorial** butto
 </table>
 
 See the full [original concept-art gallery](docs/CONCEPT_ART.md).
+
+## What it actually looks like right now
+
+Concept art above; **real in-game captures** in
+[`docs/SCREENSHOTS.md`](docs/SCREENSHOTS.md), kept deliberately honest — the
+build does not look like the concept art yet, and that page says so and shows
+the distance.
 
 ## About the artwork
 
@@ -85,6 +106,14 @@ npm install
 npm run dev
 ```
 
+Then open `http://localhost:5173/`.
+
+**In the Claude Desktop app**, `.claude/launch.json` wires this up for the Browser
+pane — `Ctrl+Shift+B` on Windows, `Cmd+Shift+B` on macOS — so the game previews
+next to the conversation with hot reload. Note that the pane previews servers on
+*your* machine: a Claude Code **cloud/web** session runs in an isolated VM whose
+localhost is not yours, so the preview is a local-session feature only.
+
 ## Scripts
 
 | Command | What |
@@ -112,6 +141,7 @@ Core orders: **A** attack-move, **P** patrol, **S** stop, **H** hold position.
 | `Esc` | Cancel current mode |
 | `T` | Toggle the slow-frame throttle (tick-rate independence test) |
 | `Home` | Frame the entire battlefield |
+| `` ` `` | Developer console (`/help` for commands) |
 
 ## Repository layout
 
@@ -122,7 +152,7 @@ src/
 ├── sim/     deterministic headless simulation
 ├── render/  Three.js views
 ├── input/   mouse, keyboard, selection
-└── ui/      HUD, chain editor
+└── ui/      HUD, chain editor, research panel, dev console
 tests/       Vitest suites
 docs/        design bible, architecture, decisions, state
 legacy/      original HTML prototypes, kept for reference
@@ -161,11 +191,19 @@ abstract. See [`docs/ENGINE_VISION.md`](docs/ENGINE_VISION.md).
 
 ## The world beneath the war table
 
+<img src="docs/assets/concept-art/war-table-camera-concept.webp" alt="War table camera concept" width="100%">
+
 Greenmantle is staged in a black void. At ordinary play distance the battlefield
 reads as a physical miniature war table; at maximum zoom the complete board will
 resolve into a monumental **World Turtle** carrying the terrain on its back. The
 current descending terrain edges are a temporary production scaffold for that
 future silhouette.
+
+The camera is not a conventional RTS camera bolted onto a landscape: it is a free
+orbital view over a table, with a zoom range from miniature (down among the units)
+to cosmological (the whole board as an object). That range is why level-of-detail
+is load-bearing rather than an optimisation, and why art is authored against the
+table rather than against a fixed top-down angle (D-014, D-026).
 
 
 

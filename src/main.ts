@@ -36,8 +36,13 @@ import { FogOfWarField, playerVisionSources } from './ui/fogOfWar';
 import { createVisibilityController, visibilityModeFromSearch } from './ui/visibility';
 import { createFogOverlay } from './render/fogOverlay';
 import { createTutorial } from './ui/tutorial';
+import { createDevConsole } from './ui/devConsole';
+import type { DevConsole } from './ui/devConsole';
 import { Recorder } from './sim/replay';
 import { configureLiveRecording, issueCommand } from './replay/live';
+import { UNIT_TYPES } from './data/units';
+import type { UnitTypeKey } from './core/types';
+import type { UnitDef } from './data/units';
 
 void mountBuildBadge();
 
@@ -59,7 +64,7 @@ const terrainMesh = terrainPresentation.mesh;
 const fog = new FogOfWarField(terrainPresentation.boundary);
 const visibility = createVisibilityController(fog, visibilityModeFromSearch(window.location.search));
 const fogOverlay = createFogOverlay(scene, fog, visibility);
-const sceneryViews = buildSceneryViews(scene, world);
+const sceneryViews = buildSceneryViews(scene, world, quality.tier);
 
 const views = {
   units: new Map<EntityId, THREE.Group>(),
@@ -85,8 +90,15 @@ createMouse({
   commandFeedback: commandFeedback.show,
 });
 
+// Created after the loop, since the console drives loop pacing — but the
+// keyboard handler exists before it, so it consults this reference lazily.
+let devConsole: DevConsole | null = null;
+
 const keyboard = createKeyboard({
   onKey(k, e) {
+    // First refusal: while the console is open it owns the keyboard, or typing
+    // "s" into it would also fire the stop-order hotkey.
+    if (devConsole?.handleKey(e)) { e.preventDefault(); return; }
     // Ctrl+1..5 forms a squad; 1..5 selects one. Squads are persistent (Q1),
     // so the number key is a real handle, not a saved selection.
     const n = Number(k);
@@ -179,9 +191,11 @@ const keyboard = createKeyboard({
       }
     }
     if (k === 'b' && world.units.some(u => u.selected && u.gather)) ui.placingType = 'outpost';
-    if (k === 'q') hud.tryTrain('worker');
-    if (k === 'e') hud.tryTrain('legionnaire');
-    if (k === 'r') hud.tryTrain('marksman');
+    // Training keys come from the data table, so a new unit declares its own
+    // key and appears here with no input-layer edit.
+    for (const [ut, def] of Object.entries(UNIT_TYPES) as [UnitTypeKey, UnitDef][]) {
+      if (def.hotkey === k) hud.tryTrain(ut);
+    }
   },
 });
 
@@ -228,5 +242,20 @@ const loop = createLoop({
 });
 
 const sandbox = createSandbox({ world, loop, camera: cam, renderer, ui, scene, quality, recorder, visibility });
+
+// Cheats route through sim/dev.ts into the replay stream; pacing and fog are
+// host concerns and stay out of it (see ui/devConsole.ts).
+devConsole = createDevConsole(world, {
+  setPaused: on => loop.setPaused(on),
+  isPaused: () => loop.isPaused(),
+  setSpeed: x => loop.setSpeed(x),
+  getSpeed: () => loop.getSpeed(),
+  stepOnce: () => loop.stepOnce(),
+  setRevealAll: on => visibility.setMode(on ? 'omniscient' : 'player'),
+  isRevealAll: () => visibility.mode === 'omniscient',
+  // Spawn where the player is looking, which is almost always what is meant.
+  spawnPoint: () => ({ x: cam.state.focusX, z: cam.state.focusZ }),
+});
+
 cam.update();
 loop.start();

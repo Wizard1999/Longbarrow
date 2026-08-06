@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { freshMap, must, run, workersOf } from './helpers';
+import { freshMap, fund, must, run, stock, workersOf } from './helpers';
 import {
   cmdCancelTrain, cmdGather, cmdPlaceBuilding, cmdTrain,
 } from '../src/sim/commands';
@@ -33,10 +33,10 @@ describe('[14] Command supply', () => {
   const capFromStructures = supplyCap(w, 'player');
   const startUsed = supplyUsed(w, 'player');
 
-  w.resources.player = 10000;
-  const before = w.resources.player;
+  fund(w, 'player', 10000);
+  const before = stock(w, 'player');
   const trained = cmdTrain(w, base.id, 'worker');
-  const afterTrainEssence = w.resources.player;
+  const afterTrainEssence = stock(w, 'player');
   const usedAfterQueue = supplyUsed(w, 'player');
 
   // fill to the cap
@@ -52,7 +52,7 @@ describe('[14] Command supply', () => {
   });
   it('training deducts essence', () => {
     expect(trained.ok).toBe(true);
-    expect(afterTrainEssence).toBe(before - UNIT_TYPES.worker.cost);
+    expect(afterTrainEssence).toBe(before - (UNIT_TYPES.worker.cost.material ?? 0));
   });
   it('queued units count against the cap immediately', () => {
     expect(usedAfterQueue).toBe(startUsed + UNIT_TYPES.worker.supply);
@@ -69,7 +69,7 @@ describe('[14] Command supply', () => {
 describe('[15] production queue', () => {
   const w = freshMap();
   const base = must(w.buildings.find(b => b.team === 'player'));
-  w.resources.player = 10000;
+  fund(w, 'player', 10000);
   const unitsBefore = w.units.length;
   cmdTrain(w, base.id, 'worker');
   run(w, UNIT_TYPES.worker.buildTicks - 1);
@@ -81,7 +81,7 @@ describe('[15] production queue', () => {
   for (let i = 0; i < MAX_QUEUE + 3; i++) cmdTrain(w, base.id, 'worker');
   const queueDepth = base.queue.length;
 
-  const essenceBefore = w.resources.player;
+  const essenceBefore = stock(w, 'player');
   cmdCancelTrain(w, base.id, 0);
 
   it('unit has not appeared early', () => expect(countJustBefore).toBe(unitsBefore));
@@ -90,14 +90,14 @@ describe('[15] production queue', () => {
   it('walks to the rally point', () => expect(fresh.target).not.toBeNull());
   it('queue depth is capped', () => expect(queueDepth).toBeLessThanOrEqual(MAX_QUEUE));
   it('cancelling refunds in full', () => {
-    expect(w.resources.player).toBe(essenceBefore + UNIT_TYPES.worker.cost);
+    expect(stock(w, 'player')).toBe(essenceBefore + (UNIT_TYPES.worker.cost.material ?? 0));
   });
 });
 
 // [16] outpost placement
 describe('[16] outpost placement', () => {
   const w = freshMap();
-  w.resources.player = 10000;
+  fund(w, 'player', 10000);
   const base = must(w.buildings.find(b => b.team === 'player'));
   const capBefore = supplyCap(w, 'player');
   const onStructure = canPlaceBuilding(w, 'player', 'outpost', base.x + 0.5, base.z);
@@ -108,7 +108,7 @@ describe('[16] outpost placement', () => {
   const res = cmdPlaceBuilding(w, 'player', 'outpost', remote.x, remote.z);
 
   const poor = freshMap();
-  poor.resources.player = 0;
+  fund(poor, 'player', 0);
 
   it('cannot place on top of an existing structure', () => expect(onStructure.ok).toBe(false));
   it('cannot place on an essence node', () => expect(onNode.ok).toBe(false));
@@ -118,7 +118,7 @@ describe('[16] outpost placement', () => {
   });
   it('placement succeeds', () => expect(res.ok).toBe(true));
   it('essence was spent at placement time', () => {
-    expect(w.resources.player).toBe(10000 - BUILDING_TYPES.outpost.cost);
+    expect(stock(w, 'player')).toBe(10000 - (BUILDING_TYPES.outpost.cost.material ?? 0));
   });
   it('an unfinished site grants NO command yet', () => {
     expect(supplyCap(w, 'player')).toBe(capBefore);
@@ -131,7 +131,7 @@ describe('[16] outpost placement', () => {
 // [17] outposts work as drop-off points
 describe('[17] outposts work as drop-off points', () => {
   const w = freshMap();
-  w.resources.player = 10000;
+  fund(w, 'player', 10000);
   const node = must(w.nodes.find(n => n.x > 0));   // node on the RIVAL side, far from home
   const ws0 = workersOf(w, 'player');
   cmdPlaceBuilding(w, 'player', 'outpost', node.x - 4, node.z, [must(ws0[1]).id]);
@@ -147,14 +147,14 @@ describe('[17] outposts work as drop-off points', () => {
     expect(must(nearest).type).toBe('outpost');
   });
   it('essence banked from a remote node', () => {
-    expect(w.resources.player).toBeGreaterThan(10000 - BUILDING_TYPES.outpost.cost);
+    expect(stock(w, 'player')).toBeGreaterThan(10000 - (BUILDING_TYPES.outpost.cost.material ?? 0));
   });
 });
 
 // [18] control range is territory, not a build restriction (A7)
 describe('[18] control range is territory, not a build restriction', () => {
   const w = freshMap();
-  w.resources.player = 10000;
+  fund(w, 'player', 10000);
   const base = must(w.buildings.find(b => b.team === 'player'));
 
   it('own base is inside own control', () => {

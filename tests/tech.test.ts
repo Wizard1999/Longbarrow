@@ -12,14 +12,15 @@ import {
 import { effectiveDefense, maxHp, resolvedDamage } from '../src/sim/combat';
 import { COMBAT } from '../src/data/tuning';
 import { cmdGather } from '../src/sim/commands';
-import { must, run } from './helpers';
+import { fund, must, run, stock } from './helpers';
 import type { World } from '../src/core/types';
+import { costMagnitude } from '../src/sim/resources';
 
 const fresh = (seed = 1337) => buildTestMap(createWorld(seed));
 
 /** Research `id` instantly by granting funds and running out the clock. */
 function grant(w: World, id: TechId): void {
-  w.resources.player = 100_000;
+  fund(w, 'player', 100_000);
   expect(cmdResearch(w, 'player', id).ok).toBe(true);
   run(w, TECH[id].researchTicks + 1);
   expect(hasTech(w, 'player', id)).toBe(true);
@@ -34,7 +35,7 @@ describe('research mechanics', () => {
 
   it('completes after its research time and not before', () => {
     const w = fresh();
-    w.resources.player = 100_000;
+    fund(w, 'player', 100_000);
     cmdResearch(w, 'player', 'quarryDiscipline');
     run(w, TECH.quarryDiscipline.researchTicks - 1);
     expect(hasTech(w, 'player', 'quarryDiscipline')).toBe(false);
@@ -44,20 +45,20 @@ describe('research mechanics', () => {
 
   it('costs resources up front', () => {
     const w = fresh();
-    w.resources.player = 1000;
+    fund(w, 'player', 1000);
     cmdResearch(w, 'player', 'quarryDiscipline');
-    expect(w.resources.player).toBe(1000 - TECH.quarryDiscipline.cost);
+    expect(stock(w, 'player')).toBe(1000 - (TECH.quarryDiscipline.cost.material ?? 0));
   });
 
   it('refuses when it cannot be afforded', () => {
     const w = fresh();
-    w.resources.player = 0;
+    fund(w, 'player', 0);
     expect(cmdResearch(w, 'player', 'quarryDiscipline').ok).toBe(false);
   });
 
   it('enforces prerequisites', () => {
     const w = fresh();
-    w.resources.player = 100_000;
+    fund(w, 'player', 100_000);
     expect(canResearch(w, 'player', 'deepSeams').ok).toBe(false);
     grant(w, 'quarryDiscipline');
     expect(canResearch(w, 'player', 'deepSeams').ok).toBe(true);
@@ -65,18 +66,18 @@ describe('research mechanics', () => {
 
   it('only one thing at a time', () => {
     const w = fresh();
-    w.resources.player = 100_000;
+    fund(w, 'player', 100_000);
     expect(cmdResearch(w, 'player', 'quarryDiscipline').ok).toBe(true);
     expect(cmdResearch(w, 'player', 'reinforcedPlate').ok).toBe(false);
   });
 
   it('cancelling refunds in full', () => {
     const w = fresh();
-    w.resources.player = 1000;
+    fund(w, 'player', 1000);
     cmdResearch(w, 'player', 'reinforcedPlate');
     run(w, 30);
     expect(cmdCancelResearch(w, 'player').ok).toBe(true);
-    expect(w.resources.player).toBe(1000);
+    expect(stock(w, 'player')).toBe(1000);
     expect(w.tech.player.researching).toBeNull();
   });
 
@@ -191,12 +192,12 @@ describe('research changes real outcomes', () => {
     const baseline = fresh();
     grant(w, 'quarryDiscipline');
     send(w); send(baseline);
-    w.resources.player = 0;
-    baseline.resources.player = 0;
+    fund(w, 'player', 0);
+    fund(baseline, 'player', 0);
     run(w, 1200);
     run(baseline, 1200);
-    expect(baseline.resources.player).toBeGreaterThan(0);
-    expect(w.resources.player).toBeGreaterThan(baseline.resources.player);
+    expect(stock(baseline, 'player')).toBeGreaterThan(0);
+    expect(stock(w, 'player')).toBeGreaterThan(stock(baseline, 'player'));
   });
 });
 
@@ -204,14 +205,14 @@ describe('research is deterministic sim state', () => {
   it('is part of the hash', () => {
     const a = fresh(5); const b = fresh(5);
     expect(hash(a)).toBe(hash(b));
-    a.resources.player = 100_000; b.resources.player = 100_000;
+    fund(a, 'player', 100_000); fund(b, 'player', 100_000);
     cmdResearch(a, 'player', 'reinforcedPlate');
     expect(hash(a)).not.toBe(hash(b));
   });
 
   it('two worlds researching identically stay in step', () => {
     const a = fresh(5); const b = fresh(5);
-    for (const w of [a, b]) { w.resources.player = 100_000; cmdResearch(w, 'player', 'measuredVolley'); }
+    for (const w of [a, b]) { fund(w, 'player', 100_000); cmdResearch(w, 'player', 'measuredVolley'); }
     run(a, 800); run(b, 800);
     expect(hash(a)).toBe(hash(b));
   });
@@ -219,7 +220,7 @@ describe('research is deterministic sim state', () => {
   it('survives a serialize round trip', () => {
     const w = fresh();
     grant(w, 'reinforcedPlate');
-    w.resources.player = 100_000;
+    fund(w, 'player', 100_000);
     cmdResearch(w, 'player', 'attritionDoctrine');
     const wire = JSON.parse(JSON.stringify(w)) as World;
     expect(hash(wire)).toBe(hash(w));
@@ -249,7 +250,7 @@ describe('engine-first: the tech engine knows nothing about Cohort', () => {
     for (const id of Object.keys(TECH) as TechId[]) {
       const def = must(TECH[id]);
       expect(def.effects.length).toBeGreaterThan(0);
-      expect(def.cost).toBeGreaterThan(0);
+      expect(costMagnitude(def.cost)).toBeGreaterThan(0);
       expect(def.researchTicks).toBeGreaterThan(0);
       for (const req of def.requires) expect(TECH[req]).toBeDefined();
     }

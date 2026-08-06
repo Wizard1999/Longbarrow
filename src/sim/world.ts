@@ -12,6 +12,7 @@ import { stepAi } from './ai';
 import { mapBoundaryForSeed } from './mapBoundary';
 import { stepMissions } from './missions';
 import { createTechState, stepTech } from './tech';
+import { emptyBag } from './resources';
 
 export function createWorld(seed: number, startHour = 8, mapSeed = seed): World {
   return {
@@ -28,7 +29,7 @@ export function createWorld(seed: number, startHour = 8, mapSeed = seed): World 
     sites: [],          // construction in progress
     scenery: [],
     squads: [],         // persistent groups running behaviour chains
-    resources: { player: 0, rival: 0 },
+    resources: { player: emptyBag(), rival: emptyBag() },
     winner: null,
     eliminationTicks: { player: 0, rival: 0 },
     // Deliberately null. A world is just a world; who plays it is match setup,
@@ -37,6 +38,9 @@ export function createWorld(seed: number, startHour = 8, mapSeed = seed): World 
     ai: null,
     missions: [],
     tech: { player: createTechState(), rival: createTechState() },
+    // Off by default, and turned on only by an explicit recorded command, so a
+    // match cannot start cheat-enabled by accident.
+    devMode: false,
   };
 }
 

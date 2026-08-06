@@ -4,11 +4,14 @@ import { UNIT_TYPES } from '../data/units';
 import { terrainHeightAt } from '../sim/terrain';
 import { shieldWallStacks } from '../sim/combat';
 import { COMBAT } from '../data/tuning';
-import { essenceMat } from './nodeViews';
+import { resourceMaterial } from './materials';
 import type { QualityTier } from './quality';
 import { lodDistance3D, lodForDistance, strategicMarkerScale } from './lod';
 import type { VisibilityController } from '../ui/visibility';
 import { boneMaterial, trimMaterial } from './materials';
+import { RESOURCE_ORDER } from '../data/resources';
+import { createGroundShadow } from './groundShadow';
+import { unitBodyGeometry } from './unitGeometry';
 
 export const TEAM_COLORS: Record<Team, number> = { player: 0x3b5bdb, rival: 0xb02e2e };
 
@@ -26,12 +29,13 @@ interface UnitViewData {
   strategicMarker: THREE.Mesh;
 }
 
-function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
+function makeUnitView(scene: THREE.Scene, unit: Unit, tier: QualityTier): THREE.Group {
   const g = new THREE.Group();
   const detailRoot = new THREE.Group();
   g.add(detailRoot);
   const isWorker = UNIT_TYPES[unit.type].isWorker;
   const isMarksman = unit.type === 'marksman';
+  const isOutrider = unit.type === 'outrider';
   // Shared, not per-unit: a ShaderMaterial per unit means a shader compile per
   // unit, which stalls exactly when a battle is busiest (see render/materials.ts).
   const bodyMat = boneMaterial(unit.team);
@@ -40,17 +44,27 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
   // Silhouette carries the role, since the design brief wants the battlefield
   // readable at a glance: the Legionnaire is broad and low, the Marksman is
   // narrow and tall with a visible long weapon, the worker is smallest.
-  const bodyH = isWorker ? 0.8 : isMarksman ? 1.1 : 1.0;
-  const rTop = isWorker ? 0.26 : isMarksman ? 0.22 : 0.32;
-  const rBot = isWorker ? 0.34 : isMarksman ? 0.28 : 0.4;
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, bodyH, 6), bodyMat);
+  // Shared per type and tier — see unitGeometry.ts. Radial detail comes from
+  // the quality tier, which until now declared a bodySegments budget that
+  // nothing spent, leaving every unit a six-sided cylinder even on High.
+  const shape = unitBodyGeometry(unit.type, tier);
+  const bodyH = shape.bodyHeight;
+  const body = new THREE.Mesh(shape.body, bodyMat);
   body.position.y = bodyH * 0.7;
-  const head = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(isWorker ? 0.23 : isMarksman ? 0.21 : 0.28, 0), trimMat);
+  const head = new THREE.Mesh(shape.head, trimMat);
   head.position.y = bodyH + 0.35;
   body.castShadow = true;
   head.castShadow = true;
   detailRoot.add(body, head);
+
+  // Shoulder mass on line infantry only. A shield wall has to read as a solid
+  // block from the war-table camera, and width at the top is what does that.
+  if (shape.shoulders) {
+    const shoulders = new THREE.Mesh(shape.shoulders, bodyMat);
+    shoulders.position.y = bodyH * 1.02;
+    shoulders.castShadow = true;
+    detailRoot.add(shoulders);
+  }
 
   if (isMarksman) {
     // Long bone stave, angled back over the shoulder — reads as "ranged"
@@ -62,6 +76,18 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
     detailRoot.add(stave);
   }
 
+  if (isOutrider) {
+    // A lance couched low and forward — motion and intent, where the
+    // Marksman's stave angles back and reads as patience. The body lean does
+    // the rest: this unit should look like it is already mid-stride.
+    const lance = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 1.5, 5), trimMat);
+    lance.position.set(0.24, bodyH * 0.75, 0.35);
+    lance.rotation.x = 1.15;
+    lance.castShadow = true;
+    detailRoot.add(lance);
+    detailRoot.rotation.x = 0.08;
+  }
+
   if (unit.type === 'legionnaire') {
     // Shield, and the thing the wall bonus is drawn on.
     const shield = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.62, 0.5), trimMat);
@@ -70,14 +96,21 @@ function makeUnitView(scene: THREE.Scene, unit: Unit): THREE.Group {
     detailRoot.add(shield);
   }
 
-  // carried essence — only workers, only visible while hauling
+  // The carried load — only workers, only visible while hauling. Its material
+  // is swapped to match what is actually in hand, so a glance at a worker
+  // says which resource it is running (D-031).
   let carry: THREE.Mesh | null = null;
   if (isWorker) {
-    carry = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), essenceMat);
+    carry = new THREE.Mesh(new THREE.OctahedronGeometry(0.24, 0), resourceMaterial(RESOURCE_ORDER[0]!));
     carry.position.y = bodyH + 0.85;
     carry.visible = false;
     detailRoot.add(carry);
   }
+
+  // Contact shadow. Inside detailRoot, so it disappears with the body when LOD
+  // swaps to a strategic marker — a shadow with nothing casting it is worse
+  // than none.
+  detailRoot.add(createGroundShadow(unit.radius));
 
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(isWorker ? 0.46 : 0.55, isWorker ? 0.58 : 0.68, 20),
@@ -152,7 +185,7 @@ export function syncUnitViews(
 ): void {
   for (const u of world.units) {
     let v = views.get(u.id);
-    if (!v) { v = makeUnitView(scene, u); views.set(u.id, v); }
+    if (!v) { v = makeUnitView(scene, u, qualityTier); views.set(u.id, v); }
     const d = v.userData as UnitViewData;
     const informationVisible = visibility.entityVisible(u.team, u.x, u.z);
     v.visible = informationVisible;
@@ -171,7 +204,15 @@ export function syncUnitViews(
     v.userData.pickTarget = d.pickTarget;
     d.ring.visible = u.selected;
     d.squadRing.visible = squadMemberIds.has(u.id) && lod !== 'world';
-    if (d.carry) d.carry.visible = (u.gather?.carrying ?? 0) > 0;
+    if (d.carry) {
+      const hauling = (u.gather?.carrying ?? 0) > 0;
+      d.carry.visible = hauling;
+      // Materials are shared and cached per resource, so this assignment is a
+      // pointer swap rather than a shader compile (D-006's draw-call budget).
+      if (hauling && u.gather?.carryResource) {
+        d.carry.material = resourceMaterial(u.gather.carryResource);
+      }
+    }
     if (d.wall) {
       const frac = shieldWallStacks(world, u) / COMBAT.shieldWallMaxNeighbours;
       (d.wall.material as THREE.MeshBasicMaterial).opacity = frac * 0.85;

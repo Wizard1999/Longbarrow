@@ -18,13 +18,23 @@ structural.
 mask, rather than raising the grid resolution — more, smaller squares is still
 squares.
 **Repro:** load the game at any quality with default vision.
-**Status:** open. Colour corrected 2026-07-27; softness outstanding.
+**Status:** FIXED 2026-07-27. Took the texture route: the overlay is now one
+terrain-following sheet sampling an R8 coverage texture with linear filtering and
+a two-band smoothstep, so cell boundaries are gradients rather than edges. Ground
+outside the map polygon is written as *clear* so the rim fades instead of cutting.
+Also cheaper — one draw call and a ~2 KB upload per frame, against up to ~2,300
+instanced quads. Five tests cover the coverage export, including agreement with
+`stateAt` so the sampled and queried fields cannot drift apart.
 
 ### B-001 · low · render · Scenery and resource nodes use stock materials
 `sceneryViews.ts` and `nodeViews.ts` still build `MeshStandardMaterial`, so they
 do not match the painterly shading applied elsewhere. Cosmetic inconsistency,
 not a defect in behaviour.
-**Status:** open — folded into the art pass in `TODO.md`.
+**Status:** FIXED — verified stale 2026-07-27. Both files draw their materials
+from `render/materials.ts` (`rockMaterial`, `barkMaterial`, `leafMaterial`,
+`legacyMaterial`); no stock material remains in either. The report outlived the
+fix, which is its own small lesson: a bug list nobody re-checks is as misleading
+as a module map nobody maintains.
 
 ### B-002 · unknown · perf · 100-unit performance is unverified
 `DECISIONS.md` D-006 commits to 100+ units at 1080p/30fps on a 2017 integrated

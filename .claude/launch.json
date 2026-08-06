@@ -1,0 +1,31 @@
+{
+  // Dev-server config for the Claude Desktop app's Browser pane (Ctrl+Shift+B
+  // on Windows, Cmd+Shift+B on macOS). Without this, preview defaults to port
+  // 3000 and finds nothing — Vite serves 5173 (see vite.config.ts).
+  //
+  // Note this only applies to LOCAL Desktop sessions. Cloud/web sessions run in
+  // an isolated VM whose localhost is not yours, and have no preview pane.
+  "version": "0.0.1",
+
+  // The game is a WebGL canvas, so a screenshot after every edit tells Claude
+  // very little and costs a real page reload each time. Ask for verification
+  // when it is actually wanted instead.
+  "autoVerify": false,
+
+  "configurations": [
+    {
+      "name": "greenmantle",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173
+    },
+    {
+      // The public development site, served by the same Vite instance.
+      "name": "greenmantle-dev-site",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 5173,
+      "url": "http://localhost:5173/development.html"
+    }
+  ]
+}

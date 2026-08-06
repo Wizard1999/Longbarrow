@@ -1,4 +1,5 @@
 import type { UnitTypeKey } from '../core/types';
+import type { ResourceCost } from './resources';
 
 /** Combat stats. Present on every unit — workers have them so they can be
  *  killed at 1.9 and so the win condition at 1.12 has something to chew on,
@@ -7,7 +8,8 @@ export interface CombatDef {
   hp: number;
   /** Damage per attack, before defense and positional modifiers. */
   damage: number;
-  /** 0 for melee-range units; the sim treats this as reach, not a projectile. */
+  /** Reach, not a projectile. Melee units declare a short one (~0.9) rather
+   *  than zero, so contact happens at the edge of the body, not at its centre. */
   range: number;
   /** Ticks between attacks. */
   attackTicks: number;
@@ -20,13 +22,36 @@ export interface CombatDef {
   defense: number;
 }
 
+/**
+ * How a unit reads as a shape (D-035: legible beats plausible).
+ *
+ * Declared per unit rather than inferred from stats. Inference was tried and was
+ * wrong twice in one sitting — melee "range" is 0.9 rather than 0, and speeds
+ * cluster tightly enough that no threshold cleanly separates a scout. More to
+ * the point, how a unit *looks* is an authoring decision, and a game author
+ * building on this engine should set it directly instead of reverse-engineering
+ * whichever stat thresholds the renderer happens to test (D-029).
+ *
+ * Proportions are deliberately exaggerated: at war-table distance colour and
+ * detail are gone long before shape is, so the role has to live in the outline.
+ */
+export interface SilhouetteDef {
+  height: number;
+  radiusTop: number;
+  radiusBottom: number;
+  headScale: number;
+  /** Shoulder mass. 0 for none — only front-line units should read as a block. */
+  shoulderRadius: number;
+}
+
 export interface UnitDef {
   speed: number;
   radius: number;
   arriveEpsilon: number;
   isWorker: boolean;
   supply: number;
-  cost: number;
+  cost: ResourceCost;
+  silhouette: SilhouetteDef;
   buildTicks: number;
   label: string;
   /**
@@ -39,13 +64,30 @@ export interface UnitDef {
    * mechanic with no change to `sim/`.
    */
   formsShieldWall?: boolean;
+  /**
+   * Scales the *bonus portion* of positional flank damage: effective
+   * multiplier = 1 + (base − 1) × expertise. Frontal attacks (base 1) are
+   * untouched, which is exactly the asymmetry a flanker wants — declared here
+   * so the combat engine rewards the trait, never the unit's name (D-029).
+   */
+  flankExpertise?: number;
+  /** Sight radius, in world units. A balance number, so it lives here and not
+   *  in the fog-of-war code that consumes it. */
+  vision: number;
+  /** Training hotkey shown in the HUD and bound by the input layer. Content,
+   *  not code: a new unit declares its key here and both pick it up. */
+  hotkey?: string;
   combat: CombatDef;
 }
 
 export const UNIT_TYPES: Record<UnitTypeKey, UnitDef> = {
   legionnaire: {
     speed: 4.2, radius: 0.42, arriveEpsilon: 0.06, isWorker: false,
-    supply: 2, cost: 75, buildTicks: 120, label: 'Legionnaire', formsShieldWall: true,
+    supply: 2, cost: { material: 75 }, buildTicks: 120, label: 'Legionnaire', formsShieldWall: true,
+    // Broad, low, and the only profile with shoulders: a shield wall has to read
+    // as one solid mass from above, which needs width at the top.
+    silhouette: { height: 0.98, radiusTop: 0.34, radiusBottom: 0.42, headScale: 0.28, shoulderRadius: 0.46 },
+    vision: 11, hotkey: 'e',
     // Core melee. Its whole identity is the shield wall — see
     // sim/combat.ts shieldWallStacks(): defense climbs with each adjacent
     // Legionnaire, so a formed line is worth far more than the same models
@@ -57,7 +99,10 @@ export const UNIT_TYPES: Record<UnitTypeKey, UnitDef> = {
   },
   marksman: {
     speed: 3.8, radius: 0.38, arriveEpsilon: 0.06, isWorker: false,
-    supply: 2, cost: 85, buildTicks: 135, label: 'Marksman',
+    supply: 2, cost: { material: 85 }, buildTicks: 135, label: 'Marksman',
+    // Tallest and narrowest; the stave does the rest of the ranged read.
+    silhouette: { height: 1.18, radiusTop: 0.19, radiusBottom: 0.28, headScale: 0.21, shoulderRadius: 0 },
+    vision: 14, hotkey: 'r',
     // Ranged. Deliberately punishing to kite with: accuracy while moving is a
     // fraction of its accuracy set up, and it takes COMBAT.settleTicks of
     // standing still to get all the way back (§8.7, design doc §2 — skill
@@ -67,9 +112,32 @@ export const UNIT_TYPES: Record<UnitTypeKey, UnitDef> = {
       accuracyStationary: 0.95, accuracyMoving: 0.35, defense: 0,
     },
   },
+  outrider: {
+    speed: 6.0, radius: 0.4, arriveEpsilon: 0.06, isWorker: false,
+    supply: 2, cost: { material: 70 }, buildTicks: 110, label: 'Outrider',
+    // Sharply tapered with almost no mass at the base — reads as quick, and as
+    // the thing you do not want meeting your line head-on.
+    silhouette: { height: 1.06, radiusTop: 0.15, radiusBottom: 0.24, headScale: 0.24, shoulderRadius: 0 },
+    // Flanker/scout (§8.7): "exploits flank bonuses; weak head-on". The
+    // expertise doubles the positional bonus — rear becomes ×1.70, side ×1.30 —
+    // while frontal damage stays at the multiplier every unit gets. Weak
+    // head-on is the rest of the row: no defense, modest HP, and less damage
+    // than a Legionnaire trading front-to-front through a shield wall. The
+    // speed and vision are the scout half: it outruns everything on the
+    // roster and sees further than the Marksman.
+    flankExpertise: 2.0,
+    vision: 16, hotkey: 'f',
+    combat: {
+      hp: 80, damage: 8, range: 0.9, attackTicks: 22,
+      accuracyStationary: 0.85, accuracyMoving: 0.7, defense: 0,
+    },
+  },
   worker: {
     speed: 3.6, radius: 0.36, arriveEpsilon: 0.06, isWorker: true,
-    supply: 1, cost: 50, buildTicks: 90, label: 'Worker',
+    supply: 1, cost: { material: 50 }, buildTicks: 90, label: 'Worker',
+    // Squat and smallest: never mistakable for a soldier when a base is hit.
+    silhouette: { height: 0.78, radiusTop: 0.26, radiusBottom: 0.34, headScale: 0.23, shoulderRadius: 0 },
+    vision: 9, hotkey: 'q',
     combat: {
       hp: 60, damage: 3, range: 0.8, attackTicks: 36,
       accuracyStationary: 0.6, accuracyMoving: 0.6, defense: 0,
