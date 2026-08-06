@@ -6,7 +6,7 @@
 
 ## 🔑 SESSION HANDOFF — read before starting work
 
-**v1.29.0 · 435 tests · 74 modules documented · `npm run verify` green · nothing unpushed.**
+**v1.30.0 · 440 tests · 74 modules documented · `npm run verify` green · nothing unpushed.**
 
 ### What this session did
 
@@ -107,7 +107,27 @@ Doctrine that cannot fail a build is a suggestion, and it decays silently.
 
 ---
 
-## ⚡ Latest — unit silhouettes, and a budget nobody was spending (v1.29.0)
+## ⚡ Latest — building silhouettes, last unspent tier setting (v1.30.0)
+
+**440 tests · full gate green.**
+
+- **Buildings declare a silhouette** rather than the Outpost being the Standard
+  scaled by radius. Standard: tall, six-ribbed, crowned. Outpost: squat,
+  wide-based, four short ribs, core sunk low. Standard's proportions preserved
+  exactly — only the Outpost changes.
+- **Buildings spend `bodySegments`** (the tier table always said "unit *and
+  building* bodies"), and **`sceneryDetail` is consumed at last**. Both
+  declared-but-unused tier settings are now closed.
+- Building scale basis rewritten from "fraction of the Standard" to world units
+  per silhouette unit, so a new structure is authored on its own terms.
+
+**Visual overhaul status:** ground colour, contact shadows, unit silhouettes and
+building silhouettes are done. What is left on that list is **depth in the void**
+and the CodePen cost review — plus the big one, **authored ramps and
+chokepoints**, which is D-033 generator work and the real remaining blocker for
+D-035's arcade legibility.
+
+## ⚡ Previous — unit silhouettes, and a budget nobody was spending (v1.29.0)
 
 **435 tests · full gate green.**
 

@@ -64,7 +64,7 @@ const terrainMesh = terrainPresentation.mesh;
 const fog = new FogOfWarField(terrainPresentation.boundary);
 const visibility = createVisibilityController(fog, visibilityModeFromSearch(window.location.search));
 const fogOverlay = createFogOverlay(scene, fog, visibility);
-const sceneryViews = buildSceneryViews(scene, world);
+const sceneryViews = buildSceneryViews(scene, world, quality.tier);
 
 const views = {
   units: new Map<EntityId, THREE.Group>(),

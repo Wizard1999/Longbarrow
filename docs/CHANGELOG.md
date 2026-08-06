@@ -1,3 +1,27 @@
+## v1.30.0 — Building silhouettes, and the last unspent tier setting (95%)
+**Date:** 2026-08-02
+
+Finishes what v1.29.0 started. Both quality-tier settings that were
+declared and consumed nowhere are now spent, and buildings stopped being
+one form at two sizes.
+
+- **Buildings declare a silhouette** (`BuildingSilhouette` in `src/data/`). The
+  Outpost was previously the Standard scaled by radius alone, so the two were
+  the same object at two sizes and said nothing about their roles. The Standard
+  is now tall, six-ribbed and crowned; the Outpost is squat and wide-based with
+  four short ribs and its core sunk low — a forward holding rather than a small
+  capital. The Standard's proportions are preserved exactly; only the Outpost
+  deliberately changes.
+- **Buildings spend `bodySegments` too.** The tier table always said the budget
+  covered "unit **and building** bodies", and every drum and rib was a hardcoded
+  hexagon at every tier, High included — the same bug units had.
+- **`QUALITY.sceneryDetail` is consumed at last.** Threaded the tier into
+  `buildSceneryViews`, so rock subdivision and foliage segments follow quality.
+  Rocks and trees were previously identical in every tier.
+- Rewrote the building scale basis from "fraction of the Standard" to world
+  units per silhouette unit, so a new structure's numbers no longer have to be
+  reasoned about relative to another building.
+
 ## v1.29.0 — Unit silhouettes, and a quality budget that was never spent (94%)
 **Date:** 2026-08-02
 

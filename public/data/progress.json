@@ -1,5 +1,5 @@
 {
-  "overall": 94,
+  "overall": 95,
   "updated": "2026-07-27",
   "currentWork": [
     "Validate attack-move, patrol, stop, and hold-position feel in a real browser, then refine direct-order feedback and tutorial coverage.",
@@ -50,8 +50,8 @@
     {
       "name": "Visual asset foundation",
       "status": "In progress",
-      "completion": 68,
-      "benchmark": "Declared per-unit silhouettes with shared type/tier geometry; the quality tier's radial-segment budget is now actually spent"
+      "completion": 76,
+      "benchmark": "Declared silhouettes for units and buildings, shared type/tier geometry, and both quality-tier detail budgets finally consumed"
     },
     {
       "name": "LOD and performance architecture",
@@ -79,6 +79,7 @@
     }
   ],
   "milestones": [
+    "Declared building silhouettes so the Outpost reads as a forward holding rather than a shrunken capital, plus the last two declared-but-unconsumed quality-tier detail settings.",
     "Unit silhouettes declared per unit in data and shared per type/tier, closing a bug where the quality tiers' radial-segment budget was declared but consumed nowhere.",
     "Contact shadows under every unit and building, sharing one material and geometry and working with shadow maps disabled, so the low quality tier is grounded for the first time.",
     "Terrain ground-material blending by height, slope and meadow noise, so the elevation that combat rewards is legible from the war table; compiled behind a define so no other material pays for it.",

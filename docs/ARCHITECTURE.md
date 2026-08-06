@@ -46,8 +46,8 @@ Race content lives here so the engine stays generic.
 | File | Purpose |
 |---|---|
 | `tuning.ts` | Every balance constant: build, combat, cohesion, economy, automation, AI, victory, day length. |
-| `units.ts` | Unit stat table + **traits** (`isWorker`, `formsShieldWall`). |
-| `buildings.ts` | Building stats: HP, command supply, control radius, what it produces. |
+| `units.ts` | Unit stat table + **traits** (`isWorker`, `formsShieldWall`, `flankExpertise`) + declared `silhouette` and hotkey. |
+| `buildings.ts` | Building stats: HP, command supply, control radius, vision, what it produces, and a declared `silhouette`. |
 | `tech.ts` | Cohort's research track (D-028). Declarative effects, category-wide. |
 | `resources.ts` | **The resource registry (D-031).** Declares which currencies exist, their rarity, node capacity, carry amount and gather share. Change the economy here and `src/sim/` needs no edit. |
 

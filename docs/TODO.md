@@ -58,12 +58,13 @@ missing. Ordered by visual return per unit of effort:
       Fixed a real bug on the way: `QUALITY.bodySegments` promised 8/12/16 and
       **nothing consumed it** — every unit was a hardcoded 6-sided cylinder even
       on High, which is precisely why they read as cylinders.
-- [ ] **`QUALITY.sceneryDetail` is still unused.** Same class of bug as
-      `bodySegments` was: declared in the tier table, consumed nowhere, so rocks
-      and trees are identical at every quality. Needs the tier threading into
-      `buildSceneryViews`, which currently only receives it in `sync`.
-- [ ] **Building silhouettes.** Only units were done. Buildings are still
-      scaled copies of one form.
+- [x] **`QUALITY.sceneryDetail`** — v1.30.0. Threaded the tier into
+      `buildSceneryViews`; rock and foliage detail now follow it. That closes both
+      declared-but-unconsumed tier settings.
+- [x] **Building silhouettes** — v1.30.0. Declared per building
+      (`BuildingSilhouette` in `src/data/`) instead of the Outpost being the
+      Standard scaled by radius alone. Buildings also spend `bodySegments`, which
+      the tier table always said covered "unit **and building** bodies".
 - [ ] **Depth in the void.** The black surround is currently featureless; the
       table needs to feel suspended in something (D-026 World Turtle staging).
 - [ ] **Review the two CodePen references** in `ART_REFERENCES.md` for
